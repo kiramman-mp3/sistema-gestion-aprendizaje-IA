@@ -18,6 +18,17 @@ describe("validateEnv", () => {
     expect(() => validateEnv({ PLUGIN_JWT_SECRET: "corto" })).toThrow(/PLUGIN_JWT_SECRET/);
   });
 
+  it("convierte CORS_ORIGINS en una lista sin barras finales", () => {
+    expect(
+      validateEnv({ CORS_ORIGINS: "http://localhost:8000/, https://moodle.uni.ec" }).CORS_ORIGINS,
+    ).toEqual(["http://localhost:8000", "https://moodle.uni.ec"]);
+    expect(validateEnv({}).CORS_ORIGINS).toEqual([]);
+  });
+
+  it("rechaza orígenes CORS inválidos", () => {
+    expect(() => validateEnv({ CORS_ORIGINS: "*" })).toThrow(/CORS_ORIGINS/);
+  });
+
   it("no incluye el valor del secreto en el mensaje de error", () => {
     expect(() => validateEnv({ PLUGIN_JWT_SECRET: "secreto-filtrable" })).toThrow(
       expect.objectContaining({ message: expect.not.stringContaining("secreto-filtrable") }),
