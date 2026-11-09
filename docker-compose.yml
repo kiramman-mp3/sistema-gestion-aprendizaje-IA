@@ -4,7 +4,8 @@
 # Uso:
 #   docker compose up -d                  # base auxiliar y Redis (el backend corre en el host: pnpm dev)
 #   docker compose --profile antivirus up -d   # además, ClamAV para analizar los archivos subidos
-#   docker compose --profile api up -d    # además, el backend en un contenedor (incluye ClamAV)
+#   docker compose --profile worker up -d      # además, el worker documental (lee var/storage del backend en el host)
+#   docker compose --profile api up -d    # además, el backend y el worker en contenedores (incluye ClamAV)
 services:
   app-db:
     image: pgvector/pgvector:0.8.6-pg17
@@ -89,6 +90,30 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  # Extrae el texto de los sílabos (ADR-003). Procesa archivos no confiables, así que corre aislado:
+  # sin acceso a la base ni a Moodle, con el almacén en solo lectura y el sistema de archivos bloqueado.
+  document-worker:
+    profiles: ["worker", "api"]
+    build:
+      context: .
+      dockerfile: apps/document-worker/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379
+      STORAGE_DIR: /var/lib/smart-lms/storage
+      WORKER_CONCURRENCY: 2
+    volumes:
+      # Con el perfil "worker" solo, el backend corre en el host y guarda en apps/api/var/storage.
+      - ${WORKER_STORAGE_SOURCE:-file_storage}:/var/lib/smart-lms/storage:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    depends_on:
+      redis:
+        condition: service_healthy
 
 volumes:
   app_db_data:
