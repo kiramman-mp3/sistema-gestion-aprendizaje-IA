@@ -228,17 +228,25 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** convertir el documento de requisitos en especificación verificable y diseño.
 
-- [ ] Entrevistar a 2–5 docentes y medir el tiempo actual de planificación de un curso (línea base para el indicador de ahorro de tiempo).
-- [ ] Documentar el proceso actual de planificación y seguimiento (`docs/architecture/proceso-actual.md`).
-- [ ] Catalogar los formatos de sílabo recibidos y sus secciones.
-- [ ] Refinar RF y RNF con criterios de aceptación medibles.
-- [ ] Diseñar el modelo de datos completo: añadir `IntegrationAccount`, `DocumentChunk`, `PedagogicalRecommendation`, `AnalyticsSnapshot`, `PublishOperation` y unificar estados de documento y propuesta.
-- [ ] Diseñar el contrato de la API (`docs/api/openapi.yaml`).
-- [ ] Diseñar el JSON Schema v1 del sílabo en `packages/contracts`.
-- [ ] Prototipos de baja fidelidad: panel docente, generación de curso y análisis individual.
-- [ ] Análisis de privacidad: finalidad, base de legitimación, categorías de datos, necesidad de evaluación de impacto (LOPDP).
-- [ ] Plan de pruebas y conjunto de referencia: sílabos etiquetados y preguntas con respuesta verificada por docentes.
-- [ ] Solicitar consentimiento informado y aval ético para el piloto.
+- [ ] Entrevistar a 2–5 docentes y medir el tiempo actual de planificación de un curso (línea base para el indicador de ahorro de tiempo). Instrumento listo: [`docs/levantamiento/guia-entrevista.md`](levantamiento/guia-entrevista.md).
+- [ ] Documentar el proceso actual de planificación y seguimiento (`docs/architecture/proceso-actual.md`). Depende de las entrevistas.
+- [ ] Catalogar los formatos de sílabo recibidos y sus secciones. Plantilla lista: [`docs/levantamiento/catalogo-silabos.md`](levantamiento/catalogo-silabos.md); faltan los sílabos (D-03).
+- [x] Refinar RF y RNF con criterios de aceptación medibles → [`docs/requisitos/especificacion-requisitos.md`](requisitos/especificacion-requisitos.md).
+- [x] Diseñar el modelo de datos completo: añadir `IntegrationAccount`, `DocumentChunk`, `PedagogicalRecommendation`, `AnalyticsSnapshot`, `PublishOperation` y unificar estados de documento y propuesta → [`docs/architecture/modelo-datos.md`](architecture/modelo-datos.md).
+- [x] Diseñar el contrato de la API → [`docs/api/openapi.yaml`](api/openapi.yaml), validado con `pnpm lint:api`.
+- [x] Diseñar el JSON Schema v1 del sílabo en `packages/contracts` → esquema Zod, reglas de consistencia, 17 pruebas y `json-schema/syllabus-extraction-1.0.json`.
+- [x] Prototipos de baja fidelidad: panel docente, generación de curso, chat y análisis individual → [`docs/prototipos/prototipos-baja-fidelidad.md`](prototipos/prototipos-baja-fidelidad.md). Falta validarlos con docentes.
+- [x] Análisis de privacidad: finalidad, base de legitimación, categorías de datos, necesidad de evaluación de impacto (LOPDP) → [`docs/security/analisis-privacidad.md`](security/analisis-privacidad.md). Falta revisión jurídica.
+- [ ] Plan de pruebas y conjunto de referencia: sílabos etiquetados y preguntas con respuesta verificada por docentes. Plan listo: [`docs/testing/plan-pruebas.md`](testing/plan-pruebas.md); el conjunto de referencia depende de D-03.
+- [ ] Solicitar consentimiento informado y aval ético para el piloto. Borrador listo: [`docs/levantamiento/consentimiento-informado-borrador.md`](levantamiento/consentimiento-informado-borrador.md).
+- [x] Comparar el subsistema de IA de Moodle con el backend propio (ADR-012) → [`docs/architecture/comparativa-subsistema-ia-moodle.md`](architecture/comparativa-subsistema-ia-moodle.md).
+
+**Desvíos:**
+
+- Se añadieron CU-06 (configurar la integración) y CU-07 (consultar auditoría), que el documento de requisitos no tenía.
+- Los estados del documento y de la propuesta se separaron: `EXTRACTED` ya no es un estado de propuesta.
+- `packages/contracts` usa Vitest; el backend seguirá con Jest (ADR-002).
+- Se añadió `@redocly/cli` 2.71.1 y el paso "Contrato OpenAPI" en CI.
 
 **Entregables:** especificación de requisitos, diagramas, prototipos, OpenAPI v0, esquema del sílabo v1, plan de pruebas.
 
@@ -503,19 +511,19 @@ de modelos propios y publicación masiva sin revisión.
 
 ## 📈 Seguimiento
 
-| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                   |
-| ------ | --------- | ---------- | ---------- | --------------------------------------------------------------------------------------- |
-| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10 |
-| S1     | Pendiente |            |            |                                                                                         |
-| S2     | Pendiente |            |            |                                                                                         |
-| S3     | Pendiente |            |            |                                                                                         |
-| S4     | Pendiente |            |            |                                                                                         |
-| S5     | Pendiente |            |            |                                                                                         |
-| S6     | Pendiente |            |            |                                                                                         |
-| S7     | Pendiente |            |            |                                                                                         |
-| S8     | Pendiente |            |            |                                                                                         |
-| S9     | Pendiente |            |            |                                                                                         |
-| S10    | Pendiente |            |            |                                                                                         |
-| S11    | Pendiente |            |            |                                                                                         |
-| S12    | Pendiente |            |            |                                                                                         |
-| S13    | Pendiente |            |            |                                                                                         |
+| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                    |
+| ------ | --------- | ---------- | ---------- | ---------------------------------------------------------------------------------------- |
+| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10  |
+| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético |
+| S2     | Pendiente |            |            |                                                                                          |
+| S3     | Pendiente |            |            |                                                                                          |
+| S4     | Pendiente |            |            |                                                                                          |
+| S5     | Pendiente |            |            |                                                                                          |
+| S6     | Pendiente |            |            |                                                                                          |
+| S7     | Pendiente |            |            |                                                                                          |
+| S8     | Pendiente |            |            |                                                                                          |
+| S9     | Pendiente |            |            |                                                                                          |
+| S10    | Pendiente |            |            |                                                                                          |
+| S11    | Pendiente |            |            |                                                                                          |
+| S12    | Pendiente |            |            |                                                                                          |
+| S13    | Pendiente |            |            |                                                                                          |
