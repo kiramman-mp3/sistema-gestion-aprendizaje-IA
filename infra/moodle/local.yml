@@ -1,0 +1,14 @@
+# Personalización de moodle-docker para este proyecto. infra/scripts/moodle.sh la copia al directorio
+# de moodle-docker, que la carga automáticamente.
+services:
+  webserver:
+    volumes:
+      # Moodle 5.1 sirve el sitio desde public/ (index.php de la raíz lanza "rootdirpublic").
+      - "${SMART_LMS_INFRA_DIR}/moodle/apache-public.conf:/etc/apache2/sites-available/000-default.conf:ro"
+      # Plugin del proyecto, montado en vivo para desarrollar sin copiar archivos.
+      - "${SMART_LMS_PLUGIN_DIR}:/var/www/html/public/local/ai_assistant"
+      # Scripts CLI del proyecto (instalación, usuario de integración, datos sintéticos).
+      - "${SMART_LMS_INFRA_DIR}/moodle/cli:/opt/smart-lms/cli:ro"
+    extra_hosts:
+      # Permite que Moodle llame al backend que corre en el host.
+      - "host.docker.internal:host-gateway"
