@@ -14,7 +14,8 @@ const escape = (text: string) => text.replace(/([\\()])/g, "\\$1");
  */
 export function buildPdf(pages: PdfRun[][], options: { encrypted?: boolean } = {}): Uint8Array {
   const objects: string[] = [];
-  const add = (body: string) => objects.push(body) - 1 + 1;
+  // El id de un objeto PDF es su posición, empezando en 1.
+  const add = (body: string) => objects.push(body);
 
   const catalog = add("");
   const pagesId = add("");
