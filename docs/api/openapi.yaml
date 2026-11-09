@@ -43,6 +43,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/Health"
 
+  /session:
+    get:
+      tags: [health]
+      operationId: getSession
+      summary: Identidad verificada del usuario y sus capacidades en el curso del token
+      description: Permite al plugin comprobar la conexión con el backend.
+      responses:
+        "200":
+          description: Identidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          description: Autenticación no configurada o registro de tokens no disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /syllabi:
     post:
       tags: [syllabi]
@@ -697,7 +719,9 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     Unauthorized:
-      description: JWT ausente, inválido, expirado o reutilizado
+      description: |
+        JWT ausente, inválido, expirado o reutilizado. `code` es `TOKEN_MISSING`, `TOKEN_INVALID`,
+        `TOKEN_EXPIRED` o `TOKEN_REPLAYED`. Cada token sirve para una sola petición.
       content:
         application/json:
           schema:
@@ -779,6 +803,15 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    Session:
+      type: object
+      required: [moodleUserId, courseId]
+      properties:
+        moodleUserId:
+          type: integer
+        courseId:
+          type: integer
 
     SyllabusExtraction:
       description: |
