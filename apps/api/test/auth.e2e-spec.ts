@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { configureApp } from "../src/app.setup";
+import { AuditService, type AuditEntry } from "../src/audit/audit.service";
 import { AccessService } from "../src/auth/access.service";
 import { InMemoryJtiStore, JtiStore } from "../src/auth/jti-store";
 import type { CourseAccess } from "../src/integrations/moodle/moodle.types";
@@ -25,6 +26,7 @@ const fakeAccess = {
 
 describe("Autenticación del plugin (e2e)", () => {
   let app: INestApplication;
+  const audit: AuditEntry[] = [];
 
   beforeAll(async () => {
     process.env.LOG_LEVEL = "fatal";
@@ -35,6 +37,8 @@ describe("Autenticación del plugin (e2e)", () => {
       .useValue(new InMemoryJtiStore())
       .overrideProvider(AccessService)
       .useValue(fakeAccess)
+      .overrideProvider(AuditService)
+      .useValue({ record: async (entry: AuditEntry) => void audit.push(entry) })
       .compile();
     app = moduleRef.createNestApplication({ logger: false });
     configureApp(app);
@@ -61,11 +65,25 @@ describe("Autenticación del plugin (e2e)", () => {
     const token = signPluginToken({ sub: "99" });
     const res = await session().set("Authorization", `Bearer ${token}`).expect(403);
     expect(res.body.code).toBe("FORBIDDEN_COURSE");
+    expect(audit).toContainEqual(
+      expect.objectContaining({ action: "access.denied", actorMoodleId: 99, courseId: 7 }),
+    );
   });
 
-  it("SEC-03: rechaza la petición sin token", async () => {
+  it("SEC-09: no guarda el token en la auditoría", async () => {
+    const token = signPluginToken({ sub: "99" });
+    await session().set("Authorization", `Bearer ${token}`).expect(403);
+    expect(JSON.stringify(audit)).not.toContain(token.split(".")[2]);
+  });
+
+  it("SEC-03: rechaza la petición sin token y lo audita", async () => {
     const res = await session().expect(401);
     expect(res.body.code).toBe("TOKEN_MISSING");
+    expect(audit).toContainEqual({
+      action: "auth.denied",
+      outcome: "DENIED",
+      metadata: { code: "TOKEN_MISSING", method: "GET", path: "/api/v1/session" },
+    });
   });
 
   it("SEC-03: rechaza un token con firma inválida", async () => {
