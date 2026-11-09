@@ -305,7 +305,7 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 
 | Nombre       | Commits |
 | ------------ | ------- |
-| kiramman-mp3 | 91      |
+| kiramman-mp3 | 93      |
 
 ---
 
