@@ -37,6 +37,15 @@ $functions = [
         'loginrequired' => true,
         'capabilities' => 'local/ai_assistant:use',
     ],
+
+    // Called by the backend with the integration token (ADR-007).
+    'local_ai_assistant_check_access' => [
+        'classname' => \local_ai_assistant\external\check_access::class,
+        'description' => 'Reports the assistant capabilities of a user in a course.',
+        'type' => 'read',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:checkaccess',
+    ],
 ];
 
 $services = [
@@ -44,6 +53,7 @@ $services = [
         'shortname' => 'local_ai_assistant_integration',
         'functions' => [
             'core_webservice_get_site_info',
+            'local_ai_assistant_check_access',
         ],
         'restrictedusers' => 1,
         'enabled' => 1,
