@@ -3,5 +3,5 @@ dist/
 coverage/
 pnpm-lock.yaml
 moodle/
-docs/requisitos/
+docs/requisitos/implementacion_lms_inteligente_ia.md
 CLAUDE.md
