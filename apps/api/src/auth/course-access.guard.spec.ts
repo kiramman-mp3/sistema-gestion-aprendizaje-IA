@@ -1,4 +1,5 @@
 import type { ExecutionContext } from "@nestjs/common";
+import type { AuditService } from "../audit/audit.service";
 import { Reflector } from "@nestjs/core";
 import { MoodleUnavailableError } from "../integrations/moodle/moodle.errors";
 import type { CourseAccess } from "../integrations/moodle/moodle.types";
@@ -24,14 +25,24 @@ function setup(access: CourseAccess | Error, metadata: Record<string, unknown> =
     if (access instanceof Error) throw access;
     return access;
   });
-  const guard = new CourseAccessGuard(reflector, { getAccess } as unknown as AccessService);
-  const request = { auth: { moodleUserId: 4, courseId: 2 }, params: {} } as AuthenticatedRequest;
+  const record = jest.fn().mockResolvedValue(undefined);
+  const guard = new CourseAccessGuard(
+    reflector,
+    { getAccess } as unknown as AccessService,
+    { record } as unknown as AuditService,
+  );
+  const request = {
+    auth: { moodleUserId: 4, courseId: 2 },
+    params: {},
+    method: "GET",
+    path: "/api/v1/session",
+  } as unknown as AuthenticatedRequest;
   const context = {
     getHandler: () => undefined,
     getClass: () => undefined,
     switchToHttp: () => ({ getRequest: () => request }),
   } as unknown as ExecutionContext;
-  return { guard, request, context, getAccess };
+  return { guard, request, context, getAccess, record };
 }
 
 const rejection = (code: string) =>
@@ -58,9 +69,16 @@ describe("CourseAccessGuard", () => {
       roles: ["student"],
       capabilities: { use: false, publish: false, viewanalytics: false },
     };
-    const { guard, context } = setup(student);
+    const { guard, context, record } = setup(student);
 
     await expect(guard.canActivate(context)).rejects.toEqual(rejection("FORBIDDEN_COURSE"));
+    expect(record).toHaveBeenCalledWith({
+      action: "access.denied",
+      outcome: "DENIED",
+      actorMoodleId: 4,
+      courseId: 2,
+      metadata: { code: "FORBIDDEN_COURSE", method: "GET", path: "/api/v1/session" },
+    });
   });
 
   it.each([

@@ -6,6 +6,7 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { AuditService } from "../audit/audit.service";
 import { MoodleError } from "../integrations/moodle/moodle.errors";
 import { AccessService } from "./access.service";
 import type { AuthenticatedRequest } from "./auth-context";
@@ -24,6 +25,7 @@ export class CourseAccessGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly access: AccessService,
+    private readonly audit: AuditService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -36,7 +38,7 @@ export class CourseAccessGuard implements CanActivate {
 
     const routeCourseId = request.params?.courseId;
     if (routeCourseId !== undefined && Number(routeCourseId) !== auth.courseId) {
-      throw forbidden("FORBIDDEN_COURSE", "El token no corresponde a este curso.");
+      throw await this.deny(request, "FORBIDDEN_COURSE", "El token no corresponde a este curso.");
     }
 
     let access;
@@ -53,21 +55,42 @@ export class CourseAccessGuard implements CanActivate {
     }
 
     if (!access.courseexists || !access.active || !access.capabilities.use) {
-      throw forbidden("FORBIDDEN_COURSE", "Sin permiso para usar el asistente en este curso.");
+      throw await this.deny(
+        request,
+        "FORBIDDEN_COURSE",
+        "Sin permiso para usar el asistente en este curso.",
+      );
     }
 
     const required =
       this.reflector.getAllAndOverride<AssistantCapability[]>(REQUIRED_CAPABILITIES, targets) ?? [];
     const missing = required.filter((capability) => !access.capabilities[capability]);
     if (missing.length > 0) {
-      throw forbidden("FORBIDDEN_CAPABILITY", `Falta la capacidad: ${missing.join(", ")}.`);
+      throw await this.deny(
+        request,
+        "FORBIDDEN_CAPABILITY",
+        `Falta la capacidad: ${missing.join(", ")}.`,
+      );
     }
 
     request.auth = { ...auth, roles: access.roles, capabilities: access.capabilities };
     return true;
   }
-}
 
-function forbidden(code: string, message: string): ForbiddenException {
-  return new ForbiddenException({ code, message });
+  /** Registra el acceso denegado (SEC-01, SEC-02, RF-19) y devuelve la excepción a lanzar. */
+  private async deny(
+    request: AuthenticatedRequest,
+    code: string,
+    message: string,
+  ): Promise<ForbiddenException> {
+    await this.audit.record({
+      action: "access.denied",
+      outcome: "DENIED",
+      ...(request.auth
+        ? { actorMoodleId: request.auth.moodleUserId, courseId: request.auth.courseId }
+        : {}),
+      metadata: { code, method: request.method, path: request.path },
+    });
+    return new ForbiddenException({ code, message });
+  }
 }
