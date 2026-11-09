@@ -5,14 +5,16 @@ datos sintéticos; nunca se cargan datos reales de estudiantes.
 
 ## Piezas
 
-| Pieza          | Cómo se levanta                                | Dirección                         |
-| -------------- | ---------------------------------------------- | --------------------------------- |
-| Moodle 5.1.8   | `infra/scripts/moodle.sh` (moodle-docker)      | <http://localhost:8000>           |
-| Base de Moodle | moodle-docker (PostgreSQL)                     | Solo dentro de Docker             |
-| Base auxiliar  | `docker compose` (PostgreSQL + pgvector)       | `localhost:${APP_DB_PORT:-5433}`  |
-| Redis          | `docker compose`                               | `localhost:${REDIS_PORT:-6379}`   |
-| Backend        | `pnpm --filter @smart-lms/api dev`             | `http://localhost:${PORT}/api/v1` |
-| Plugin         | Montado en vivo en `public/local/ai_assistant` | Administración de Moodle          |
+| Pieza             | Cómo se levanta                                | Dirección                            |
+| ----------------- | ---------------------------------------------- | ------------------------------------ |
+| Moodle 5.1.8      | `infra/scripts/moodle.sh` (moodle-docker)      | <http://localhost:8000>              |
+| Base de Moodle    | moodle-docker (PostgreSQL)                     | Solo dentro de Docker                |
+| Base auxiliar     | `docker compose` (PostgreSQL + pgvector)       | `localhost:${APP_DB_PORT:-5433}`     |
+| Redis             | `docker compose`                               | `localhost:${REDIS_PORT:-6379}`      |
+| ClamAV            | `docker compose --profile antivirus`           | `localhost:${CLAMAV_PORT:-3310}`     |
+| Worker documental | `docker compose --profile worker`              | Sin puertos; solo Redis y el almacén |
+| Backend           | `pnpm --filter @smart-lms/api dev`             | `http://localhost:${PORT}/api/v1`    |
+| Plugin            | Montado en vivo en `public/local/ai_assistant` | Administración de Moodle             |
 
 ```mermaid
 graph LR
@@ -22,6 +24,8 @@ graph LR
     subgraph "docker compose"
         PG[(PostgreSQL + pgvector)]
         R[(Redis)]
+        AV[ClamAV]
+        DW[Worker documental<br/>OCR con Tesseract]
     end
     subgraph "moodle-docker"
         W[webserver PHP 8.3<br/>DocumentRoot public/]
@@ -29,6 +33,10 @@ graph LR
     end
     API --> PG
     API --> R
+    API -->|zINSTREAM| AV
+    DW --> R
+    DW -.->|solo lectura| FS[(apps/api/var/storage)]
+    API --> FS
     API -->|REST + token| W
     W --> MDB
     W -.->|host.docker.internal| API
@@ -104,20 +112,23 @@ Los pasos deben seguir este orden.
 
 ## Uso diario
 
-| Tarea                                      | Comando                                                                                                                                 |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Levantar todo                              | `docker compose up -d && bash infra/scripts/moodle.sh up`                                                                               |
-| Detener Moodle                             | `bash infra/scripts/moodle.sh down`                                                                                                     |
-| Detener base auxiliar y Redis              | `docker compose down`                                                                                                                   |
-| Backend en modo desarrollo                 | `pnpm --filter @smart-lms/api dev`                                                                                                      |
-| Crear una migración                        | `pnpm --filter @smart-lms/api prisma:migrate -- --name <nombre>`                                                                        |
-| Reaplicar secreto JWT y URL del backend    | `bash infra/scripts/moodle.sh configure`                                                                                                |
-| Recompilar el JavaScript del plugin        | `pnpm build:amd` (CI exige que `amd/build` esté al día: `pnpm check:amd`)                                                               |
-| Rotar el token de Moodle                   | `bash infra/scripts/moodle.sh compose exec webserver php /opt/smart-lms/cli/setup_integration.php --rotate`                             |
-| Revisar el código PHP                      | `bash infra/scripts/phpcs.sh`                                                                                                           |
-| Preparar PHPUnit (una vez por instalación) | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php public/admin/tool/phpunit/cli/init.php`                  |
-| Pruebas PHPUnit del plugin                 | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver vendor/bin/phpunit --testsuite local_ai_assistant_testsuite` |
-| Backend en contenedor                      | `docker compose --profile api up -d --build` (ver problemas conocidos)                                                                  |
+| Tarea                                       | Comando                                                                                                                                 |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Levantar todo                               | `docker compose up -d && bash infra/scripts/moodle.sh up`                                                                               |
+| Detener Moodle                              | `bash infra/scripts/moodle.sh down`                                                                                                     |
+| Detener base auxiliar y Redis               | `docker compose down`                                                                                                                   |
+| Backend en modo desarrollo                  | `pnpm --filter @smart-lms/api dev`                                                                                                      |
+| Crear una migración                         | `pnpm --filter @smart-lms/api prisma:migrate -- --name <nombre>`                                                                        |
+| Reaplicar secreto JWT y URL del backend     | `bash infra/scripts/moodle.sh configure`                                                                                                |
+| Recompilar el JavaScript del plugin         | `pnpm build:amd` (CI exige que `amd/build` esté al día: `pnpm check:amd`)                                                               |
+| Rotar el token de Moodle                    | `bash infra/scripts/moodle.sh compose exec webserver php /opt/smart-lms/cli/setup_integration.php --rotate`                             |
+| Revisar el código PHP                       | `bash infra/scripts/phpcs.sh`                                                                                                           |
+| Preparar PHPUnit (una vez por instalación)  | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php public/admin/tool/phpunit/cli/init.php`                  |
+| Pruebas PHPUnit del plugin                  | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver vendor/bin/phpunit --testsuite local_ai_assistant_testsuite` |
+| Backend en contenedor                       | `docker compose --profile api up -d --build` (ver problemas conocidos)                                                                  |
+| Antivirus para las cargas                   | `docker compose --profile antivirus up -d` (el primer arranque tarda unos minutos)                                                      |
+| Worker documental con el backend en el host | `WORKER_STORAGE_SOURCE=./apps/api/var/storage docker compose --profile worker up -d --build document-worker`                            |
+| Pruebas del worker                          | `pnpm --filter @smart-lms/document-worker test`                                                                                         |
 
 ## Datos sintéticos
 
@@ -165,7 +176,15 @@ Si otro proyecto usa un puerto, cámbialo en `.env`:
 | `API_PORT` (contenedor)  | `3000`           |
 | `APP_DB_PORT`            | `5433`           |
 | `REDIS_PORT`             | `6379`           |
+| `CLAMAV_PORT`            | `3310`           |
 | `MOODLE_DOCKER_WEB_PORT` | `127.0.0.1:8000` |
+
+## Procesamiento de sílabos
+
+- Sin `CLAMAV_URL`, el backend acepta archivos sin analizarlos y lo avisa en el log; en producción no arranca sin ella.
+- El worker en Docker trae Poppler y Tesseract con español. Ejecutado en el host de Windows no tiene OCR y los PDF escaneados terminan en `EMPTY_DOCUMENT`.
+- `STORAGE_DIR` relativo se resuelve desde `apps/api` tanto en el backend como en el worker.
+- Flujo, estados y códigos de error en [`docs/architecture/procesamiento-silabos.md`](../architecture/procesamiento-silabos.md).
 
 ## Problemas conocidos
 
