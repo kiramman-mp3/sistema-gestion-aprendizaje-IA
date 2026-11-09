@@ -8,4 +8,6 @@ packages:
 allowBuilds:
   "@parcel/watcher": false
   "@prisma/engines": false
+  # Acelerador nativo opcional de msgpackr (BullMQ); sin él usa la versión en JavaScript.
+  msgpackr-extract: false
   prisma: false

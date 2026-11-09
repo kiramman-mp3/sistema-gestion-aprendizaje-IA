@@ -21,6 +21,8 @@
     "@nestjs/platform-express": "11.2.8",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
+    "@smart-lms/contracts": "workspace:*",
+    "bullmq": "6.4.2",
     "ioredis": "6.0.0",
     "nestjs-pino": "5.3.1",
     "pino": "10.4.0",
