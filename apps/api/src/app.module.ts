@@ -6,6 +6,7 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { validateEnv, type Env } from "./config/env";
 import { buildLoggerParams } from "./config/logger";
 import { HealthModule } from "./health/health.module";
+import { MoodleModule } from "./integrations/moodle/moodle.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { HealthModule } from "./health/health.module";
         }),
     }),
     HealthModule,
+    MoodleModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
 })
