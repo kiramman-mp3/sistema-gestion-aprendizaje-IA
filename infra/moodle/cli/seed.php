@@ -76,27 +76,54 @@ foreach ($people as $username => [$firstname, $lastname]) {
 }
 $students = array_filter($users, fn($u) => str_starts_with($u->username, 'estudiante'));
 
+// Tareas por curso. "due" es relativo a hoy en días y "mix" reparte a los estudiantes por estado:
+// none = sin entrega, draft = borrador, ontime = enviada a tiempo, late = enviada tarde.
+// "graded" indica si se califican todas las entregas enviadas, la mitad ('partial') o ninguna.
 $courses = [
     'IS-501-DEMO' => [
         'fullname' => 'Ingeniería de Software (demo)',
         'teachers' => ['docente1' => 'editingteacher', 'docente2' => 'teacher'],
         'students' => array_slice($students, 0, 12, true),
+        'assignments' => [
+            [
+                'name' => 'Tarea 1: Historias de usuario',
+                'due' => -14,
+                'mix' => ['ontime' => 9, 'late' => 2, 'none' => 1],
+                'graded' => true,
+            ],
+            [
+                'name' => 'Tarea 2: Especificación de requisitos',
+                'due' => -7,
+                'mix' => ['ontime' => 7, 'late' => 2, 'draft' => 1, 'none' => 2],
+                'graded' => 'partial',
+            ],
+            [
+                'name' => 'Tarea 3: Diagrama de arquitectura',
+                'due' => 5,
+                'mix' => ['ontime' => 5, 'draft' => 3, 'none' => 4],
+                'graded' => false,
+            ],
+        ],
     ],
     'BD-301-DEMO' => [
         'fullname' => 'Bases de Datos (demo)',
         'teachers' => ['docente3' => 'editingteacher'],
         'students' => array_slice($students, 0, 8, true),
+        'assignments' => [
+            [
+                'name' => 'Tarea 1: Modelo entidad-relación',
+                'due' => -10,
+                'mix' => ['ontime' => 6, 'late' => 1, 'none' => 1],
+                'graded' => true,
+            ],
+            [
+                'name' => 'Tarea 2: Normalización',
+                'due' => 3,
+                'mix' => ['ontime' => 3, 'draft' => 2, 'none' => 3],
+                'graded' => false,
+            ],
+        ],
     ],
-];
-
-/**
- * Tareas por curso. "due" es relativo a hoy en días; "plan" define el estado de cada estudiante:
- * none = sin entrega, draft = borrador, ontime = enviada a tiempo, late = enviada tarde.
- */
-$assignments = [
-    ['name' => 'Tarea 1: Historias de usuario', 'due' => -14, 'mix' => ['ontime' => 9, 'late' => 2, 'none' => 1], 'graded' => true],
-    ['name' => 'Tarea 2: Especificación de requisitos', 'due' => -7, 'mix' => ['ontime' => 7, 'late' => 2, 'draft' => 1, 'none' => 2], 'graded' => 'partial'],
-    ['name' => 'Tarea 3: Diagrama de arquitectura', 'due' => 5, 'mix' => ['ontime' => 5, 'draft' => 3, 'none' => 4], 'graded' => false],
 ];
 
 $summary = [];
@@ -114,7 +141,7 @@ foreach ($courses as $shortname => $def) {
         $generator->enrol_user($student->id, $course->id, 'student');
     }
 
-    foreach ($assignments as $index => $spec) {
+    foreach ($def['assignments'] as $index => $spec) {
         $duedate = $now + $spec['due'] * $day;
         $instance = $assigngenerator->create_instance([
             'course' => $course->id,
@@ -136,8 +163,7 @@ foreach ($courses as $shortname => $def) {
             $plan = array_merge($plan, array_fill(0, $count, $state));
         }
         $enrolled = array_values($def['students']);
-        $plan = array_slice($plan, 0, count($enrolled));
-        $plan = array_pad($plan, count($enrolled), 'none');
+        $plan = array_pad(array_slice($plan, 0, count($enrolled)), count($enrolled), 'none');
 
         $counts = ['none' => 0, 'draft' => 0, 'ontime' => 0, 'late' => 0, 'graded' => 0];
         foreach ($enrolled as $i => $student) {
@@ -146,17 +172,25 @@ foreach ($courses as $shortname => $def) {
             if ($state === 'none') {
                 continue;
             }
+
+            // El generador guarda la entrega como borrador porque la tarea exige confirmar el envío.
             $assigngenerator->create_submission([
                 'userid' => $student->id,
                 'cmid' => $cm->id,
                 'onlinetext' => '<p>Entrega sintética de ' . s($student->username) . '.</p>',
-                'status' => $state === 'draft' ? ASSIGN_SUBMISSION_STATUS_DRAFT : ASSIGN_SUBMISSION_STATUS_SUBMITTED,
             ]);
+            if ($state !== 'draft') {
+                $assign->submit_for_grading((object) ['userid' => $student->id], []);
+            }
 
-            // Fija la fecha de entrega para producir entregas a tiempo o tardías.
+            // Fija la fecha de modificación para producir entregas a tiempo o tardías.
             $submitted = $state === 'late' ? $duedate + 2 * $day : min($now, $duedate - $day);
-            $DB->set_field('assign_submission', 'timemodified', $submitted,
-                ['assignment' => $instance->id, 'userid' => $student->id]);
+            $DB->set_field(
+                'assign_submission',
+                'timemodified',
+                $submitted,
+                ['assignment' => $instance->id, 'userid' => $student->id]
+            );
 
             $grade = $spec['graded'] === true || ($spec['graded'] === 'partial' && $i % 2 === 0);
             if ($state !== 'draft' && $grade) {
@@ -172,8 +206,14 @@ foreach ($courses as $shortname => $def) {
         }
         $summary[] = sprintf(
             '%s · %s · vence %s · sin entrega %d, borrador %d, a tiempo %d, tarde %d, calificadas %d',
-            $shortname, $spec['name'], userdate($duedate, '%Y-%m-%d'),
-            $counts['none'], $counts['draft'], $counts['ontime'], $counts['late'], $counts['graded']
+            $shortname,
+            $spec['name'],
+            date('Y-m-d', $duedate),
+            $counts['none'],
+            $counts['draft'],
+            $counts['ontime'],
+            $counts['late'],
+            $counts['graded']
         );
     }
 }
