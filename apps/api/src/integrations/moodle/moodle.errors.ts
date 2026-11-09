@@ -35,8 +35,11 @@ export class MoodleUnavailableError extends MoodleError {}
 /** La respuesta no tiene la forma esperada. */
 export class MoodleResponseError extends MoodleError {}
 
-const AUTH_CODES = new Set(["invalidtoken", "accessexception", "servicerequireslogin"]);
+// "accessexception" llega cuando la función no está en el servicio o el usuario no está autorizado en
+// él: es un problema de permisos, no de credenciales.
+const AUTH_CODES = new Set(["invalidtoken", "servicerequireslogin"]);
 const PERMISSION_CODES = new Set([
+  "accessexception",
   "nopermissions",
   "requireloginerror",
   "notingroup",
