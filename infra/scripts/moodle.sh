@@ -48,7 +48,8 @@ mdc() {
 }
 
 php_cli() {
-  mdc exec -T webserver php "$@"
+  # En Git Bash (Windows), evita que /var/www/... se convierta en una ruta de Windows.
+  MSYS_NO_PATHCONV=1 mdc exec -T webserver php "$@"
 }
 
 cmd_setup() {
