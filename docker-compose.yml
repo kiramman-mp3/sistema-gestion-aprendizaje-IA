@@ -45,12 +45,15 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://app:${APP_DB_PASSWORD}@app-db:5432/ai_assistant
       REDIS_URL: redis://redis:6379
-      # Moodle corre en el host (moodle-docker) y se expone en el puerto 8000.
+      # Limitación conocida: Moodle redirige toda petición a su wwwroot (http://localhost:8000), que no
+      # existe dentro de este contenedor, así que /health informará "moodle": "down". Para desarrollar
+      # contra Moodle, ejecuta el backend en el host (pnpm dev). En producción, Moodle y el backend usan
+      # nombres DNS reales y este valor apunta al wwwroot de Moodle.
       MOODLE_BASE_URL: ${MOODLE_BASE_URL_FROM_DOCKER:-http://host.docker.internal:8000}
       MOODLE_TOKEN: ${MOODLE_TOKEN:-}
       PLUGIN_JWT_SECRET: ${PLUGIN_JWT_SECRET:-}
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${API_PORT:-3000}:3000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
