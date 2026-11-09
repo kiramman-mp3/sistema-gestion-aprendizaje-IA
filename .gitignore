@@ -1,0 +1,39 @@
+# Dependencias
+node_modules/
+vendor/
+
+# Builds
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Archivos subidos y temporales
+uploads/
+tmp/
+
+# Editores y sistema operativo
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Moodle y moodle-docker descargados por infra/scripts/moodle.sh
+infra/.cache/
+
+# Cliente de Prisma generado (pnpm --filter @smart-lms/api prisma:generate)
+apps/api/src/generated/

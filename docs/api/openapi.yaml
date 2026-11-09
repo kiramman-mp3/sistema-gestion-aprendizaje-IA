@@ -1,0 +1,1141 @@
+openapi: 3.1.0
+info:
+  title: API del LMS inteligente
+  version: 0.1.0
+  description: |
+    Contrato v0 (Sprint 1) del backend. Todas las rutas requieren un JWT de vida corta firmado por el
+    plugin de Moodle (ADR-006). El backend valida rol y capacidades en el curso en cada petición
+    (ADR-007). Los ejemplos no contienen datos reales.
+  license:
+    name: Por definir
+    identifier: UNLICENSED
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Desarrollo local
+security:
+  - pluginJwt: []
+tags:
+  - name: syllabi
+    description: Carga y extracción de sílabos (CU-01)
+  - name: proposals
+    description: Propuestas de estructura de curso (CU-02, CU-03)
+  - name: assistant
+    description: Asistente conversacional (CU-04)
+  - name: analytics
+    description: Indicadores, evidencias y recomendaciones (CU-05)
+  - name: admin
+    description: Configuración y auditoría (CU-06, CU-07)
+  - name: health
+    description: Estado del servicio
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: Estado del backend y sus dependencias
+      security: []
+      responses:
+        "200":
+          description: Estado de cada dependencia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /session:
+    get:
+      tags: [health]
+      operationId: getSession
+      summary: Identidad verificada del usuario y sus capacidades en el curso del token
+      description: Permite al plugin comprobar la conexión con el backend.
+      responses:
+        "200":
+          description: Identidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          description: |
+            Autenticación no configurada (`AUTH_NOT_CONFIGURED`), registro de tokens no disponible
+            (`AUTH_UNAVAILABLE`) o Moodle no respondió al verificar permisos (`MOODLE_UNAVAILABLE`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /syllabi:
+    post:
+      tags: [syllabi]
+      operationId: uploadSyllabus
+      summary: Cargar un sílabo (RF-03)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [courseId, file]
+              properties:
+                courseId:
+                  type: integer
+                file:
+                  type: string
+                  format: binary
+                  description: PDF o DOCX de hasta 10 MB
+      responses:
+        "202":
+          description: Archivo aceptado; el procesamiento continúa en segundo plano
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyllabusDocument"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: El mismo archivo ya fue cargado para el curso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Archivo demasiado grande
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: Tipo de archivo no permitido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /syllabi/{syllabusId}:
+    get:
+      tags: [syllabi]
+      operationId: getSyllabus
+      summary: Estado y metadatos de un sílabo
+      parameters:
+        - $ref: "#/components/parameters/SyllabusId"
+      responses:
+        "200":
+          description: Sílabo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyllabusDocument"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /syllabi/{syllabusId}/extract:
+    post:
+      tags: [syllabi]
+      operationId: startExtraction
+      summary: Iniciar o reintentar la extracción (RF-04, RF-05)
+      parameters:
+        - $ref: "#/components/parameters/SyllabusId"
+      responses:
+        "202":
+          description: Trabajo encolado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyllabusDocument"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/InvalidTransition"
+
+  /syllabi/{syllabusId}/extraction:
+    get:
+      tags: [syllabi]
+      operationId: getExtraction
+      summary: Última versión de la extracción, o la indicada
+      parameters:
+        - $ref: "#/components/parameters/SyllabusId"
+        - name: version
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Extracción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyllabusExtractionVersion"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [syllabi]
+      operationId: saveExtractionRevision
+      summary: Guardar la revisión del docente como nueva versión (RF-06)
+      parameters:
+        - $ref: "#/components/parameters/SyllabusId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyllabusExtraction"
+      responses:
+        "201":
+          description: Nueva versión creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyllabusExtractionVersion"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /proposals:
+    post:
+      tags: [proposals]
+      operationId: createProposal
+      summary: Generar una propuesta a partir de una versión de extracción (RF-07)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [syllabusId, extractionVersion]
+              properties:
+                syllabusId:
+                  type: string
+                  format: uuid
+                extractionVersion:
+                  type: integer
+                  minimum: 1
+      responses:
+        "201":
+          description: Propuesta creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /proposals/{proposalId}:
+    get:
+      tags: [proposals]
+      operationId: getProposal
+      summary: Consultar una propuesta
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      responses:
+        "200":
+          description: Propuesta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [proposals]
+      operationId: updateProposal
+      summary: Editar ítems de la propuesta (vuelve a NEEDS_REVIEW si estaba aprobada)
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ProposalItem"
+      responses:
+        "200":
+          description: Propuesta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/InvalidTransition"
+
+  /proposals/{proposalId}/approve:
+    post:
+      tags: [proposals]
+      operationId: approveProposal
+      summary: Aprobar la propuesta (RF-08)
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      responses:
+        "200":
+          description: Propuesta aprobada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/InvalidTransition"
+
+  /proposals/{proposalId}/publish:
+    post:
+      tags: [proposals]
+      operationId: publishProposal
+      summary: Publicar en Moodle una propuesta aprobada (RF-09)
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 16
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                confirm:
+                  type: boolean
+                  const: true
+                  description: Confirmación explícita del docente
+      responses:
+        "202":
+          description: Publicación iniciada, o la misma operación ya existente si se repite la clave
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishOperation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/InvalidTransition"
+
+  /proposals/{proposalId}/publish-operations/{operationId}:
+    get:
+      tags: [proposals]
+      operationId: getPublishOperation
+      summary: Progreso y resultado de una publicación
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+        - name: operationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Operación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishOperation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /assistant/chat:
+    post:
+      tags: [assistant]
+      operationId: sendChatMessage
+      summary: Enviar un mensaje al asistente (RF-10 a RF-14)
+      description: |
+        Con `Accept: text/event-stream` la respuesta se envía por eventos SSE (`token`, `tool`,
+        `final`, `error`). Con `Accept: application/json` se devuelve la respuesta completa.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [courseId, message]
+              properties:
+                courseId:
+                  type: integer
+                conversationId:
+                  type: [string, "null"]
+                  format: uuid
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+            example:
+              courseId: 42
+              conversationId: null
+              message: ¿Qué estudiantes no entregaron la tarea 3?
+      responses:
+        "200":
+          description: Respuesta del asistente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+            text/event-stream:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          description: Límite de uso alcanzado (RNF-07)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Proveedor de IA no disponible; no se inventa respuesta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /assistant/conversations/{conversationId}:
+    get:
+      tags: [assistant]
+      operationId: getConversation
+      summary: Historial de una conversación propia
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Conversación
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, courseId, messages]
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  courseId:
+                    type: integer
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      required: [role, content, createdAt]
+                      properties:
+                        role:
+                          type: string
+                          enum: [user, assistant]
+                        content:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No existe o pertenece a otro usuario (SEC-10)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /analytics/courses/{courseId}:
+    get:
+      tags: [analytics]
+      operationId: getCourseAnalytics
+      summary: Indicadores y señales del curso (RF-15, RF-16)
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+      responses:
+        "200":
+          description: Indicadores
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseAnalytics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /analytics/courses/{courseId}/students/{studentId}:
+    get:
+      tags: [analytics]
+      operationId: getStudentEvidence
+      summary: Evidencias de un estudiante en el curso (RF-17)
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Evidencias observadas y cálculos, separados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentEvidence"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /analytics/courses/{courseId}/students/{studentId}/recommendations:
+    post:
+      tags: [analytics]
+      operationId: createRecommendation
+      summary: Generar recomendaciones pedagógicas (RF-18)
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "201":
+          description: Recomendación generada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recommendation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          description: Datos insuficientes para recomendar
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /recommendations/{recommendationId}/followups:
+    post:
+      tags: [analytics]
+      operationId: addRecommendationFollowup
+      summary: Registrar el seguimiento docente (RF-20)
+      parameters:
+        - name: recommendationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actionTaken]
+              properties:
+                actionTaken:
+                  type: string
+                  maxLength: 2000
+                observedResult:
+                  type: [string, "null"]
+                  maxLength: 2000
+      responses:
+        "201":
+          description: Seguimiento registrado
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/difficulty-rules:
+    get:
+      tags: [admin]
+      operationId: listDifficultyRules
+      summary: Reglas de señales de dificultad (CU-06)
+      responses:
+        "200":
+          description: Reglas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DifficultyRule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags: [admin]
+      operationId: replaceDifficultyRules
+      summary: Reemplazar las reglas institucionales
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/DifficultyRule"
+      responses:
+        "200":
+          description: Reglas guardadas
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /audit:
+    get:
+      tags: [admin]
+      operationId: listAuditEvents
+      summary: Consultar auditoría (RF-19, CU-07)
+      parameters:
+        - name: courseId
+          in: query
+          schema:
+            type: integer
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Página de eventos
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuditEvent"
+                  nextCursor:
+                    type: [string, "null"]
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    pluginJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT firmado por el plugin con `sub`, `courseid`, `exp` (≤ 5 min) y `jti`.
+
+  parameters:
+    SyllabusId:
+      name: syllabusId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProposalId:
+      name: proposalId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CourseId:
+      name: courseId
+      in: path
+      required: true
+      schema:
+        type: integer
+    StudentId:
+      name: studentId
+      in: path
+      required: true
+      schema:
+        type: integer
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+
+  responses:
+    ValidationError:
+      description: Datos de entrada inválidos
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: |
+        JWT ausente, inválido, expirado o reutilizado. `code` es `TOKEN_MISSING`, `TOKEN_INVALID`,
+        `TOKEN_EXPIRED` o `TOKEN_REPLAYED`. Cada token sirve para una sola petición.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: |
+        Sin permiso sobre el curso (`FORBIDDEN_COURSE`: el usuario no tiene
+        `local/ai_assistant:use` o el curso de la ruta no es el del token) o sobre la operación
+        (`FORBIDDEN_CAPABILITY`).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Recurso inexistente o fuera del alcance del usuario
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InvalidTransition:
+      description: El estado actual no permite la operación
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          examples: [FORBIDDEN_COURSE]
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              message:
+                type: string
+
+    Health:
+      type: object
+      required: [status, dependencies]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, down]
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [ok, down]
+
+    SyllabusDocument:
+      type: object
+      required: [id, courseId, filename, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        courseId:
+          type: integer
+        filename:
+          type: string
+        status:
+          type: string
+          enum: [UPLOADED, REJECTED, PROCESSING, EXTRACTED, REVIEWED, FAILED]
+        progress:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 100
+        errorCode:
+          type: [string, "null"]
+        latestExtractionVersion:
+          type: [integer, "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    Session:
+      type: object
+      required: [moodleUserId, courseId, roles, capabilities]
+      properties:
+        moodleUserId:
+          type: integer
+        courseId:
+          type: integer
+        roles:
+          type: array
+          description: Roles del usuario en el curso según Moodle
+          items:
+            type: string
+        capabilities:
+          type: object
+          required: [use, publish, viewanalytics]
+          properties:
+            use:
+              type: boolean
+            publish:
+              type: boolean
+            viewanalytics:
+              type: boolean
+
+    SyllabusExtraction:
+      description: |
+        Cumple el JSON Schema generado desde `packages/contracts`
+        (`json-schema/syllabus-extraction-1.0.json`).
+      type: object
+
+    SyllabusExtractionVersion:
+      type: object
+      required: [version, schemaVersion, source, content, consistencyIssues, createdAt]
+      properties:
+        version:
+          type: integer
+        schemaVersion:
+          type: string
+          const: "1.0"
+        source:
+          type: string
+          enum: [AI, TEACHER]
+        content:
+          $ref: "#/components/schemas/SyllabusExtraction"
+        consistencyIssues:
+          type: array
+          items:
+            type: object
+            required: [code, path, message]
+            properties:
+              code:
+                type: string
+              path:
+                type: string
+              message:
+                type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ProposalItem:
+      type: object
+      required: [itemType, title, position]
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentId:
+          type: [string, "null"]
+          format: uuid
+        itemType:
+          type: string
+          enum: [SECTION, ASSIGN, FORUM, QUIZ, LABEL, PAGE]
+        title:
+          type: string
+        description:
+          type: [string, "null"]
+        position:
+          type: integer
+        learningOutcomeIds:
+          type: array
+          items:
+            type: string
+        dueDate:
+          type: [string, "null"]
+          format: date
+        weight:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 100
+        moodleItemId:
+          type: [integer, "null"]
+          readOnly: true
+        publishStatus:
+          type: string
+          enum: [PENDING, CREATED, FAILED]
+          readOnly: true
+
+    Proposal:
+      type: object
+      required: [id, courseId, status, extractionVersion, items]
+      properties:
+        id:
+          type: string
+          format: uuid
+        courseId:
+          type: integer
+        syllabusId:
+          type: string
+          format: uuid
+        extractionVersion:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, NEEDS_REVIEW, APPROVED, PUBLISHING, PUBLISHED, REJECTED, FAILED]
+        approvedBy:
+          type: [integer, "null"]
+        approvedAt:
+          type: [string, "null"]
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProposalItem"
+
+    PublishOperation:
+      type: object
+      required: [id, status, createdCount, failedCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [RUNNING, SUCCEEDED, FAILED]
+        createdCount:
+          type: integer
+        failedCount:
+          type: integer
+        failures:
+          type: array
+          items:
+            type: object
+            properties:
+              itemId:
+                type: string
+                format: uuid
+              error:
+                type: string
+
+    ChatResponse:
+      type: object
+      required: [conversationId, answer, generatedAt, sources]
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+        intent:
+          type: [string, "null"]
+        answer:
+          type: string
+        data:
+          type: [object, "null"]
+          description: Datos estructurados devueltos por la herramienta usada
+        generatedAt:
+          type: string
+          format: date-time
+        sources:
+          type: array
+          items:
+            type: object
+            required: [type, id]
+            properties:
+              type:
+                type: string
+                enum: [moodle_activity, moodle_gradebook, document]
+              id:
+                type: [integer, string]
+              page:
+                type: [integer, "null"]
+              url:
+                type: [string, "null"]
+                format: uri
+        incompleteData:
+          type: boolean
+          description: Verdadero si faltaron datos para responder por completo
+
+    Indicator:
+      type: object
+      required: [key, label, value, definition]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        value:
+          type: [number, "null"]
+        unit:
+          type: [string, "null"]
+        definition:
+          type: string
+
+    CourseAnalytics:
+      type: object
+      required: [courseId, computedAt, indicators, signals]
+      properties:
+        courseId:
+          type: integer
+        computedAt:
+          type: string
+          format: date-time
+        indicators:
+          type: array
+          items:
+            $ref: "#/components/schemas/Indicator"
+        signals:
+          type: array
+          items:
+            type: object
+            required: [studentId, rule, explanation]
+            properties:
+              studentId:
+                type: integer
+              rule:
+                type: string
+              explanation:
+                type: string
+
+    StudentEvidence:
+      type: object
+      required: [courseId, studentId, observed, computed, unknown]
+      properties:
+        courseId:
+          type: integer
+        studentId:
+          type: integer
+        observed:
+          type: array
+          description: Datos observados en Moodle
+          items:
+            type: object
+        computed:
+          type: array
+          items:
+            $ref: "#/components/schemas/Indicator"
+        unknown:
+          type: array
+          description: Información que falta para concluir
+          items:
+            type: string
+
+    Recommendation:
+      type: object
+      required: [id, evidenceSummary, strategies, missingInformation, followUpIndicators]
+      properties:
+        id:
+          type: string
+          format: uuid
+        evidenceSummary:
+          type: array
+          items:
+            type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        difficulties:
+          type: array
+          items:
+            type: string
+        missingInformation:
+          type: array
+          items:
+            type: string
+        strategies:
+          type: array
+          items:
+            type: string
+        reinforcementActivities:
+          type: array
+          items:
+            type: string
+        followUpIndicators:
+          type: array
+          items:
+            type: string
+
+    DifficultyRule:
+      type: object
+      required: [rule, enabled, params]
+      properties:
+        courseId:
+          type: [integer, "null"]
+        rule:
+          type: string
+          enum:
+            - MISSING_REQUIRED
+            - GRADE_BELOW_THRESHOLD
+            - SUSTAINED_DECLINE
+            - REPEATED_OUTCOME_DIFFICULTY
+        enabled:
+          type: boolean
+        params:
+          type: object
+
+    AuditEvent:
+      type: object
+      required: [id, action, outcome, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        actorMoodleId:
+          type: [integer, "null"]
+        courseId:
+          type: [integer, "null"]
+        action:
+          type: string
+        resourceType:
+          type: [string, "null"]
+        resourceId:
+          type: [string, "null"]
+        outcome:
+          type: string
+          enum: [SUCCESS, DENIED, ERROR]
+        createdAt:
+          type: string
+          format: date-time

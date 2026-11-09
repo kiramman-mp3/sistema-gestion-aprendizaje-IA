@@ -1,0 +1,11 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Scripts de instalación de dependencias. pnpm los bloquea por defecto y, en CI o Docker, falla si
+# alguno queda sin decidir. Ninguno es necesario: Prisma 7 genera el cliente y migra sin ellos, y
+# @parcel/watcher trae binarios precompilados.
+allowBuilds:
+  "@parcel/watcher": false
+  "@prisma/engines": false
+  prisma: false

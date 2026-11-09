@@ -240,6 +240,29 @@ Verificaciones:
 
 La prioridad es mantener un historial Git limpio, entendible y fácil de revertir.
 
+Documentación al cerrar sprints y fases
+
+El plan de trabajo está en `docs/ROADMAP.md`. Cada vez que finalice un sprint o una fase, se debe agregar o actualizar la documentación antes de darlo por cerrado.
+
+Al finalizar un sprint:
+
+* Actualizar `docs/ROADMAP.md`: marcar con `- [x]` las tareas completadas, actualizar la tabla de Seguimiento (estado, fechas de inicio y fin, notas) y registrar desvíos, tareas movidas a otro sprint y replanificaciones.
+* Agregar o actualizar la documentación técnica de lo construido en el sprint: endpoints en `docs/api/`, decisiones nuevas o modificadas como ADR en `docs/architecture/adr/`, diagramas y modelo de datos en `docs/architecture/`, y aspectos de seguridad o privacidad en `docs/security/`.
+* Actualizar el README.md si cambiaron archivos, scripts, endpoints, migraciones, variables de entorno o la estructura del proyecto.
+
+Al finalizar una fase, además:
+
+* Marcar el hito de la fase como alcanzado en `docs/ROADMAP.md`.
+* Documentar en `docs/` los resultados de la fase: entregables, métricas obtenidas (por ejemplo F1, cobertura de pruebas, resultados de pruebas de seguridad) y riesgos detectados.
+* Actualizar los manuales afectados en `docs/user-manual/` y el material de tesis en `docs/thesis/` cuando corresponda.
+
+Reglas:
+
+* La documentación se cambia en una rama `docs/*` creada desde `develop`, con commits `docs:`, y se integra a `develop` con `git merge --no-ff` como el resto del trabajo.
+* No mezclar cambios de documentación con cambios de código en el mismo commit.
+* Los datos documentados (métricas, versiones, fechas, endpoints) se sacan del código, de las pruebas y de git; nunca se inventan.
+* Un sprint o una fase no se considera terminado hasta que su documentación esté actualizada e integrada en `develop`.
+
 README
 
 Cuando se pida crear o actualizar el README.md de un proyecto, seguir esta estructura. Está escrito en español, con títulos con emoji y bloques de Markdown de GitHub. Los datos (versiones, cantidades, comandos, rutas) se sacan siempre del código y de git, nunca se inventan: si algo no existe en el repo (por ejemplo un archivo LICENSE), no se afirma.
