@@ -260,16 +260,28 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** levantar Moodle, el backend y la base auxiliar en Docker.
 
-- [ ] `chore/docker-dev-env`: Docker Compose con Moodle (versión fijada), su base de datos, PostgreSQL 17 + `pgvector`, Redis, `api` y `document-worker`, con healthchecks y redes.
-- [ ] `chore/moodle-seed`: script de datos sintéticos: cursos, docentes, estudiantes, tareas, entregas y calificaciones.
-- [ ] `feature/moodle-local-plugin-skeleton`: plugin `local_ai_assistant` con `version.php`, `settings.php`, `db/access.php` (capacidades `local/ai_assistant:use`, `:publish`, `:viewanalytics`), `lang/es`, `lang/en` y proveedor de privacidad.
-- [ ] `chore/phpcs`: `phpcs` con el estándar `moodle` en local (vía Docker) y en CI. (Movido desde S0.)
-- [ ] `feature/api-skeleton`: NestJS con módulos `health`, `common` (guards, filters, interceptors), configuración validada y logs estructurados.
-- [ ] `feature/prisma-base-schema`: esquema Prisma inicial y primera migración.
-- [ ] `feature/moodle-client`: cliente de servicios web de Moodle con tipos, timeouts, reintentos y mapeo de errores.
-- [ ] Crear usuario de integración con permisos mínimos y token dedicado.
+- [x] `chore/docker-dev-env`: Docker Compose con PostgreSQL 17 + `pgvector` 0.8.6, Redis 8.8 y el backend (perfil `api`), con healthchecks. Moodle 5.1.8 con `moodle-docker` (commit fijado) mediante `infra/scripts/moodle.sh`. Guía: [`docs/desarrollo/entorno-local.md`](desarrollo/entorno-local.md).
+- [x] `chore/moodle-seed`: `infra/moodle/cli/seed.php` crea 2 cursos, 3 docentes, 12 estudiantes y 5 tareas con todos los estados de entrega; verificado contra la base de Moodle.
+- [x] `feature/moodle-local-plugin-skeleton`: plugin `local_ai_assistant` con capacidades `use`, `publish` y `viewanalytics`, servicio web restringido, ajustes (URL del backend y secreto JWT), `lang/es`, `lang/en` y proveedor de privacidad. Instalado en Moodle; PHPUnit 2/2.
+- [x] `chore/phpcs`: `phpcs` con `moodle-cs` 3.7.0 en Docker (`infra/scripts/phpcs.sh`) y en CI.
+- [x] `feature/api-skeleton`: NestJS 11 con configuración validada con Zod, logs `pino` con redacción de secretos, filtro de errores con el formato del contrato y `GET /api/v1/health`.
+- [x] `feature/prisma-base-schema`: Prisma 7 con adaptador `pg`, 15 tablas del modelo de datos y migración inicial con `vector` y `pgcrypto`.
+- [x] `feature/moodle-client`: cliente REST con timeouts, reintentos solo en lecturas, mapeo de errores y validación de respuestas.
+- [x] Crear usuario de integración con permisos mínimos y token dedicado: `infra/moodle/cli/setup_integration.php`. El token solo puede llamar a las funciones del servicio del plugin (verificado: otras funciones devuelven `accessexception`).
+- [x] Indicador de salud de Redis (añadido para cumplir el criterio de aceptación).
 
 **Criterio de aceptación:** `docker compose up` deja todo funcionando; `GET /api/v1/health` informa el estado de Moodle, la base de datos y Redis.
+**Resultado:** cumplido con el backend en el host: `{"status":"ok","dependencies":{"database":"ok","redis":"ok","moodle":"ok"}}`. Con el backend en contenedor (perfil `api`), Moodle aparece `down` por la redirección a su `wwwroot`; documentado como limitación del entorno local.
+
+**Desvíos:**
+
+- Moodle no está en el `docker-compose.yml` del proyecto: se levanta con `moodle-docker` (ADR-011) y un script propio. Moodle 5.1 sirve el sitio desde `public/`, así que `infra/moodle/local.yml` cambia el `DocumentRoot` y monta el plugin en `public/local/ai_assistant`.
+- En Windows, montar el código de Moodle desde el host hacía la instalación inviable (horas). El código se clona dentro de un volumen de Docker; la instalación quedó en unos 3 minutos.
+- `document-worker` se movió al Sprint 4: la aplicación todavía no existe.
+- `@nestjs/config` quedó en 4.0.4: la versión 12 es solo ESM y no funciona con Nest 11 en CommonJS ni con Jest.
+- Puerto de la base auxiliar en el host: 5433 por defecto, para no chocar con otras bases locales.
+- pnpm 12 exige decidir los scripts de instalación en CI y Docker: se declararon en `allowBuilds` (todos denegados; no son necesarios).
+- El cliente de Moodle trataba `accessexception` como error de autenticación; se corrigió a error de permisos tras verlo contra Moodle real.
 
 ### Sprint 3 · Semanas 7–8 — Autenticación, autorización y auditoría
 
@@ -297,7 +309,7 @@ validados por el tutor y Moodle local de desarrollo.
 
 - [ ] `feature/syllabus-upload`: `POST /syllabi` con validación de extensión, MIME real (magic bytes), tamaño, checksum y antivirus (ClamAV).
 - [ ] `feature/job-queue`: BullMQ + Redis; estados de trabajo y reintentos.
-- [ ] `feature/document-worker`: extracción de texto PDF/DOCX conservando página, encabezados y tablas.
+- [ ] `feature/document-worker`: extracción de texto PDF/DOCX conservando página, encabezados y tablas. Incluye su servicio en `docker-compose.yml` (movido desde S2).
 - [ ] `feature/ocr-fallback`: OCR para PDF escaneados, con marca de baja confianza.
 - [ ] `feature/syllabus-status`: `GET /syllabi/:id` con estado y progreso.
 - [ ] `feature/plugin-syllabus-upload-ui`: pantalla de carga con progreso.
@@ -515,7 +527,7 @@ de modelos propios y publicación masiva sin revisión.
 | ------ | --------- | ---------- | ---------- | ---------------------------------------------------------------------------------------- |
 | S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10  |
 | S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético |
-| S2     | Pendiente |            |            |                                                                                          |
+| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo    |
 | S3     | Pendiente |            |            |                                                                                          |
 | S4     | Pendiente |            |            |                                                                                          |
 | S5     | Pendiente |            |            |                                                                                          |
