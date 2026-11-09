@@ -14,9 +14,9 @@ partir de su sílabo, consultar en lenguaje natural la información real del cur
 recomendaciones pedagógicas basadas en evidencias.
 
 Es un proyecto de desarrollo de software y titulación para una institución de educación superior de
-Ecuador. Terminó el **Sprint 2** del [roadmap](docs/ROADMAP.md): Moodle 5.1 con el plugin del proyecto,
-el backend NestJS, la base auxiliar y Redis funcionan juntos en local con datos sintéticos. Las
-funciones de IA empiezan en los sprints siguientes.
+Ecuador. Terminó la **Fase 2** del [roadmap](docs/ROADMAP.md) (hito H1, versión `v0.1.0`): el plugin de
+Moodle, el backend y Moodle se comunican con autenticación y permisos verificados, con datos
+sintéticos. Las funciones de IA empiezan en la Fase 3.
 
 > [!TIP]
 > Para levantar el entorno completo, sigue la [guía del entorno local](docs/desarrollo/entorno-local.md).
@@ -56,19 +56,25 @@ gestionan la plataforma.
 
 ## 🖼️ Capturas
 
-Todavía no hay pantallas propias: el plugin solo tiene su página de ajustes. Las capturas se agregarán
-en `docs/capturas/` cuando exista la interfaz del asistente (Sprint 3 en adelante).
+| Página del asistente                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------- |
+| <img width="420" src="docs/capturas/asistente-conexion.jpg" alt="Página del asistente en Moodle conectada al backend"> |
+| <sub>El docente del curso ve la conexión con el backend y sus permisos (Moodle local, datos sintéticos).</sub>         |
 
 ---
 
 ## ✨ Características
 
-Implementado hasta el Sprint 2:
+Implementado hasta el Sprint 3:
 
 - **Entorno reproducible:** Moodle 5.1.8 con `moodle-docker`, base auxiliar PostgreSQL 17 con `pgvector`, Redis y datos sintéticos deterministas, levantados con dos scripts.
 - **Integración con mínimo privilegio:** usuario técnico de Moodle con un rol que solo permite usar REST, autorizado en un único servicio restringido definido por el plugin.
 - **Backend con salud verificable:** `GET /api/v1/health` informa el estado de la base de datos, Redis y Moodle.
 - **Logs sin secretos:** los tokens, cabeceras de autorización y cuerpos de petición se ocultan en los logs.
+- **Autenticación entre el plugin y el backend:** el plugin firma un JWT HS256 de 5 minutos y un solo uso; el backend lo verifica y rechaza reutilizaciones.
+- **Permisos de Moodle en cada petición:** el backend pregunta a Moodle qué puede hacer el docente en el curso y bloquea cursos ajenos y estudiantes.
+- **Auditoría:** los rechazos de autenticación y de acceso quedan registrados sin tokens ni datos personales.
+- **Página del asistente en Moodle:** enlazada desde el curso, comprueba la conexión con el backend y muestra los permisos del docente.
 - **Contrato del sílabo:** esquema Zod v1 con reglas de consistencia y exportación a JSON Schema.
 
 Planificadas para el MVP según el [documento de requisitos](docs/requisitos/implementacion_lms_inteligente_ia.md):
@@ -132,6 +138,8 @@ IA, la cola y el RAG llegan en los sprints 3 a 9.
 │       ├── src/
 │       │   ├── config/             # Variables de entorno validadas y logger
 │       │   ├── common/filters/     # Formato de error del contrato
+│       │   ├── auth/               # JWT del plugin, guards de curso y capacidades, GET /session
+│       │   ├── audit/              # Registro de auditoría
 │       │   ├── health/             # GET /api/v1/health e indicadores
 │       │   ├── database/           # PrismaService
 │       │   ├── redis/              # Conexión a Redis
@@ -140,14 +148,23 @@ IA, la cola y el RAG llegan en los sprints 3 a 9.
 │       └── Dockerfile              # Imagen del backend
 ├── packages/
 │   └── contracts/                  # Esquema del sílabo v1, reglas y JSON Schema
-├── moodle/local/ai_assistant/      # Plugin de Moodle: capacidades, servicio, ajustes, privacidad
+├── moodle/local/ai_assistant/      # Plugin de Moodle
+│   ├── classes/external/           # get_backend_token (AJAX) y check_access (integración)
+│   ├── classes/local/              # Emisor de tokens para el backend
+│   ├── amd/src/ y amd/build/       # Módulo JavaScript de la página y su build
+│   ├── templates/                  # Plantilla Mustache de la página
+│   ├── db/                         # Capacidades y servicios web
+│   └── index.php, lib.php          # Página del asistente y enlace en el curso
 ├── infra/
 │   ├── docker/                     # Init de PostgreSQL e imagen de phpcs
 │   ├── moodle/                     # local.yml de moodle-docker, Apache y scripts CLI (integración, seed)
+│   ├── amd/                        # Configuración de Rollup para los módulos AMD
 │   └── scripts/                    # moodle.sh y phpcs.sh
 ├── docs/
 │   ├── ROADMAP.md                  # Plan por fases y sprints
 │   ├── desarrollo/                 # Guía del entorno local
+│   ├── resultados/                 # Resultados por fase
+│   ├── capturas/                   # Capturas de pantalla
 │   ├── requisitos/                 # Documento original y especificación numerada (RF/RNF/CU)
 │   ├── architecture/               # ADR, decisiones, modelo de datos y comparativa
 │   ├── api/openapi.yaml            # Contrato OpenAPI v0 del backend
@@ -221,6 +238,7 @@ conocidos. En resumen:
 | `MOODLE_TOKEN`          | Token del usuario de integración de Moodle                          |
 | `MOODLE_ADMIN_PASSWORD` | Contraseña del administrador de la instancia local                  |
 | `PLUGIN_JWT_SECRET`     | Secreto compartido para firmar JWT plugin–backend (≥ 32 caracteres) |
+| `CORS_ORIGINS`          | Orígenes del navegador permitidos (el `wwwroot` de Moodle)          |
 | `AI_PROVIDER`           | Proveedor de IA (pendiente, decisión D-07)                          |
 | `AI_API_KEY`            | Clave del proveedor de IA                                           |
 
@@ -233,20 +251,22 @@ conocidos. En resumen:
 
 ### Desarrollo
 
-| Comando                                          | Qué hace                                                    |
-| ------------------------------------------------ | ----------------------------------------------------------- |
-| `pnpm lint`                                      | ESLint en todo el repositorio                               |
-| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                  |
-| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                 |
-| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                          |
-| `pnpm test`                                      | Pruebas de todos los paquetes                               |
-| `pnpm build`                                     | Compila todos los paquetes                                  |
-| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                      |
-| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                   |
-| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                           |
-| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                          |
-| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `seed`, `down`, `compose` |
-| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle         |
+| Comando                                          | Qué hace                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------------ |
+| `pnpm lint`                                      | ESLint en todo el repositorio                                            |
+| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                               |
+| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                              |
+| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                                       |
+| `pnpm test`                                      | Pruebas de todos los paquetes                                            |
+| `pnpm build`                                     | Compila todos los paquetes                                               |
+| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                                   |
+| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                |
+| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                        |
+| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                       |
+| `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                       |
+| `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                          |
+| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose` |
+| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle                      |
 
 ### Producción local
 
@@ -291,7 +311,7 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 - [x] Esquema v1 del sílabo con reglas de consistencia (Sprint 1)
 - [ ] Entrevistas, catálogo de sílabos y validación de prototipos con docentes (Sprint 1)
 - [x] Entorno Moodle, plugin base, backend, base auxiliar y cliente de Moodle (Sprint 2)
-- [ ] Autenticación plugin–backend, autorización y auditoría (Sprint 3)
+- [x] Autenticación plugin–backend, autorización, auditoría y página del asistente (Sprint 3)
 - [ ] Procesamiento de sílabos (Sprints 4–5)
 - [ ] Generación y publicación de cursos (Sprints 6–7)
 - [ ] Asistente conversacional (Sprints 8–9)
@@ -305,7 +325,7 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 
 | Nombre       | Commits |
 | ------------ | ------- |
-| kiramman-mp3 | 93      |
+| kiramman-mp3 | 136     |
 
 ---
 
