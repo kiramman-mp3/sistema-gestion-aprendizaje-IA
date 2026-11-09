@@ -12,15 +12,17 @@ partir de su sílabo, consultar en lenguaje natural la información real del cur
 recomendaciones pedagógicas basadas en evidencias.
 
 Es un proyecto de desarrollo de software y titulación para una institución de educación superior de
-Ecuador. Está en el **Sprint 0** del [roadmap](docs/ROADMAP.md): todavía no hay aplicaciones
-implementadas, solo la base del repositorio, la integración continua y las decisiones de arquitectura.
+Ecuador. Está en el **Sprint 1** del [roadmap](docs/ROADMAP.md): todavía no hay aplicaciones
+implementadas. Existen la base del repositorio, la integración continua, las decisiones de
+arquitectura, el diseño (requisitos, modelo de datos, API y prototipos) y el contrato del sílabo en
+`packages/contracts`.
 
 > [!TIP]
 > Para revisar el proyecto en su estado actual:
 >
 > ```bash
 > pnpm install
-> pnpm lint && pnpm format:check
+> pnpm lint && pnpm test && pnpm lint:api
 > ```
 >
 > Después, lee el [roadmap](docs/ROADMAP.md) y las [decisiones de arquitectura](docs/architecture/adr/README.md).
@@ -77,8 +79,9 @@ Planificadas para el MVP según el [documento de requisitos](docs/requisitos/imp
 - **Backend:** NestJS con TypeScript, Prisma, BullMQ y Redis.
 - **Base de datos:** base de Moodle y base auxiliar PostgreSQL con `pgvector`.
 - **IA:** proveedor LLM por definir detrás de la interfaz `LlmProvider`.
-- **Pruebas:** Jest y Supertest en el backend; PHPUnit en el plugin.
-- **Calidad:** ESLint, Prettier y GitHub Actions.
+- **Contratos:** Zod 4 en `packages/contracts`, con exportación a JSON Schema.
+- **Pruebas:** Vitest en `packages/*`; Jest y Supertest en el backend; PHPUnit en el plugin.
+- **Calidad:** ESLint, Prettier, Redocly CLI (contrato OpenAPI) y GitHub Actions.
 - **Despliegue:** Docker y Docker Compose (entorno de producción por definir en el Sprint 13).
 
 El estado de cada decisión está en el [registro de ADR](docs/architecture/adr/README.md).
@@ -111,20 +114,30 @@ la IA interpreta, consulta herramientas y propone, y el docente conserva la deci
 
 ```bash
 .
-├── .github/workflows/ci.yml   # Pipeline: lint, formato, tipos, pruebas y build
-├── apps/                      # Aplicaciones Node (api, document-worker) — desde el Sprint 2
-├── packages/                  # Código compartido (contracts, shared) — desde el Sprint 1
-├── moodle/local/              # Plugin local_ai_assistant — desde el Sprint 2
-├── infra/                     # Docker, scripts y monitoreo
-├── tests/                     # Pruebas de integración, e2e y fixtures
+├── .github/workflows/ci.yml        # Pipeline: lint, formato, contrato API, tipos, pruebas y build
+├── apps/                           # Aplicaciones Node (api, document-worker) — desde el Sprint 2
+├── packages/
+│   └── contracts/                  # Contratos compartidos
+│       ├── src/syllabus/           # Esquema Zod del sílabo v1 y reglas de consistencia
+│       ├── json-schema/            # JSON Schema generado del sílabo
+│       └── scripts/                # Exportación a JSON Schema
+├── moodle/local/                   # Plugin local_ai_assistant — desde el Sprint 2
+├── infra/                          # Docker, scripts y monitoreo
+├── tests/                          # Pruebas de integración, e2e y fixtures
 ├── docs/
-│   ├── ROADMAP.md             # Plan por fases y sprints
-│   ├── requisitos/            # Documento de requisitos técnicos y funcionales
-│   └── architecture/          # Decisiones del Sprint 0 y registro de ADR
-├── .env.example               # Variables de entorno de referencia
-├── eslint.config.mjs          # Configuración de ESLint
-├── package.json               # Scripts del workspace
-└── pnpm-workspace.yaml        # Paquetes del workspace
+│   ├── ROADMAP.md                  # Plan por fases y sprints
+│   ├── requisitos/                 # Documento original y especificación numerada (RF/RNF/CU)
+│   ├── architecture/               # ADR, decisiones, modelo de datos y comparativa
+│   ├── api/openapi.yaml            # Contrato OpenAPI v0 del backend
+│   ├── security/                   # Análisis de privacidad (LOPDP)
+│   ├── testing/                    # Plan de pruebas
+│   ├── levantamiento/              # Guía de entrevista, catálogo de sílabos, consentimiento
+│   └── prototipos/                 # Prototipos de baja fidelidad
+├── .env.example                    # Variables de entorno de referencia
+├── .redocly.lint-ignore.yaml       # Avisos aceptados del contrato OpenAPI
+├── eslint.config.mjs               # Configuración de ESLint
+├── package.json                    # Scripts del workspace
+└── pnpm-workspace.yaml             # Paquetes del workspace
 ```
 
 ---
@@ -179,17 +192,24 @@ la IA interpreta, consulta herramientas y propone, y el docente conserva la deci
 
 ### Desarrollo
 
-Todavía no hay aplicaciones que ejecutar. Los scripts del workspace ya funcionan y se aplicarán a cada
-paquete a medida que se agreguen.
+Todavía no hay aplicaciones que ejecutar. Los scripts del workspace se aplican a cada paquete que los
+defina; hoy, a `packages/contracts`.
 
 | Comando             | Qué hace                                           |
 | ------------------- | -------------------------------------------------- |
 | `pnpm lint`         | Ejecuta ESLint en todo el repositorio              |
+| `pnpm lint:api`     | Valida `docs/api/openapi.yaml` con Redocly         |
 | `pnpm format`       | Formatea el código con Prettier                    |
 | `pnpm format:check` | Verifica el formato sin modificar archivos         |
 | `pnpm typecheck`    | Ejecuta `typecheck` en los paquetes que lo definan |
 | `pnpm test`         | Ejecuta `test` en los paquetes que lo definan      |
 | `pnpm build`        | Ejecuta `build` en los paquetes que lo definan     |
+
+En `packages/contracts`:
+
+| Comando                                          | Qué hace                                                      |
+| ------------------------------------------------ | ------------------------------------------------------------- |
+| `pnpm --filter @smart-lms/contracts schema:json` | Compila y regenera `json-schema/syllabus-extraction-1.0.json` |
 
 ---
 
@@ -223,7 +243,9 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 
 - [x] Repositorio, flujo de ramas y CI base
 - [x] Decisiones de arquitectura iniciales
-- [ ] Especificación de requisitos y prototipos (Sprint 1)
+- [x] Especificación de requisitos, modelo de datos, contrato API y prototipos (Sprint 1)
+- [x] Esquema v1 del sílabo con reglas de consistencia (Sprint 1)
+- [ ] Entrevistas, catálogo de sílabos y validación de prototipos con docentes (Sprint 1)
 - [ ] Entorno Moodle, plugin y backend conectados (Sprints 2–3)
 - [ ] Procesamiento de sílabos (Sprints 4–5)
 - [ ] Generación y publicación de cursos (Sprints 6–7)
@@ -238,7 +260,7 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 
 | Nombre       | Commits |
 | ------------ | ------- |
-| kiramman-mp3 | 21      |
+| kiramman-mp3 | 40      |
 
 ---
 
