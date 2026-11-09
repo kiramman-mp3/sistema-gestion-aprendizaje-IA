@@ -58,8 +58,12 @@ paths:
                 $ref: "#/components/schemas/Session"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "503":
-          description: Autenticación no configurada o registro de tokens no disponible
+          description: |
+            Autenticación no configurada (`AUTH_NOT_CONFIGURED`), registro de tokens no disponible
+            (`AUTH_UNAVAILABLE`) o Moodle no respondió al verificar permisos (`MOODLE_UNAVAILABLE`).
           content:
             application/json:
               schema:
@@ -727,7 +731,10 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     Forbidden:
-      description: Sin permiso sobre el curso o la operación
+      description: |
+        Sin permiso sobre el curso (`FORBIDDEN_COURSE`: el usuario no tiene
+        `local/ai_assistant:use` o el curso de la ruta no es el del token) o sobre la operación
+        (`FORBIDDEN_CAPABILITY`).
       content:
         application/json:
           schema:
@@ -806,12 +813,27 @@ components:
 
     Session:
       type: object
-      required: [moodleUserId, courseId]
+      required: [moodleUserId, courseId, roles, capabilities]
       properties:
         moodleUserId:
           type: integer
         courseId:
           type: integer
+        roles:
+          type: array
+          description: Roles del usuario en el curso según Moodle
+          items:
+            type: string
+        capabilities:
+          type: object
+          required: [use, publish, viewanalytics]
+          properties:
+            use:
+              type: boolean
+            publish:
+              type: boolean
+            viewanalytics:
+              type: boolean
 
     SyllabusExtraction:
       description: |
