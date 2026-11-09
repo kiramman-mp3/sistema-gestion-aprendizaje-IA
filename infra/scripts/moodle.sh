@@ -4,13 +4,16 @@
 #   infra/scripts/moodle.sh setup         Descarga moodle-docker y Moodle en las versiones fijadas
 #   infra/scripts/moodle.sh sync          Clona Moodle en el volumen de Docker (lo hace setup)
 #   infra/scripts/moodle.sh up            Levanta Moodle en http://localhost:8000
-#   infra/scripts/moodle.sh install       Instala Moodle y crea el usuario de integración
+#   infra/scripts/moodle.sh install       Instala Moodle, configura el plugin y crea el usuario de integración
+#   infra/scripts/moodle.sh configure     Copia al plugin el secreto JWT y la URL del backend del .env
 #   infra/scripts/moodle.sh seed          Carga datos sintéticos (cursos, usuarios, tareas)
 #   infra/scripts/moodle.sh down          Detiene y elimina los contenedores
 #   infra/scripts/moodle.sh compose ...   Ejecuta cualquier comando de moodle-docker-compose
 #
 # Variables (en .env de la raíz o en el entorno):
 #   MOODLE_ADMIN_PASSWORD   Contraseña del administrador local (obligatoria para install)
+#   PLUGIN_JWT_SECRET       Secreto compartido con el backend (obligatorio para configure)
+#   PORT                    Puerto del backend en el host; define la URL que usa el navegador
 set -euo pipefail
 
 MOODLE_TAG="v5.1.8"
@@ -102,7 +105,19 @@ cmd_install() {
     --adminpass="${MOODLE_ADMIN_PASSWORD}" \
     --adminemail=admin@example.com
   php_cli /var/www/html/admin/cli/upgrade.php --non-interactive
+  cmd_configure
   php_cli /opt/smart-lms/cli/setup_integration.php
+}
+
+# El secreto viaja como variable de entorno del proceso, no como argumento visible en `ps`.
+cmd_configure() {
+  : "${PLUGIN_JWT_SECRET:?Define PLUGIN_JWT_SECRET en .env (al menos 32 caracteres)}"
+  local backendurl="http://localhost:${PORT:-3000}/api/v1"
+  MSYS_NO_PATHCONV=1 mdc exec -T -e "SMART_LMS_JWT_SECRET=${PLUGIN_JWT_SECRET}" webserver \
+    php -r 'define("CLI_SCRIPT", true); require "/var/www/html/config.php";
+      set_config("jwtsecret", getenv("SMART_LMS_JWT_SECRET"), "local_ai_assistant");'
+  php_cli /var/www/html/admin/cli/cfg.php --component=local_ai_assistant --name=backendurl --set="${backendurl}"
+  echo "Plugin configurado: backend en ${backendurl}."
 }
 
 cmd_seed() {
@@ -118,6 +133,7 @@ main() {
     sync) cmd_sync ;;
     up) cmd_up ;;
     install) cmd_install ;;
+    configure) cmd_configure ;;
     seed) cmd_seed "$@" ;;
     down) mdc down ;;
     compose) mdc "$@" ;;
