@@ -5,3 +5,4 @@ pnpm-lock.yaml
 moodle/
 docs/requisitos/implementacion_lms_inteligente_ia.md
 CLAUDE.md
+apps/api/src/generated/
