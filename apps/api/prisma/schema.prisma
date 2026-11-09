@@ -23,6 +23,8 @@ enum DocumentStatus {
   UPLOADED
   REJECTED
   PROCESSING
+  /// Texto extraído por el worker documental; listo para la extracción con IA (Sprint 5).
+  TEXT_READY
   EXTRACTED
   REVIEWED
   FAILED
@@ -133,6 +135,10 @@ model SyllabusDocument {
   storageKey           String?        @map("storage_key")
   status               DocumentStatus @default(UPLOADED)
   errorCode            String?        @map("error_code")
+  /// Cumple documentTextSchema de @smart-lms/contracts.
+  extractedText        Json?          @map("extracted_text")
+  pageCount            Int?           @map("page_count")
+  textExtractedAt      DateTime?      @map("text_extracted_at")
   retainUntil          DateTime       @map("retain_until")
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
