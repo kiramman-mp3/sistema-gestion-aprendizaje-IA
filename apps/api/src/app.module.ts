@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { APP_FILTER } from "@nestjs/core";
 import { LoggerModule } from "nestjs-pino";
+import { AuditModule } from "./audit/audit.module";
 import { AuthModule } from "./auth/auth.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { validateEnv, type Env } from "./config/env";
@@ -34,6 +35,7 @@ import { RedisModule } from "./redis/redis.module";
     HealthModule,
     DatabaseModule,
     RedisModule,
+    AuditModule,
     AuthModule,
     MoodleModule,
   ],
