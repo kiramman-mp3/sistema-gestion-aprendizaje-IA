@@ -17,6 +17,8 @@ RUN pnpm --filter @smart-lms/document-worker... build \
 
 FROM node:26.13.0-alpine AS runtime
 ENV NODE_ENV=production
+# OCR de PDF escaneados (RF-04): pdftoppm rasteriza y Tesseract reconoce texto en español.
+RUN apk add --no-cache poppler-utils tesseract-ocr tesseract-ocr-data-spa
 WORKDIR /app
 COPY --from=build --chown=node:node /out/node_modules ./node_modules
 COPY --from=build --chown=node:node /out/package.json ./package.json
