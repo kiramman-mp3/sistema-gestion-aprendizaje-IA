@@ -76,7 +76,7 @@ cmd_up() {
 
 cmd_install() {
   : "${MOODLE_ADMIN_PASSWORD:?Define MOODLE_ADMIN_PASSWORD en .env}"
-  php_cli /var/www/html/public/admin/cli/install_database.php \
+  php_cli /var/www/html/admin/cli/install_database.php \
     --agree-license \
     --fullname="LMS Inteligente (desarrollo)" \
     --shortname="lms-dev" \
@@ -84,7 +84,7 @@ cmd_install() {
     --adminuser=admin \
     --adminpass="${MOODLE_ADMIN_PASSWORD}" \
     --adminemail=admin@example.com
-  php_cli /var/www/html/public/admin/cli/upgrade.php --non-interactive
+  php_cli /var/www/html/admin/cli/upgrade.php --non-interactive
   php_cli /opt/smart-lms/cli/setup_integration.php
 }
 
