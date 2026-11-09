@@ -72,7 +72,7 @@ Los pasos deben seguir este orden.
    bash infra/scripts/moodle.sh up
    ```
 
-5. Instalar Moodle, el plugin y el usuario de integración. Al final se imprime el token: cópialo en `MOODLE_TOKEN` del `.env`.
+5. Instalar Moodle, el plugin y el usuario de integración. El script copia al plugin el secreto JWT (`PLUGIN_JWT_SECRET`) y la URL del backend (`http://localhost:${PORT}/api/v1`). Al final se imprime el token: cópialo en `MOODLE_TOKEN` del `.env`.
 
    ```bash
    bash infra/scripts/moodle.sh install
@@ -90,6 +90,8 @@ Los pasos deben seguir este orden.
    pnpm --filter @smart-lms/api dev
    curl http://localhost:3000/api/v1/health
    ```
+
+8. Entrar a <http://localhost:8000> como `docente1`, abrir el curso `IS-501-DEMO` y, en **More**, elegir **AI assistant** (**Más** y **Asistente IA** con Moodle en español). La página debe mostrar que está conectada con el backend y los permisos del docente.
 
 > [!NOTE]
 > El código de Moodle no se monta desde el host: `moodle.sh setup` lo clona dentro del volumen de
@@ -109,6 +111,8 @@ Los pasos deben seguir este orden.
 | Detener base auxiliar y Redis              | `docker compose down`                                                                                                                   |
 | Backend en modo desarrollo                 | `pnpm --filter @smart-lms/api dev`                                                                                                      |
 | Crear una migración                        | `pnpm --filter @smart-lms/api prisma:migrate -- --name <nombre>`                                                                        |
+| Reaplicar secreto JWT y URL del backend    | `bash infra/scripts/moodle.sh configure`                                                                                                |
+| Recompilar el JavaScript del plugin        | `pnpm build:amd` (CI exige que `amd/build` esté al día: `pnpm check:amd`)                                                               |
 | Rotar el token de Moodle                   | `bash infra/scripts/moodle.sh compose exec webserver php /opt/smart-lms/cli/setup_integration.php --rotate`                             |
 | Revisar el código PHP                      | `bash infra/scripts/phpcs.sh`                                                                                                           |
 | Preparar PHPUnit (una vez por instalación) | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php public/admin/tool/phpunit/cli/init.php`                  |
@@ -134,11 +138,22 @@ Los pasos deben seguir este orden.
 `infra/moodle/cli/setup_integration.php` aplica mínimo privilegio:
 
 - Usuario `ai_integration` con autenticación `webservice` (no puede entrar por la web).
-- Rol `smartlmsintegration` en contexto de sistema con solo `webservice/rest:use`.
+- Rol `smartlmsintegration` en contexto de sistema con solo `webservice/rest:use` y `local/ai_assistant:checkaccess` (para preguntar a Moodle qué puede hacer un docente en un curso).
 - Autorizado únicamente en el servicio restringido `local_ai_assistant_integration`, cuyas funciones define `db/services.php` del plugin.
 
 Cada sprint que agregue funciones al servicio debe añadir también las capacidades que esas funciones
-requieran, y documentarlo.
+requieran, y documentarlo. `setup_integration.php` es idempotente: al volver a ejecutarlo aplica las
+capacidades nuevas sin regenerar el token.
+
+## Conexión del navegador con el backend
+
+La página del asistente se ejecuta en el navegador y llama al backend directamente, por eso:
+
+- La URL del backend del plugin debe ser accesible desde el navegador (`localhost`, no `host.docker.internal`).
+- `CORS_ORIGINS` del backend debe incluir el `wwwroot` de Moodle (`http://localhost:8000`).
+- `PLUGIN_JWT_SECRET` del backend y el secreto del plugin deben coincidir; `moodle.sh configure` los sincroniza.
+
+El flujo completo está en [autenticación y autorización](../architecture/autenticacion-autorizacion.md).
 
 ## Puertos y conflictos
 
@@ -154,11 +169,13 @@ Si otro proyecto usa un puerto, cámbialo en `.env`:
 
 ## Problemas conocidos
 
-| Síntoma                                               | Causa y solución                                                                                                                            |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rootdirpublic` al abrir Moodle                       | El servidor web apunta a la raíz y no a `public/`. Revisa que `local.yml` se copió con `moodle.sh setup`.                                   |
-| `Could not open input file: C:/Program Files/Git/...` | Git Bash convirtió la ruta. Los scripts ya usan `MSYS_NO_PATHCONV=1`; si ejecutas `docker exec` a mano, añádelo.                            |
-| `port is already allocated`                           | Otro contenedor usa el puerto. Cambia la variable correspondiente en `.env`.                                                                |
-| `Cannot find module './internal/class.js'` en pruebas | Falta generar el cliente: `pnpm --filter @smart-lms/api prisma:generate`.                                                                   |
-| `"moodle": "down"` con el perfil `api`                | Moodle redirige a su `wwwroot` (`http://localhost:8000`), inaccesible desde el contenedor. Para desarrollar, ejecuta el backend en el host. |
-| `ERR_PNPM_IGNORED_BUILDS` en CI o Docker              | Un paquete nuevo trae scripts de instalación. Decide si se permiten en `allowBuilds` de `pnpm-workspace.yaml`.                              |
+| Síntoma                                                                                | Causa y solución                                                                                                                                 |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `rootdirpublic` al abrir Moodle                                                        | El servidor web apunta a la raíz y no a `public/`. Revisa que `local.yml` se copió con `moodle.sh setup`.                                        |
+| `Could not open input file: C:/Program Files/Git/...`                                  | Git Bash convirtió la ruta. Los scripts ya usan `MSYS_NO_PATHCONV=1`; si ejecutas `docker exec` a mano, añádelo.                                 |
+| `port is already allocated`                                                            | Otro contenedor usa el puerto. Cambia la variable correspondiente en `.env`.                                                                     |
+| `Cannot find module './internal/class.js'` en pruebas                                  | Falta generar el cliente: `pnpm --filter @smart-lms/api prisma:generate`.                                                                        |
+| `"moodle": "down"` con el perfil `api`                                                 | Moodle redirige a su `wwwroot` (`http://localhost:8000`), inaccesible desde el contenedor. Para desarrollar, ejecuta el backend en el host.      |
+| La página del asistente muestra "No se pudo conectar con el backend (Failed to fetch)" | El backend no está corriendo, la URL del plugin no coincide con su puerto o falta el origen en `CORS_ORIGINS`. Revisa con `moodle.sh configure`. |
+| La página muestra `(TOKEN_INVALID)`                                                    | El secreto del plugin y `PLUGIN_JWT_SECRET` no coinciden, o `MOODLE_BASE_URL` no es el `wwwroot` de Moodle.                                      |
+| `ERR_PNPM_IGNORED_BUILDS` en CI o Docker                                               | Un paquete nuevo trae scripts de instalación. Decide si se permiten en `allowBuilds` de `pnpm-workspace.yaml`.                                   |

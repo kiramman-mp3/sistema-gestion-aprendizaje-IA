@@ -1,6 +1,6 @@
 # ADR-007: Validación de capacidades con una función externa del plugin
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada (implementada en el Sprint 3)
 - **Fecha:** 2026-11-09
 - **Sprint:** S0 (implementación en S3)
 
@@ -23,3 +23,10 @@ Crear la función externa `local_ai_assistant_check_access` que, para un usuario
 
 - Toda operación del backend pasa por un guard de curso y capacidad.
 - Los cambios de rol en Moodle tardan como máximo el tiempo de caché en reflejarse.
+
+## Implementación
+
+- La función es `local_ai_assistant_check_access` y exige la capacidad de sistema `local/ai_assistant:checkaccess`, asignada solo al rol de integración.
+- Devuelve `courseexists`, `active`, `roles` y `capabilities` (`use`, `publish`, `viewanalytics`).
+- El backend guarda la respuesta 120 s en Redis; si Redis falla, consulta Moodle directamente. Si Moodle no responde, el backend devuelve 503.
+- Detalle y evidencia: [`docs/architecture/autenticacion-autorizacion.md`](../autenticacion-autorizacion.md).
