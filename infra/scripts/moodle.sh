@@ -2,7 +2,7 @@
 # Entorno Moodle de desarrollo basado en moodle-docker (ADR-011).
 #
 #   infra/scripts/moodle.sh setup         Descarga moodle-docker y Moodle en las versiones fijadas
-#   infra/scripts/moodle.sh sync          Copia el código de Moodle al volumen de Docker (lo hace setup)
+#   infra/scripts/moodle.sh sync          Clona Moodle en el volumen de Docker (lo hace setup)
 #   infra/scripts/moodle.sh up            Levanta Moodle en http://localhost:8000
 #   infra/scripts/moodle.sh install       Instala Moodle y crea el usuario de integración
 #   infra/scripts/moodle.sh seed          Carga datos sintéticos (cursos, usuarios, tareas)
@@ -61,25 +61,28 @@ cmd_setup() {
   git -C "${MOODLE_DOCKER_DIR}" fetch --quiet origin
   git -C "${MOODLE_DOCKER_DIR}" -c advice.detachedHead=false checkout --quiet "${MOODLE_DOCKER_COMMIT}"
 
-  if [[ ! -d "${MOODLE_DIR}/.git" ]]; then
-    git clone --quiet --depth 1 --branch "${MOODLE_TAG}" https://github.com/moodle/moodle.git "${MOODLE_DIR}"
-  fi
-  cp "${MOODLE_DOCKER_DIR}/config.docker-template.php" "${MOODLE_DIR}/config.php"
+  # moodle-docker exige MOODLE_DOCKER_WWWROOT; el código real vive en el volumen moodle_code.
+  mkdir -p "${MOODLE_DIR}"
   cp "${ROOT_DIR}/infra/moodle/local.yml" "${MOODLE_DOCKER_DIR}/local.yml"
   cmd_sync
-  echo "moodle-docker ${MOODLE_DOCKER_COMMIT:0:7} y Moodle ${MOODLE_TAG} listos en infra/.cache/"
+  echo "moodle-docker ${MOODLE_DOCKER_COMMIT:0:7} y Moodle ${MOODLE_TAG} listos."
 }
 
-# Copia el código al volumen moodle_code (ver local.yml). Se repite tras cambiar MOODLE_TAG.
+# Clona Moodle directamente dentro del volumen moodle_code (ver local.yml). Clonar dentro de Docker
+# evita leer miles de archivos desde el sistema de archivos del host. Se repite tras cambiar MOODLE_TAG.
 cmd_sync() {
   local volume="${COMPOSE_PROJECT_NAME}_moodle_code"
   docker volume create "${volume}" >/dev/null
   MSYS_NO_PATHCONV=1 docker run --rm \
     -v "${volume}:/dst" \
-    -v "${MOODLE_DOCKER_WWWROOT}:/src:ro" \
+    -v "$(native_path "${MOODLE_DOCKER_DIR}"):/moodle-docker:ro" \
     alpine:3.22.8 \
-    sh -c "find /dst -mindepth 1 -delete && tar -C /src --exclude=.git -cf - . | tar -C /dst -xf -"
-  echo "Código de Moodle copiado al volumen ${volume}."
+    sh -c "apk add --no-cache --quiet git \
+      && find /dst -mindepth 1 -delete \
+      && git clone --quiet --depth 1 --branch ${MOODLE_TAG} https://github.com/moodle/moodle.git /dst \
+      && rm -rf /dst/.git \
+      && cp /moodle-docker/config.docker-template.php /dst/config.php"
+  echo "Moodle ${MOODLE_TAG} clonado en el volumen ${volume}."
 }
 
 cmd_up() {
