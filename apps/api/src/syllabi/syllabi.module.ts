@@ -15,5 +15,6 @@ import { SyllabusProcessingService } from "./syllabus-processing.service";
     DocumentTextResultsHandler,
     DocumentTextResultsWorker,
   ],
+  exports: [SyllabusProcessingService],
 })
 export class SyllabiModule {}
