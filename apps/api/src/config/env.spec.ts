@@ -34,4 +34,23 @@ describe("validateEnv", () => {
       expect.objectContaining({ message: expect.not.stringContaining("secreto-filtrable") }),
     );
   });
+
+  it("acepta clamd solo por tcp", () => {
+    expect(validateEnv({ CLAMAV_URL: "tcp://clamav:3310" }).CLAMAV_URL).toBe("tcp://clamav:3310");
+    expect(() => validateEnv({ CLAMAV_URL: "http://clamav:3310" })).toThrow(/CLAMAV_URL/);
+  });
+
+  it("exige el antivirus en producción", () => {
+    expect(() => validateEnv({ NODE_ENV: "production" })).toThrow(/CLAMAV_URL/);
+    expect(
+      validateEnv({ NODE_ENV: "production", CLAMAV_URL: "tcp://clamav:3310" }).NODE_ENV,
+    ).toBe("production");
+  });
+
+  it("usa 30 días de retención y var/storage por defecto", () => {
+    expect(validateEnv({})).toMatchObject({
+      SYLLABUS_RETENTION_DAYS: 30,
+      STORAGE_DIR: "var/storage",
+    });
+  });
 });
