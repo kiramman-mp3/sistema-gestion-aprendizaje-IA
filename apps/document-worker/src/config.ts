@@ -9,12 +9,14 @@ const configSchema = z.object({
   REDIS_URL: z.url(),
   STORAGE_DIR: z.string().min(1).default("var/storage"),
   WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(2),
+  OCR_ENABLED: z.enum(["true", "false"]).default("true"),
 });
 
 export interface WorkerConfig {
   redisUrl: string;
   storageDir: string;
   concurrency: number;
+  ocrEnabled: boolean;
 }
 
 /** Lee y valida el entorno. El error nombra las variables, nunca sus valores. */
@@ -24,10 +26,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
     const fields = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Configuración inválida: ${fields}`);
   }
-  const { REDIS_URL, STORAGE_DIR, WORKER_CONCURRENCY } = result.data;
+  const { REDIS_URL, STORAGE_DIR, WORKER_CONCURRENCY, OCR_ENABLED } = result.data;
   return {
     redisUrl: REDIS_URL,
     storageDir: isAbsolute(STORAGE_DIR) ? STORAGE_DIR : resolve(API_DIR, STORAGE_DIR),
     concurrency: WORKER_CONCURRENCY,
+    ocrEnabled: OCR_ENABLED === "true",
   };
 }
