@@ -44,8 +44,13 @@ if ($options['help']) {
     exit(0);
 }
 
+/** Usuario técnico que usa el backend. */
 const SMART_LMS_USERNAME = 'ai_integration';
+
+/** Rol con permisos mínimos asignado en contexto de sistema. */
 const SMART_LMS_ROLE = 'smartlmsintegration';
+
+/** Servicio restringido definido en db/services.php del plugin. */
 const SMART_LMS_SERVICE = 'local_ai_assistant_integration';
 
 /**
