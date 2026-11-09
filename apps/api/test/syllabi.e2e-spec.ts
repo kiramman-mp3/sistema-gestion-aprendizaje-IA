@@ -63,6 +63,10 @@ function fakePrisma(documents: StoredDocument[]) {
         documents.push(document);
         return document;
       },
+      findUnique: async ({ where }: { where: { id: string } }) => {
+        const document = documents.find((d) => d.id === where.id);
+        return document ? { ...document, extractions: [] } : null;
+      },
     },
   };
 }
@@ -97,10 +101,13 @@ describe("Carga de sílabos (e2e)", () => {
       .useValue({ enabled: true, scan: (content: Buffer) => scan(content) })
       .overrideProvider(SyllabusProcessingService)
       .useValue({
-        enqueue: async (job: unknown) => {
+        enqueue: async (job: { documentId: string }) => {
           enqueued.push(job);
+          const document = documents.find((d) => d.id === job.documentId);
+          if (document) document.status = "PROCESSING";
           return true;
         },
+        progress: async () => 40,
       })
       .compile();
     app = moduleRef.createNestApplication({ logger: false });
@@ -236,5 +243,33 @@ describe("Carga de sílabos (e2e)", () => {
       .field("courseId", "7")
       .attach("file", minimalPdf(), "silabo.pdf")
       .expect(401);
+  });
+
+  describe("GET /syllabi/:id", () => {
+    const get = (id: string, courseid = 7) =>
+      request(app.getHttpServer())
+        .get(`/api/v1/syllabi/${id}`)
+        .set("Authorization", `Bearer ${signPluginToken({ courseid })}`);
+
+    it("devuelve el estado y el progreso del worker (RF-04)", async () => {
+      const uploaded = await upload(minimalPdf("estado"), "estado.pdf").expect(202);
+      const res = await get(uploaded.body.id).expect(200);
+      expect(res.body).toMatchObject({
+        id: uploaded.body.id,
+        status: "PROCESSING",
+        progress: 40,
+        pageCount: null,
+        textConfidence: null,
+        latestExtractionVersion: null,
+      });
+    });
+
+    it("SEC-01: responde 404 para un sílabo de otro curso sin revelar que existe", async () => {
+      const uploaded = await upload(minimalPdf("ajeno"), "ajeno.pdf").expect(202);
+      const res = await get(uploaded.body.id, 8).expect(404);
+      expect(res.body.code).toBe("SYLLABUS_NOT_FOUND");
+      await get("no-es-un-uuid").expect(404);
+      await get("00000000-0000-4000-8000-999999999999").expect(404);
+    });
   });
 });
