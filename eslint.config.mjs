@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/node_modules/**", "**/dist/**", "**/coverage/**", "moodle/**"],
+    ignores: ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/generated/**", "moodle/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

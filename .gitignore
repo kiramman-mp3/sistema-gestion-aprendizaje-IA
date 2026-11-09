@@ -31,3 +31,6 @@ tmp/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Cliente de Prisma generado (pnpm --filter @smart-lms/api prisma:generate)
+apps/api/src/generated/
