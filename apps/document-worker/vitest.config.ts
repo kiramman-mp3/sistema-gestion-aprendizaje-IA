@@ -1,7 +1,14 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  // Los contratos se prueban desde su código fuente, sin compilarlos antes.
-  resolve: { conditions: ["smart-lms-source"] },
+  resolve: {
+    // Los contratos se prueban desde su código fuente, sin compilarlos antes.
+    alias: {
+      "@smart-lms/contracts": fileURLToPath(
+        new URL("../../packages/contracts/src/index.ts", import.meta.url),
+      ),
+    },
+  },
   test: { include: ["src/**/*.test.ts"] },
 });
