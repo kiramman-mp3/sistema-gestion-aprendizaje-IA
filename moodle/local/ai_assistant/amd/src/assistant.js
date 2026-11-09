@@ -44,17 +44,22 @@ const getBackendToken = (courseId) =>
  *
  * @param {number} courseId
  * @param {string} path Path under the API prefix, for example "/session".
+ * @param {{method?: string, body?: FormData}} [options] A FormData body is sent as multipart.
  * @returns {Promise<object>}
  */
-export const callBackend = async (courseId, path) => {
+export const callBackend = async (courseId, path, options = {}) => {
   const { token, backendurl } = await getBackendToken(courseId);
   const response = await fetch(`${backendurl.replace(/\/+$/, "")}${path}`, {
+    method: options.method || "GET",
+    body: options.body,
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(body.message || `HTTP ${response.status}`);
     error.code = body.code;
+    error.status = response.status;
+    error.details = body.details;
     throw error;
   }
   return body;

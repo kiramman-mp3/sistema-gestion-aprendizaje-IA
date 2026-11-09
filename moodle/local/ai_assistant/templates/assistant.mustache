@@ -51,4 +51,26 @@
             {{/backendconfigured}}
         </div>
     </section>
+
+    {{#backendconfigured}}
+    <section class="card mb-3" aria-labelledby="local_ai_assistant-syllabus" data-region="syllabus">
+        <div class="card-body">
+            <h3 class="h5 card-title" id="local_ai_assistant-syllabus">{{#str}} syllabus, local_ai_assistant {{/str}}</h3>
+            <p class="card-text">{{#str}} syllabusdesc, local_ai_assistant {{/str}}</p>
+            <form data-action="upload-syllabus" class="mb-3">
+                <div class="mb-2">
+                    <label class="form-label" for="local_ai_assistant-file">{{#str}} syllabusfile, local_ai_assistant {{/str}}</label>
+                    <input type="file" class="form-control" id="local_ai_assistant-file" name="file" required
+                        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                </div>
+                <button type="submit" class="btn btn-primary">{{#str}} syllabusupload, local_ai_assistant {{/str}}</button>
+            </form>
+            <div class="progress mb-2 d-none" data-region="syllabus-progress">
+                <div class="progress-bar" role="progressbar" style="width: 0%"
+                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="local_ai_assistant-syllabus"></div>
+            </div>
+            <div data-region="syllabus-status" aria-live="polite"></div>
+        </div>
+    </section>
+    {{/backendconfigured}}
 </div>

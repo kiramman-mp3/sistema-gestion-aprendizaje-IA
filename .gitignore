@@ -5,6 +5,8 @@ vendor/
 # Builds
 dist/
 build/
+# Moodle sirve los módulos AMD compilados desde el plugin: se versionan (pnpm check:amd).
+!moodle/**/amd/build/
 coverage/
 *.tsbuildinfo
 
