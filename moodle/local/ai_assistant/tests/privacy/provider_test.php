@@ -26,8 +26,8 @@ use core_privacy\local\metadata\types\external_location;
  * @category   test
  * @copyright  2026 Smart LMS project
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_ai_assistant\privacy\provider
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(provider::class)]
 final class provider_test extends \core_privacy\tests\provider_testcase {
     public function test_metadata_declares_backend_as_external_location(): void {
         $collection = provider::get_metadata(new collection('local_ai_assistant'));

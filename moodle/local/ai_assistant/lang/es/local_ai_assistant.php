@@ -31,6 +31,7 @@ $string['backendurl'] = 'URL del backend';
 $string['backendurl_desc'] = 'URL base de la API del backend de Smart LMS, incluido el prefijo /api/v1.';
 $string['jwtsecret'] = 'Secreto de firma JWT';
 $string['jwtsecret_desc'] = 'Secreto compartido para firmar los tokens de vida corta que recibe el backend. Debe coincidir con PLUGIN_JWT_SECRET del backend y tener al menos 32 caracteres.';
+$string['jwtsecretmissing'] = 'El secreto de firma JWT no está configurado o tiene menos de 32 caracteres.';
 $string['pluginname'] = 'Asistente docente con IA';
 $string['privacy:metadata:backend'] = 'El backend de Smart LMS procesa información del curso para planificarlo, responder preguntas y sugerir estrategias pedagógicas.';
 $string['privacy:metadata:backend:courseid'] = 'El ID del curso en el que se usa el asistente.';

@@ -31,6 +31,7 @@ $string['backendurl'] = 'Backend URL';
 $string['backendurl_desc'] = 'Base URL of the Smart LMS backend API, including the /api/v1 prefix.';
 $string['jwtsecret'] = 'JWT signing secret';
 $string['jwtsecret_desc'] = 'Shared secret used to sign short-lived tokens for the backend. It must match PLUGIN_JWT_SECRET in the backend and be at least 32 characters long.';
+$string['jwtsecretmissing'] = 'The JWT signing secret is not configured or is shorter than 32 characters.';
 $string['pluginname'] = 'AI teaching assistant';
 $string['privacy:metadata:backend'] = 'The Smart LMS backend processes course information to plan courses, answer questions and suggest teaching strategies.';
 $string['privacy:metadata:backend:courseid'] = 'The ID of the course in which the assistant is used.';
