@@ -16,7 +16,7 @@
     "test": "pnpm -r --if-present run test",
     "typecheck": "pnpm -r --if-present run typecheck",
     "build:amd": "rollup -c infra/amd/rollup.config.mjs",
-    "check:amd": "pnpm build:amd && git diff --exit-code -- moodle/**/amd/build"
+    "check:amd": "pnpm build:amd && git diff --exit-code -- moodle"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
