@@ -8,6 +8,7 @@ import { buildLoggerParams } from "./config/logger";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { MoodleModule } from "./integrations/moodle/moodle.module";
+import { RedisModule } from "./redis/redis.module";
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { MoodleModule } from "./integrations/moodle/moodle.module";
     }),
     HealthModule,
     DatabaseModule,
+    RedisModule,
     MoodleModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
