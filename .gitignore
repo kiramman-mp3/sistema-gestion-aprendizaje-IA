@@ -31,3 +31,6 @@ tmp/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Moodle y moodle-docker descargados por infra/scripts/moodle.sh
+infra/.cache/
