@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import {
   BadRequestException,
   ConflictException,
+  NotFoundException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -128,6 +129,42 @@ export class SyllabiService {
     const enqueued = await this.processing.enqueue({ documentId: document.id, storageKey, kind });
     return toSyllabusDto(enqueued ? { ...document, status: "PROCESSING" } : document, {
       progress: enqueued ? 0 : null,
+    });
+  }
+
+  /**
+   * Estado de un sílabo del curso del token. Un sílabo de otro curso responde 404, igual que uno que
+   * no existe, para no revelar que existe (RF-02).
+   */
+  async findOne(auth: AuthContext, id: string): Promise<SyllabusDocumentDto> {
+    const document = /^[0-9a-f-]{36}$/i.test(id)
+      ? await this.prisma.syllabusDocument.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            moodleCourseId: true,
+            filename: true,
+            status: true,
+            errorCode: true,
+            createdAt: true,
+            pageCount: true,
+            extractedText: true,
+            extractions: { select: { version: true }, orderBy: { version: "desc" }, take: 1 },
+          },
+        })
+      : null;
+    if (!document || document.moodleCourseId !== auth.courseId) {
+      throw new NotFoundException({ code: "SYLLABUS_NOT_FOUND", message: "El sílabo no existe." });
+    }
+    const progress =
+      document.status === "PROCESSING"
+        ? ((await this.processing.progress(document.id)) ?? 0)
+        : document.status === "UPLOADED"
+          ? 0
+          : 100;
+    return toSyllabusDto(document, {
+      progress,
+      latestExtractionVersion: document.extractions[0]?.version ?? null,
     });
   }
 
