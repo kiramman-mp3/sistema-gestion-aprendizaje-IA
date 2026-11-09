@@ -1,11 +1,19 @@
 import { Module } from "@nestjs/common";
 import { AntivirusModule } from "../antivirus/antivirus.module";
+import { DocumentTextResultsHandler } from "./document-text-results.handler";
+import { DocumentTextResultsWorker } from "./document-text-results.worker";
 import { SyllabiController } from "./syllabi.controller";
 import { SyllabiService } from "./syllabi.service";
+import { SyllabusProcessingService } from "./syllabus-processing.service";
 
 @Module({
   imports: [AntivirusModule],
   controllers: [SyllabiController],
-  providers: [SyllabiService],
+  providers: [
+    SyllabiService,
+    SyllabusProcessingService,
+    DocumentTextResultsHandler,
+    DocumentTextResultsWorker,
+  ],
 })
 export class SyllabiModule {}

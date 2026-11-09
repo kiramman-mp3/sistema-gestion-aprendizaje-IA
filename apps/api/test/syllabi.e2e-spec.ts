@@ -12,6 +12,7 @@ import { InMemoryJtiStore, JtiStore } from "../src/auth/jti-store";
 import { PrismaService } from "../src/database/prisma.service";
 import type { CourseAccess } from "../src/integrations/moodle/moodle.types";
 import { MAX_SYLLABUS_BYTES } from "../src/syllabi/syllabi.service";
+import { SyllabusProcessingService } from "../src/syllabi/syllabus-processing.service";
 import { minimalDocx, minimalPdf } from "./support/documents";
 import { signPluginToken, TEST_ISSUER, TEST_SECRET } from "./support/plugin-token";
 
@@ -71,6 +72,7 @@ describe("Carga de sílabos (e2e)", () => {
   let storageDir: string;
   const audit: AuditEntry[] = [];
   const documents: StoredDocument[] = [];
+  const enqueued: unknown[] = [];
   let scan: (content: Buffer) => Promise<ScanVerdict>;
 
   beforeAll(async () => {
@@ -93,6 +95,13 @@ describe("Carga de sílabos (e2e)", () => {
       .useValue(fakePrisma(documents))
       .overrideProvider(AntivirusService)
       .useValue({ enabled: true, scan: (content: Buffer) => scan(content) })
+      .overrideProvider(SyllabusProcessingService)
+      .useValue({
+        enqueue: async (job: unknown) => {
+          enqueued.push(job);
+          return true;
+        },
+      })
       .compile();
     app = moduleRef.createNestApplication({ logger: false });
     configureApp(app);
@@ -123,9 +132,14 @@ describe("Carga de sílabos (e2e)", () => {
     expect(res.body).toMatchObject({
       courseId: 7,
       filename: "Sílabo IS-501.pdf",
-      status: "UPLOADED",
-      progress: null,
+      status: "PROCESSING",
+      progress: 0,
       errorCode: null,
+    });
+    expect(enqueued.at(-1)).toEqual({
+      documentId: res.body.id,
+      storageKey: documents.at(-1)?.storageKey,
+      kind: "pdf",
     });
     expect(documents.at(-1)).toMatchObject({
       mimeType: "application/pdf",
@@ -141,7 +155,7 @@ describe("Carga de sílabos (e2e)", () => {
 
   it("acepta un DOCX", async () => {
     const res = await upload(minimalDocx("Bases de datos"), "silabo-bd.docx").expect(202);
-    expect(res.body.status).toBe("UPLOADED");
+    expect(res.body.status).toBe("PROCESSING");
   });
 
   it("rechaza la misma carga en el mismo curso con 409", async () => {
