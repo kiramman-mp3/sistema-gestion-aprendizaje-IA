@@ -42,9 +42,9 @@ describe("validateEnv", () => {
 
   it("exige el antivirus en producción", () => {
     expect(() => validateEnv({ NODE_ENV: "production" })).toThrow(/CLAMAV_URL/);
-    expect(
-      validateEnv({ NODE_ENV: "production", CLAMAV_URL: "tcp://clamav:3310" }).NODE_ENV,
-    ).toBe("production");
+    expect(validateEnv({ NODE_ENV: "production", CLAMAV_URL: "tcp://clamav:3310" }).NODE_ENV).toBe(
+      "production",
+    );
   });
 
   it("usa 30 días de retención y var/storage por defecto", () => {

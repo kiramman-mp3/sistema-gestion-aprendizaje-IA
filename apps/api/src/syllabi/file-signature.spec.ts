@@ -33,9 +33,7 @@ describe("detectDocumentKind", () => {
   });
 
   it("rechaza archivos con extensión falsa (FUN-02)", () => {
-    expect(rejectionCode("silabo.pdf", Buffer.from("MZ\x90\x00 ejecutable"))).toBe(
-      "MIME_MISMATCH",
-    );
+    expect(rejectionCode("silabo.pdf", Buffer.from("MZ\x90\x00 ejecutable"))).toBe("MIME_MISMATCH");
     expect(rejectionCode("silabo.pdf", minimalDocx())).toBe("MIME_MISMATCH");
     expect(rejectionCode("silabo.docx", minimalPdf())).toBe("MIME_MISMATCH");
     expect(rejectionCode("silabo.docx", Buffer.from("texto plano"))).toBe("MIME_MISMATCH");

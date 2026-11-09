@@ -7,10 +7,7 @@ export const DOCUMENT_MIME_TYPES: Record<DocumentKind, string> = {
 };
 
 export type FileRejectionCode =
-  | "EXTENSION_NOT_ALLOWED"
-  | "MIME_MISMATCH"
-  | "MACROS_NOT_ALLOWED"
-  | "ARCHIVE_TOO_LARGE";
+  "EXTENSION_NOT_ALLOWED" | "MIME_MISMATCH" | "MACROS_NOT_ALLOWED" | "ARCHIVE_TOO_LARGE";
 
 /** El archivo no es un PDF o DOCX válido. El mensaje se muestra al docente tal cual. */
 export class FileRejectedError extends Error {
@@ -40,10 +37,7 @@ export function detectDocumentKind(filename: string, content: Buffer): DocumentK
   const extension = /\.[^.]+$/.exec(filename.toLowerCase())?.[0] ?? "";
   const expected = EXTENSIONS[extension];
   if (!expected) {
-    throw new FileRejectedError(
-      "EXTENSION_NOT_ALLOWED",
-      "Solo se aceptan archivos PDF o DOCX.",
-    );
+    throw new FileRejectedError("EXTENSION_NOT_ALLOWED", "Solo se aceptan archivos PDF o DOCX.");
   }
 
   const actual = sniff(content);
