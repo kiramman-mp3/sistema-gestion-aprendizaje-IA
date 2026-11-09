@@ -29,7 +29,6 @@ use core_privacy\local\metadata\types\external_location;
  * @covers     \local_ai_assistant\privacy\provider
  */
 final class provider_test extends \core_privacy\tests\provider_testcase {
-
     public function test_metadata_declares_backend_as_external_location(): void {
         $collection = provider::get_metadata(new collection('local_ai_assistant'));
         $items = $collection->get_collection();
