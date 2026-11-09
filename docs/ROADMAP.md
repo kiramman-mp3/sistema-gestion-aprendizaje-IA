@@ -7,14 +7,14 @@ de ese documento: autenticación plugin–backend, creación de actividades medi
 propia, almacenamiento vectorial, procesamiento asíncrono, historial para analítica y seudonimización
 antes de llamar al proveedor LLM.
 
-| Dato | Valor |
-|---|---|
-| Versión del plan | 1.0 |
-| Fecha | 2026-11-09 |
-| Cadencia | Sprints de 2 semanas |
-| Duración estimada | 14 sprints (~28 semanas) |
+| Dato                 | Valor                                                     |
+| -------------------- | --------------------------------------------------------- |
+| Versión del plan     | 1.0                                                       |
+| Fecha                | 2026-11-09                                                |
+| Cadencia             | Sprints de 2 semanas                                      |
+| Duración estimada    | 14 sprints (~28 semanas)                                  |
 | Equipo de referencia | 1–2 desarrolladores + docente tutor + 2–5 docentes piloto |
-| Estado | Planificación |
+| Estado               | Planificación                                             |
 
 > [!IMPORTANT]
 > Las fechas y la duración son orientativas. El Sprint 0 cierra las decisiones de la sección 19 del
@@ -36,17 +36,17 @@ antes de llamar al proveedor LLM.
 
 ## 🧭 Vista general
 
-| Fase | Nombre | Sprints | Semanas | Hito al cerrar |
-|---|---|---|---|---|
-| 0 | Decisiones y arranque | S0 | 1–2 | Decisiones cerradas, repo y CI base |
-| 1 | Levantamiento y diseño | S1 | 3–4 | Requisitos numerados, prototipos, ADRs |
-| 2 | Infraestructura e integración | S2–S3 | 5–8 | **H1:** plugin ↔ backend ↔ Moodle autenticado |
-| 3 | Procesamiento de sílabos | S4–S5 | 9–12 | **H2:** sílabo convertido en extracción editable |
-| 4 | Generación y publicación | S6–S7 | 13–16 | **H3:** estructura publicada en Moodle sin duplicados |
-| 5 | Asistente conversacional | S8–S9 | 17–20 | **H4:** chat que consulta datos reales del curso |
-| 6 | Analítica y recomendaciones | S10–S11 | 21–24 | **H5:** panel analítico y asistente pedagógico |
-| 7 | Pruebas y evaluación | S12 | 25–26 | **H6:** informe de evaluación con docentes |
-| 8 | Despliegue y documentación | S13 | 27–28 | **H7:** versión 1.0 en `main`, manuales y tesis |
+| Fase | Nombre                        | Sprints | Semanas | Hito al cerrar                                        |
+| ---- | ----------------------------- | ------- | ------- | ----------------------------------------------------- |
+| 0    | Decisiones y arranque         | S0      | 1–2     | Decisiones cerradas, repo y CI base                   |
+| 1    | Levantamiento y diseño        | S1      | 3–4     | Requisitos numerados, prototipos, ADRs                |
+| 2    | Infraestructura e integración | S2–S3   | 5–8     | **H1:** plugin ↔ backend ↔ Moodle autenticado         |
+| 3    | Procesamiento de sílabos      | S4–S5   | 9–12    | **H2:** sílabo convertido en extracción editable      |
+| 4    | Generación y publicación      | S6–S7   | 13–16   | **H3:** estructura publicada en Moodle sin duplicados |
+| 5    | Asistente conversacional      | S8–S9   | 17–20   | **H4:** chat que consulta datos reales del curso      |
+| 6    | Analítica y recomendaciones   | S10–S11 | 21–24   | **H5:** panel analítico y asistente pedagógico        |
+| 7    | Pruebas y evaluación          | S12     | 25–26   | **H6:** informe de evaluación con docentes            |
+| 8    | Despliegue y documentación    | S13     | 27–28   | **H7:** versión 1.0 en `main`, manuales y tesis       |
 
 ```mermaid
 gantt
@@ -85,20 +85,20 @@ gantt
 
 Cada decisión se registra como ADR en `docs/architecture/adr/` durante el Sprint 0 o el Sprint 1.
 
-| ADR | Decisión propuesta | Alternativa | Motivo |
-|---|---|---|---|
-| ADR-001 | Monorepo con `pnpm` workspaces (`apps/`, `packages/`, `moodle/`) | Repos separados | Contratos compartidos (`packages/contracts`) entre backend y worker |
-| ADR-002 | Backend NestJS + TypeScript + Prisma + PostgreSQL | — | Definido en el documento de requisitos |
-| ADR-003 | Worker documental en TypeScript (`pdf-parse`/`pdfjs`, `mammoth`) con OCR opcional | Worker en Python | Reduce el proyecto a dos lenguajes (PHP + TS); Python solo si el OCR o las tablas lo exigen |
-| ADR-004 | Cola de trabajos con BullMQ + Redis | Tabla de jobs en PostgreSQL | Extracción y publicación son largas y necesitan reintentos |
-| ADR-005 | Vectores en PostgreSQL con `pgvector` | Vector store externo | Una sola base auxiliar, filtros por curso en SQL |
-| ADR-006 | Autenticación plugin → backend con JWT de vida corta firmado por el plugin (`sub`, `courseid`, `exp`, `jti`) | Token por usuario de Moodle | El token de integración único no aplica los permisos del docente |
-| ADR-007 | Validación de capacidades mediante función externa propia del plugin (`local_ai_assistant_check_access`) | Replicar roles en el backend | Moodle sigue decidiendo los permisos |
-| ADR-008 | Creación de actividades mediante funciones externas del plugin que usan `create_module()` | Servicios web core | No hay servicios web core para crear módulos |
-| ADR-009 | Capa de abstracción de proveedor LLM (interfaz `LlmProvider`) con salida estructurada validada con Zod | SDK de un proveedor acoplado | Riesgo de dependencia de proveedor (sección 15) |
-| ADR-010 | Seudonimización: el LLM recibe `Estudiante#<id>` y el backend restaura los nombres | Enviar nombres reales | Minimización de datos (LOPDP) |
-| ADR-011 | Entorno Moodle de desarrollo con `moodlehq/moodle-docker` y versión fijada | `bitnami/moodle:latest` | Imagen oficial de desarrollo; Bitnami retiró su catálogo gratuito |
-| ADR-012 | Usar o no el subsistema de IA nativo de Moodle (4.5+) | Backend propio | Se documenta la comparación; el plan asume backend propio |
+| ADR     | Decisión propuesta                                                                                           | Alternativa                  | Motivo                                                                                      |
+| ------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------- |
+| ADR-001 | Monorepo con `pnpm` workspaces (`apps/`, `packages/`, `moodle/`)                                             | Repos separados              | Contratos compartidos (`packages/contracts`) entre backend y worker                         |
+| ADR-002 | Backend NestJS + TypeScript + Prisma + PostgreSQL                                                            | —                            | Definido en el documento de requisitos                                                      |
+| ADR-003 | Worker documental en TypeScript (`pdf-parse`/`pdfjs`, `mammoth`) con OCR opcional                            | Worker en Python             | Reduce el proyecto a dos lenguajes (PHP + TS); Python solo si el OCR o las tablas lo exigen |
+| ADR-004 | Cola de trabajos con BullMQ + Redis                                                                          | Tabla de jobs en PostgreSQL  | Extracción y publicación son largas y necesitan reintentos                                  |
+| ADR-005 | Vectores en PostgreSQL con `pgvector`                                                                        | Vector store externo         | Una sola base auxiliar, filtros por curso en SQL                                            |
+| ADR-006 | Autenticación plugin → backend con JWT de vida corta firmado por el plugin (`sub`, `courseid`, `exp`, `jti`) | Token por usuario de Moodle  | El token de integración único no aplica los permisos del docente                            |
+| ADR-007 | Validación de capacidades mediante función externa propia del plugin (`local_ai_assistant_check_access`)     | Replicar roles en el backend | Moodle sigue decidiendo los permisos                                                        |
+| ADR-008 | Creación de actividades mediante funciones externas del plugin que usan `create_module()`                    | Servicios web core           | No hay servicios web core para crear módulos                                                |
+| ADR-009 | Capa de abstracción de proveedor LLM (interfaz `LlmProvider`) con salida estructurada validada con Zod       | SDK de un proveedor acoplado | Riesgo de dependencia de proveedor (sección 15)                                             |
+| ADR-010 | Seudonimización: el LLM recibe `Estudiante#<id>` y el backend restaura los nombres                           | Enviar nombres reales        | Minimización de datos (LOPDP)                                                               |
+| ADR-011 | Entorno Moodle de desarrollo con `moodlehq/moodle-docker` y versión fijada                                   | `bitnami/moodle:latest`      | Imagen oficial de desarrollo; Bitnami retiró su catálogo gratuito                           |
+| ADR-012 | Usar o no el subsistema de IA nativo de Moodle (4.5+)                                                        | Backend propio               | Se documenta la comparación; el plan asume backend propio                                   |
 
 > [!WARNING]
 > Moodle 5.1 reorganizó el código bajo el directorio `public/`. Verificar en el Sprint 2 la ruta
@@ -113,56 +113,56 @@ sprints, casos de uso y pruebas. Se refina en el Sprint 1.
 
 ### Requisitos funcionales
 
-| ID | Requisito | CU | Sprint |
-|---|---|---|---|
-| RF-01 | El plugin se comunica con el backend mediante JWT firmado de vida corta | — | S3 |
-| RF-02 | El backend valida identidad, curso, rol, capacidad y alcance en cada petición | Todos | S3 |
-| RF-03 | Carga de sílabos PDF/DOCX con validación de extensión, MIME real, tamaño y antivirus | CU-01 | S4 |
-| RF-04 | Extracción de texto, tablas y encabezados; OCR para documentos escaneados | CU-01 | S4 |
-| RF-05 | Extracción estructurada con IA validada contra esquema versionado; campos dudosos marcados | CU-01 | S5 |
-| RF-06 | El docente revisa y corrige la extracción; se guardan versiones | CU-01 | S5 |
-| RF-07 | Generación de propuesta de secciones y actividades vinculadas a unidad y resultado de aprendizaje | CU-02 | S6 |
-| RF-08 | Edición y aprobación de la propuesta con máquina de estados | CU-02 | S6 |
-| RF-09 | Publicación idempotente en Moodle con registro de IDs y manejo de fallos parciales | CU-03 | S7 |
-| RF-10 | Chat en lenguaje natural con tool calling sobre herramientas explícitas | CU-04 | S8 |
-| RF-11 | Consulta de estados reales de entrega por actividad | CU-04 | S8 |
-| RF-12 | Consulta de actividades pendientes de calificar | CU-04 | S8 |
-| RF-13 | Resumen de calificaciones según reglas del curso | CU-04 | S8 |
-| RF-14 | Búsqueda RAG en sílabos y documentos del curso con referencias | CU-04 | S9 |
-| RF-15 | Indicadores de curso: entregas, pendientes, promedio, evolución, rendimiento por unidad, participación | — | S10 |
-| RF-16 | Señales de posible dificultad con umbrales y ventanas configurables | CU-05 | S10 |
-| RF-17 | Evidencias por estudiante en un curso autorizado | CU-05 | S11 |
-| RF-18 | Recomendaciones pedagógicas con evidencias, limitaciones e indicadores de seguimiento | CU-05 | S11 |
-| RF-19 | Registro de auditoría de consultas y operaciones sensibles | Todos | S3 |
-| RF-20 | Registro del seguimiento docente de las recomendaciones | CU-05 | S11 |
+| ID    | Requisito                                                                                              | CU    | Sprint |
+| ----- | ------------------------------------------------------------------------------------------------------ | ----- | ------ |
+| RF-01 | El plugin se comunica con el backend mediante JWT firmado de vida corta                                | —     | S3     |
+| RF-02 | El backend valida identidad, curso, rol, capacidad y alcance en cada petición                          | Todos | S3     |
+| RF-03 | Carga de sílabos PDF/DOCX con validación de extensión, MIME real, tamaño y antivirus                   | CU-01 | S4     |
+| RF-04 | Extracción de texto, tablas y encabezados; OCR para documentos escaneados                              | CU-01 | S4     |
+| RF-05 | Extracción estructurada con IA validada contra esquema versionado; campos dudosos marcados             | CU-01 | S5     |
+| RF-06 | El docente revisa y corrige la extracción; se guardan versiones                                        | CU-01 | S5     |
+| RF-07 | Generación de propuesta de secciones y actividades vinculadas a unidad y resultado de aprendizaje      | CU-02 | S6     |
+| RF-08 | Edición y aprobación de la propuesta con máquina de estados                                            | CU-02 | S6     |
+| RF-09 | Publicación idempotente en Moodle con registro de IDs y manejo de fallos parciales                     | CU-03 | S7     |
+| RF-10 | Chat en lenguaje natural con tool calling sobre herramientas explícitas                                | CU-04 | S8     |
+| RF-11 | Consulta de estados reales de entrega por actividad                                                    | CU-04 | S8     |
+| RF-12 | Consulta de actividades pendientes de calificar                                                        | CU-04 | S8     |
+| RF-13 | Resumen de calificaciones según reglas del curso                                                       | CU-04 | S8     |
+| RF-14 | Búsqueda RAG en sílabos y documentos del curso con referencias                                         | CU-04 | S9     |
+| RF-15 | Indicadores de curso: entregas, pendientes, promedio, evolución, rendimiento por unidad, participación | —     | S10    |
+| RF-16 | Señales de posible dificultad con umbrales y ventanas configurables                                    | CU-05 | S10    |
+| RF-17 | Evidencias por estudiante en un curso autorizado                                                       | CU-05 | S11    |
+| RF-18 | Recomendaciones pedagógicas con evidencias, limitaciones e indicadores de seguimiento                  | CU-05 | S11    |
+| RF-19 | Registro de auditoría de consultas y operaciones sensibles                                             | Todos | S3     |
+| RF-20 | Registro del seguimiento docente de las recomendaciones                                                | CU-05 | S11    |
 
 ### Requisitos no funcionales (propuestos; validar en S0–S1)
 
-| ID | Requisito | Meta propuesta |
-|---|---|---|
-| RNF-01 | Tiempo hasta el primer token del chat (streaming) | p95 < 3 s |
-| RNF-02 | Respuesta completa del chat con una herramienta | p95 < 10 s |
-| RNF-03 | Extracción de un sílabo de 20 páginas | < 2 min |
-| RNF-04 | Tamaño máximo de archivo | 10 MB |
-| RNF-05 | Cobertura de pruebas del backend | ≥ 70 % en módulos de dominio |
-| RNF-06 | Consultas a otro curso sin permiso bloqueadas | 100 % |
-| RNF-07 | Costo de IA por docente al mes | Límite configurable; meta a fijar con el presupuesto |
+| ID     | Requisito                                            | Meta propuesta                                             |
+| ------ | ---------------------------------------------------- | ---------------------------------------------------------- |
+| RNF-01 | Tiempo hasta el primer token del chat (streaming)    | p95 < 3 s                                                  |
+| RNF-02 | Respuesta completa del chat con una herramienta      | p95 < 10 s                                                 |
+| RNF-03 | Extracción de un sílabo de 20 páginas                | < 2 min                                                    |
+| RNF-04 | Tamaño máximo de archivo                             | 10 MB                                                      |
+| RNF-05 | Cobertura de pruebas del backend                     | ≥ 70 % en módulos de dominio                               |
+| RNF-06 | Consultas a otro curso sin permiso bloqueadas        | 100 %                                                      |
+| RNF-07 | Costo de IA por docente al mes                       | Límite configurable; meta a fijar con el presupuesto       |
 | RNF-08 | Retención de documentos, embeddings y conversaciones | Configurable; valor por defecto a fijar con la institución |
-| RNF-09 | Idiomas de la interfaz | Español e inglés (`lang/es`, `lang/en`) |
-| RNF-10 | Accesibilidad de la interfaz del plugin | WCAG 2.1 AA en componentes propios |
+| RNF-09 | Idiomas de la interfaz                               | Español e inglés (`lang/es`, `lang/en`)                    |
+| RNF-10 | Accesibilidad de la interfaz del plugin              | WCAG 2.1 AA en componentes propios                         |
 
 ### Metas de calidad de IA (propuestas; medir en S12)
 
-| Métrica | Meta |
-|---|---|
-| F1 de extracción de unidades | ≥ 0.85 |
-| F1 de extracción de resultados de aprendizaje | ≥ 0.80 |
-| Exactitud de consultas de entregas | ≥ 95 % |
-| Exactitud de cálculos académicos | 100 % (son deterministas) |
-| Respuestas con fuente verificable | ≥ 95 % |
-| Abstención correcta cuando faltan datos | ≥ 90 % |
-| Recomendaciones calificadas como pertinentes por docentes | ≥ 70 % |
-| SUS | ≥ 68 |
+| Métrica                                                   | Meta                      |
+| --------------------------------------------------------- | ------------------------- |
+| F1 de extracción de unidades                              | ≥ 0.85                    |
+| F1 de extracción de resultados de aprendizaje             | ≥ 0.80                    |
+| Exactitud de consultas de entregas                        | ≥ 95 %                    |
+| Exactitud de cálculos académicos                          | 100 % (son deterministas) |
+| Respuestas con fuente verificable                         | ≥ 95 %                    |
+| Abstención correcta cuando faltan datos                   | ≥ 90 %                    |
+| Recomendaciones calificadas como pertinentes por docentes | ≥ 70 %                    |
+| SUS                                                       | ≥ 68                      |
 
 ---
 
@@ -454,16 +454,16 @@ validados por el tutor y Moodle local de desarrollo.
 
 ## ⚠️ Riesgos por fase
 
-| Riesgo | Fase | Señal temprana | Mitigación |
-|---|---|---|---|
-| Sin acceso a Moodle institucional o servicios web | 0–2 | D-02/D-06 sin respuesta al final de S0 | Moodle local con datos sintéticos; piloto en instancia propia |
-| Sílabos escaneados o muy heterogéneos | 3 | F1 bajo en S5 | OCR, revisión humana, plantillas por formato |
-| Creación de módulos más costosa de lo previsto | 4 | S7 sin `assign` funcionando a mitad de sprint | Reducir D-05 a `assign` + `label` en el MVP |
-| Alucinaciones en el chat | 5 | Respuestas sin fuente en pruebas | Herramientas obligatorias, validación de salida, abstención |
-| Costos de IA elevados | 5–6 | Consumo por consulta por encima de la meta | Caché, modelo más pequeño para tareas simples, límites |
-| Analítica sin historial suficiente | 6 | Pocos snapshots al llegar a S10 | Activar snapshots desde S8 aunque el panel llegue después |
-| Pocos docentes para el piloto | 7 | D-09 sin cerrar en S1 | Reclutar en S1; evaluación con tareas controladas |
-| Retrasos acumulados | Todas | Velocidad de sprint < 70 % de lo planificado | Recortar CU-05 a evidencias sin recomendaciones generativas |
+| Riesgo                                            | Fase  | Señal temprana                                | Mitigación                                                    |
+| ------------------------------------------------- | ----- | --------------------------------------------- | ------------------------------------------------------------- |
+| Sin acceso a Moodle institucional o servicios web | 0–2   | D-02/D-06 sin respuesta al final de S0        | Moodle local con datos sintéticos; piloto en instancia propia |
+| Sílabos escaneados o muy heterogéneos             | 3     | F1 bajo en S5                                 | OCR, revisión humana, plantillas por formato                  |
+| Creación de módulos más costosa de lo previsto    | 4     | S7 sin `assign` funcionando a mitad de sprint | Reducir D-05 a `assign` + `label` en el MVP                   |
+| Alucinaciones en el chat                          | 5     | Respuestas sin fuente en pruebas              | Herramientas obligatorias, validación de salida, abstención   |
+| Costos de IA elevados                             | 5–6   | Consumo por consulta por encima de la meta    | Caché, modelo más pequeño para tareas simples, límites        |
+| Analítica sin historial suficiente                | 6     | Pocos snapshots al llegar a S10               | Activar snapshots desde S8 aunque el panel llegue después     |
+| Pocos docentes para el piloto                     | 7     | D-09 sin cerrar en S1                         | Reclutar en S1; evaluación con tareas controladas             |
+| Retrasos acumulados                               | Todas | Velocidad de sprint < 70 % de lo planificado  | Recortar CU-05 a evidencias sin recomendaciones generativas   |
 
 ---
 
@@ -495,19 +495,19 @@ de modelos propios y publicación masiva sin revisión.
 
 ## 📈 Seguimiento
 
-| Sprint | Estado | Inicio | Fin | Notas |
-|---|---|---|---|---|
-| S0 | En curso | 2026-11-16 | 2026-11-29 | Repositorio Git inicializado |
-| S1 | Pendiente | | | |
-| S2 | Pendiente | | | |
-| S3 | Pendiente | | | |
-| S4 | Pendiente | | | |
-| S5 | Pendiente | | | |
-| S6 | Pendiente | | | |
-| S7 | Pendiente | | | |
-| S8 | Pendiente | | | |
-| S9 | Pendiente | | | |
-| S10 | Pendiente | | | |
-| S11 | Pendiente | | | |
-| S12 | Pendiente | | | |
-| S13 | Pendiente | | | |
+| Sprint | Estado    | Inicio     | Fin        | Notas                        |
+| ------ | --------- | ---------- | ---------- | ---------------------------- |
+| S0     | En curso  | 2026-11-16 | 2026-11-29 | Repositorio Git inicializado |
+| S1     | Pendiente |            |            |                              |
+| S2     | Pendiente |            |            |                              |
+| S3     | Pendiente |            |            |                              |
+| S4     | Pendiente |            |            |                              |
+| S5     | Pendiente |            |            |                              |
+| S6     | Pendiente |            |            |                              |
+| S7     | Pendiente |            |            |                              |
+| S8     | Pendiente |            |            |                              |
+| S9     | Pendiente |            |            |                              |
+| S10    | Pendiente |            |            |                              |
+| S11    | Pendiente |            |            |                              |
+| S12    | Pendiente |            |            |                              |
+| S13    | Pendiente |            |            |                              |
