@@ -24,6 +24,7 @@ import {
   FileRejectedError,
   type DocumentKind,
 } from "./file-signature";
+import { SyllabusProcessingService } from "./syllabus-processing.service";
 import { toSyllabusDto, type SyllabusDocumentDto } from "./syllabus.dto";
 
 /** RF-03 y RNF-04: sílabos de hasta 10 MB. */
@@ -47,6 +48,7 @@ export class SyllabiService {
     private readonly audit: AuditService,
     private readonly accounts: IntegrationAccountService,
     private readonly config: ConfigService<Env, true>,
+    private readonly processing: SyllabusProcessingService,
   ) {}
 
   /**
@@ -123,7 +125,10 @@ export class SyllabiService {
       resourceId: document.id,
       metadata: { kind, sizeBytes: file.size },
     });
-    return toSyllabusDto(document);
+    const enqueued = await this.processing.enqueue({ documentId: document.id, storageKey, kind });
+    return toSyllabusDto(enqueued ? { ...document, status: "PROCESSING" } : document, {
+      progress: enqueued ? 0 : null,
+    });
   }
 
   private async checkType(auth: AuthContext, file: UploadedDocument): Promise<DocumentKind> {

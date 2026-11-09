@@ -7,6 +7,7 @@ import type { IntegrationAccountService } from "../integrations/integration-acco
 import type { FileStorage } from "../storage/file-storage";
 import { minimalPdf } from "../../test/support/documents";
 import { cleanFilename, SyllabiService } from "./syllabi.service";
+import type { SyllabusProcessingService } from "./syllabus-processing.service";
 
 describe("cleanFilename", () => {
   it("quita rutas y caracteres de control", () => {
@@ -42,6 +43,7 @@ describe("SyllabiService", () => {
       { record: jest.fn() } as unknown as AuditService,
       { currentId: async () => "cuenta-1" } as unknown as IntegrationAccountService,
       { get: () => 30 } as unknown as ConfigService<Env, true>,
+      { enqueue: jest.fn() } as unknown as SyllabusProcessingService,
     );
     const content = minimalPdf();
 
