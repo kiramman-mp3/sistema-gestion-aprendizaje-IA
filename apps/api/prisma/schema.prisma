@@ -1,0 +1,394 @@
+// Base auxiliar del LMS inteligente. Diseño en docs/architecture/modelo-datos.md.
+// Moodle es la fuente de verdad: aquí solo hay datos de la capa inteligente y referencias moodle_*_id.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+// Las extensiones vector y pgcrypto se crean en la primera migración.
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Estados ────────────────────────────────────────────────────────────────
+
+enum IntegrationStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum DocumentStatus {
+  UPLOADED
+  REJECTED
+  PROCESSING
+  EXTRACTED
+  REVIEWED
+  FAILED
+}
+
+enum ExtractionSource {
+  AI
+  TEACHER
+}
+
+enum ProposalStatus {
+  DRAFT
+  NEEDS_REVIEW
+  APPROVED
+  PUBLISHING
+  PUBLISHED
+  REJECTED
+  FAILED
+}
+
+enum ProposalItemType {
+  SECTION
+  ASSIGN
+  FORUM
+  QUIZ
+  LABEL
+  PAGE
+}
+
+enum PublishItemStatus {
+  PENDING
+  CREATED
+  FAILED
+}
+
+enum PublishOperationStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  TOOL
+}
+
+enum MappingSource {
+  PROPOSAL
+  MANUAL
+}
+
+enum DifficultyRuleType {
+  MISSING_REQUIRED
+  GRADE_BELOW_THRESHOLD
+  SUSTAINED_DECLINE
+  REPEATED_OUTCOME_DIFFICULTY
+}
+
+enum RecommendationStatus {
+  GENERATED
+  DISMISSED
+  APPLIED
+}
+
+enum AuditOutcome {
+  SUCCESS
+  DENIED
+  ERROR
+}
+
+// ─── Integración ────────────────────────────────────────────────────────────
+
+model IntegrationAccount {
+  id             String            @id @default(uuid()) @db.Uuid
+  name           String
+  moodleBaseUrl  String            @map("moodle_base_url")
+  /// Referencia al gestor de secretos; nunca el token.
+  tokenSecretRef String            @map("token_secret_ref")
+  jwtKeyRef      String            @map("jwt_key_ref")
+  status         IntegrationStatus @default(ACTIVE)
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  syllabusDocuments          SyllabusDocument[]
+  aiConversations            AiConversation[]
+  activityUnitMappings       ActivityUnitMapping[]
+  analyticsSnapshots         AnalyticsSnapshot[]
+  difficultyRules            DifficultyRule[]
+  pedagogicalRecommendations PedagogicalRecommendation[]
+  auditEvents                AuditEvent[]
+
+  @@map("integration_accounts")
+}
+
+// ─── Sílabos ────────────────────────────────────────────────────────────────
+
+model SyllabusDocument {
+  id                   String         @id @default(uuid()) @db.Uuid
+  integrationAccountId String         @map("integration_account_id") @db.Uuid
+  moodleCourseId       Int            @map("moodle_course_id")
+  uploadedBy           Int            @map("uploaded_by")
+  filename             String
+  mimeType             String         @map("mime_type")
+  sizeBytes            Int            @map("size_bytes")
+  checksumSha256       String         @map("checksum_sha256") @db.Char(64)
+  /// Ubicación del archivo; nula después de la retención.
+  storageKey           String?        @map("storage_key")
+  status               DocumentStatus @default(UPLOADED)
+  errorCode            String?        @map("error_code")
+  retainUntil          DateTime       @map("retain_until")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  integrationAccount IntegrationAccount   @relation(fields: [integrationAccountId], references: [id])
+  extractions        SyllabusExtraction[]
+  chunks             DocumentChunk[]
+
+  @@index([moodleCourseId, createdAt])
+  @@index([moodleCourseId, checksumSha256])
+  @@map("syllabus_documents")
+}
+
+model SyllabusExtraction {
+  id                String           @id @default(uuid()) @db.Uuid
+  documentId        String           @map("document_id") @db.Uuid
+  version           Int
+  schemaVersion     String           @map("schema_version")
+  /// Cumple syllabusExtractionSchema de @smart-lms/contracts.
+  content           Json
+  consistencyIssues Json             @default("[]") @map("consistency_issues")
+  source            ExtractionSource
+  createdBy         Int?             @map("created_by")
+  llmModel          String?          @map("llm_model")
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  document  SyllabusDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  proposals CourseProposal[]
+
+  @@unique([documentId, version])
+  @@map("syllabus_extractions")
+}
+
+model DocumentChunk {
+  id             String                 @id @default(uuid()) @db.Uuid
+  documentId     String                 @map("document_id") @db.Uuid
+  /// Duplicado a propósito para filtrar por curso antes de buscar (RF-14).
+  moodleCourseId Int                    @map("moodle_course_id")
+  page           Int?
+  chunkIndex     Int                    @map("chunk_index")
+  content        String
+  /// La dimensión y el índice HNSW se fijan al elegir el modelo de embeddings (D-07).
+  embedding      Unsupported("vector")?
+  embeddingModel String?                @map("embedding_model")
+  createdAt      DateTime               @default(now()) @map("created_at")
+
+  document SyllabusDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([moodleCourseId])
+  @@index([documentId, chunkIndex])
+  @@map("document_chunks")
+}
+
+// ─── Propuestas y publicación ───────────────────────────────────────────────
+
+model CourseProposal {
+  id             String         @id @default(uuid()) @db.Uuid
+  extractionId   String         @map("extraction_id") @db.Uuid
+  moodleCourseId Int            @map("moodle_course_id")
+  createdBy      Int            @map("created_by")
+  status         ProposalStatus @default(DRAFT)
+  approvedBy     Int?           @map("approved_by")
+  approvedAt     DateTime?      @map("approved_at")
+  publishedAt    DateTime?      @map("published_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  extraction        SyllabusExtraction @relation(fields: [extractionId], references: [id])
+  items             ProposalItem[]
+  publishOperations PublishOperation[]
+
+  @@index([moodleCourseId, createdAt])
+  @@map("course_proposals")
+}
+
+model ProposalItem {
+  id                 String            @id @default(uuid()) @db.Uuid
+  proposalId         String            @map("proposal_id") @db.Uuid
+  parentId           String?           @map("parent_id") @db.Uuid
+  itemType           ProposalItemType  @map("item_type")
+  title              String
+  description        String?
+  position           Int
+  unitRef            String            @map("unit_ref")
+  learningOutcomeIds String[]          @map("learning_outcome_ids")
+  dueDate            DateTime?         @map("due_date") @db.Date
+  weight             Decimal?          @db.Decimal(5, 2)
+  moodleItemId       Int?              @map("moodle_item_id")
+  publishStatus      PublishItemStatus @default(PENDING) @map("publish_status")
+  publishError       String?           @map("publish_error")
+
+  proposal CourseProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  parent   ProposalItem?  @relation("ProposalItemTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children ProposalItem[] @relation("ProposalItemTree")
+
+  @@index([proposalId, position])
+  @@map("proposal_items")
+}
+
+model PublishOperation {
+  id             String                 @id @default(uuid()) @db.Uuid
+  proposalId     String                 @map("proposal_id") @db.Uuid
+  idempotencyKey String                 @unique @map("idempotency_key")
+  requestedBy    Int                    @map("requested_by")
+  status         PublishOperationStatus @default(RUNNING)
+  createdCount   Int                    @default(0) @map("created_count")
+  failedCount    Int                    @default(0) @map("failed_count")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  finishedAt     DateTime?              @map("finished_at")
+
+  proposal CourseProposal @relation(fields: [proposalId], references: [id])
+
+  @@index([proposalId])
+  @@map("publish_operations")
+}
+
+// ─── Asistente conversacional ───────────────────────────────────────────────
+
+model AiConversation {
+  id                   String   @id @default(uuid()) @db.Uuid
+  integrationAccountId String   @map("integration_account_id") @db.Uuid
+  moodleUserId         Int      @map("moodle_user_id")
+  moodleCourseId       Int      @map("moodle_course_id")
+  title                String?
+  retainUntil          DateTime @map("retain_until")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  integrationAccount IntegrationAccount @relation(fields: [integrationAccountId], references: [id])
+  messages           AiMessage[]
+
+  @@index([moodleUserId, moodleCourseId])
+  @@index([retainUntil])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String      @id @default(uuid()) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  role           MessageRole
+  /// Texto seudonimizado (ADR-010).
+  content        String
+  intent         String?
+  toolName       String?     @map("tool_name")
+  llmModel       String?     @map("llm_model")
+  tokensIn       Int?        @map("tokens_in")
+  tokensOut      Int?        @map("tokens_out")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
+}
+
+// ─── Analítica y recomendaciones ────────────────────────────────────────────
+
+model ActivityUnitMapping {
+  id                   String        @id @default(uuid()) @db.Uuid
+  integrationAccountId String        @map("integration_account_id") @db.Uuid
+  moodleCourseId       Int           @map("moodle_course_id")
+  moodleCmId           Int           @map("moodle_cm_id")
+  unitRef              String        @map("unit_ref")
+  learningOutcomeIds   String[]      @map("learning_outcome_ids")
+  source               MappingSource
+  createdAt            DateTime      @default(now()) @map("created_at")
+
+  integrationAccount IntegrationAccount @relation(fields: [integrationAccountId], references: [id])
+
+  @@unique([moodleCourseId, moodleCmId])
+  @@map("activity_unit_mappings")
+}
+
+model AnalyticsSnapshot {
+  id                   String   @id @default(uuid()) @db.Uuid
+  integrationAccountId String   @map("integration_account_id") @db.Uuid
+  moodleCourseId       Int      @map("moodle_course_id")
+  /// Nulo para indicadores del curso completo.
+  moodleUserId         Int?     @map("moodle_user_id")
+  takenAt              DateTime @map("taken_at")
+  /// Valores calculados y versión de la fórmula.
+  indicators           Json
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  integrationAccount IntegrationAccount @relation(fields: [integrationAccountId], references: [id])
+
+  @@index([moodleCourseId, moodleUserId, takenAt])
+  @@map("analytics_snapshots")
+}
+
+model DifficultyRule {
+  id                   String             @id @default(uuid()) @db.Uuid
+  integrationAccountId String             @map("integration_account_id") @db.Uuid
+  /// Nulo = regla institucional por defecto.
+  moodleCourseId       Int?               @map("moodle_course_id")
+  rule                 DifficultyRuleType
+  params               Json
+  enabled              Boolean            @default(true)
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  integrationAccount IntegrationAccount @relation(fields: [integrationAccountId], references: [id])
+
+  @@index([moodleCourseId])
+  @@map("difficulty_rules")
+}
+
+model PedagogicalRecommendation {
+  id                   String               @id @default(uuid()) @db.Uuid
+  integrationAccountId String               @map("integration_account_id") @db.Uuid
+  moodleCourseId       Int                  @map("moodle_course_id")
+  moodleStudentId      Int                  @map("moodle_student_id")
+  requestedBy          Int                  @map("requested_by")
+  evidence             Json
+  content              Json
+  status               RecommendationStatus @default(GENERATED)
+  createdAt            DateTime             @default(now()) @map("created_at")
+
+  integrationAccount IntegrationAccount       @relation(fields: [integrationAccountId], references: [id])
+  followups          RecommendationFollowup[]
+
+  @@index([moodleCourseId, moodleStudentId, createdAt])
+  @@map("pedagogical_recommendations")
+}
+
+model RecommendationFollowup {
+  id               String   @id @default(uuid()) @db.Uuid
+  recommendationId String   @map("recommendation_id") @db.Uuid
+  teacherId        Int      @map("teacher_id")
+  actionTaken      String   @map("action_taken")
+  observedResult   String?  @map("observed_result")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  recommendation PedagogicalRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@map("recommendation_followups")
+}
+
+// ─── Auditoría ──────────────────────────────────────────────────────────────
+
+model AuditEvent {
+  id                   String       @id @default(uuid()) @db.Uuid
+  integrationAccountId String?      @map("integration_account_id") @db.Uuid
+  /// Nulo si la petición no se autenticó.
+  actorMoodleId        Int?         @map("actor_moodle_id")
+  moodleCourseId       Int?         @map("moodle_course_id")
+  action               String
+  resourceType         String?      @map("resource_type")
+  resourceId           String?      @map("resource_id")
+  outcome              AuditOutcome
+  /// Sin nombres, notas ni texto de mensajes (RF-19).
+  metadata             Json?
+  createdAt            DateTime     @default(now()) @map("created_at")
+
+  integrationAccount IntegrationAccount? @relation(fields: [integrationAccountId], references: [id])
+
+  @@index([actorMoodleId, createdAt])
+  @@index([moodleCourseId, createdAt])
+  @@map("audit_events")
+}
