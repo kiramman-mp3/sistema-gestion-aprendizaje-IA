@@ -42,17 +42,19 @@ Las retenciones son propuestas para discutir con la institución (RNF-08).
 
 ## 4. Riesgos y controles
 
-| Riesgo                                                | Probabilidad     | Impacto | Controles                                                                              |
-| ----------------------------------------------------- | ---------------- | ------- | -------------------------------------------------------------------------------------- |
-| Acceso de un docente a datos de un curso ajeno        | Media            | Alto    | ADR-006, ADR-007, SEC-01, auditoría                                                    |
-| Envío de datos identificables al proveedor LLM        | Alta sin control | Alto    | Seudonimización, minimización por herramienta, SEC-07                                  |
-| Transferencia internacional de datos al proveedor LLM | Alta             | Medio   | Elegir proveedor con garantías contractuales y sin uso para entrenamiento (D-07, D-08) |
-| Etiquetado injusto de estudiantes por las señales     | Media            | Alto    | Reglas transparentes, sin diagnósticos, revisión docente, RF-16, RF-18                 |
-| Decisiones basadas solo en tratamiento automatizado   | Baja             | Alto    | La IA no decide; el docente conserva la decisión (sección 10.3 de los requisitos)      |
-| Fuga de secretos o tokens                             | Media            | Alto    | Gestor de secretos, SEC-09, rotación del token de Moodle                               |
-| Prompt injection en documentos                        | Media            | Medio   | Texto como datos, herramientas con permisos propios, SEC-06                            |
-| Conservación excesiva de conversaciones               | Media            | Medio   | Retención configurable y tarea de limpieza                                             |
-| Uso de datos reales en desarrollo                     | Baja             | Alto    | Solo datos sintéticos; regla en el plan de pruebas                                     |
+| Riesgo                                                | Probabilidad     | Impacto | Controles                                                                                   |
+| ----------------------------------------------------- | ---------------- | ------- | ------------------------------------------------------------------------------------------- |
+| Acceso de un docente a datos de un curso ajeno        | Media            | Alto    | ADR-006, ADR-007, SEC-01, auditoría                                                         |
+| Envío de datos identificables al proveedor LLM        | Alta sin control | Alto    | Seudonimización, minimización por herramienta, SEC-07                                       |
+| Transferencia internacional de datos al proveedor LLM | Alta             | Medio   | Elegir proveedor con garantías contractuales y sin uso para entrenamiento (D-07, D-08)      |
+| Etiquetado injusto de estudiantes por las señales     | Media            | Alto    | Reglas transparentes, sin diagnósticos, revisión docente, RF-16, RF-18                      |
+| Decisiones basadas solo en tratamiento automatizado   | Baja             | Alto    | La IA no decide; el docente conserva la decisión (sección 10.3 de los requisitos)           |
+| Fuga de secretos o tokens                             | Media            | Alto    | Gestor de secretos, SEC-09, rotación del token de Moodle                                    |
+| Prompt injection en documentos                        | Media            | Medio   | Texto como datos, herramientas con permisos propios, SEC-06                                 |
+| Conservación excesiva de conversaciones               | Media            | Medio   | Retención configurable y tarea de limpieza                                                  |
+| Uso de datos reales en desarrollo                     | Baja             | Alto    | Solo datos sintéticos; regla en el plan de pruebas                                          |
+| Archivo malicioso subido como sílabo                  | Media            | Alto    | Magic bytes, sin macros, límite de descompresión, ClamAV (SEC-05), worker aislado (ADR-013) |
+| Conservación excesiva de sílabos originales           | Media            | Bajo    | Borrado diario del archivo al vencer `retain_until` (30 días por defecto), auditado         |
 
 ## 5. Derechos de los titulares
 
