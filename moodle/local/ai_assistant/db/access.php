@@ -62,4 +62,13 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+
+    // Ask Moodle what another user may do with the assistant. Only for the backend integration user,
+    // so no archetype receives it.
+    'local/ai_assistant:checkaccess' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
 ];
