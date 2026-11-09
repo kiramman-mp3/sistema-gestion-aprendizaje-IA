@@ -36,17 +36,17 @@ antes de llamar al proveedor LLM.
 
 ## 🧭 Vista general
 
-| Fase | Nombre                        | Sprints | Semanas | Hito al cerrar                                        |
-| ---- | ----------------------------- | ------- | ------- | ----------------------------------------------------- |
-| 0    | Decisiones y arranque         | S0      | 1–2     | Decisiones cerradas, repo y CI base                   |
-| 1    | Levantamiento y diseño        | S1      | 3–4     | Requisitos numerados, prototipos, ADRs                |
-| 2    | Infraestructura e integración | S2–S3   | 5–8     | **H1:** plugin ↔ backend ↔ Moodle autenticado         |
-| 3    | Procesamiento de sílabos      | S4–S5   | 9–12    | **H2:** sílabo convertido en extracción editable      |
-| 4    | Generación y publicación      | S6–S7   | 13–16   | **H3:** estructura publicada en Moodle sin duplicados |
-| 5    | Asistente conversacional      | S8–S9   | 17–20   | **H4:** chat que consulta datos reales del curso      |
-| 6    | Analítica y recomendaciones   | S10–S11 | 21–24   | **H5:** panel analítico y asistente pedagógico        |
-| 7    | Pruebas y evaluación          | S12     | 25–26   | **H6:** informe de evaluación con docentes            |
-| 8    | Despliegue y documentación    | S13     | 27–28   | **H7:** versión 1.0 en `main`, manuales y tesis       |
+| Fase | Nombre                        | Sprints | Semanas | Hito al cerrar                                            |
+| ---- | ----------------------------- | ------- | ------- | --------------------------------------------------------- |
+| 0    | Decisiones y arranque         | S0      | 1–2     | Decisiones cerradas, repo y CI base                       |
+| 1    | Levantamiento y diseño        | S1      | 3–4     | Requisitos numerados, prototipos, ADRs                    |
+| 2    | Infraestructura e integración | S2–S3   | 5–8     | **H1:** plugin ↔ backend ↔ Moodle autenticado (alcanzado) |
+| 3    | Procesamiento de sílabos      | S4–S5   | 9–12    | **H2:** sílabo convertido en extracción editable          |
+| 4    | Generación y publicación      | S6–S7   | 13–16   | **H3:** estructura publicada en Moodle sin duplicados     |
+| 5    | Asistente conversacional      | S8–S9   | 17–20   | **H4:** chat que consulta datos reales del curso          |
+| 6    | Analítica y recomendaciones   | S10–S11 | 21–24   | **H5:** panel analítico y asistente pedagógico            |
+| 7    | Pruebas y evaluación          | S12     | 25–26   | **H6:** informe de evaluación con docentes                |
+| 8    | Despliegue y documentación    | S13     | 27–28   | **H7:** versión 1.0 en `main`, manuales y tesis           |
 
 ```mermaid
 gantt
@@ -287,17 +287,26 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** comunicación segura de extremo a extremo con los permisos reales de Moodle.
 
-- [ ] `feature/plugin-jwt-signing`: el plugin firma JWT de vida corta (≤ 5 min) con `sub`, `courseid`, `exp` y `jti`; clave guardada en la configuración del plugin, nunca en el frontend.
-- [ ] `feature/api-jwt-guard`: guard NestJS que valida firma, expiración y reutilización de `jti`.
-- [ ] `feature/moodle-access-check`: función externa `local_ai_assistant_check_access` que devuelve rol y capacidades del usuario en el curso; caché corta en el backend.
-- [ ] `feature/course-scope-guard`: guard por curso y capacidad aplicado a todos los controladores.
-- [ ] `feature/audit-log`: módulo `audit` y tabla `audit_events`; logs sin datos personales innecesarios.
-- [ ] `feature/plugin-assistant-shell`: página del asistente en Moodle (AMD + Mustache) que llama al backend.
-- [ ] Pruebas negativas: token inválido, token expirado, curso ajeno, estudiante con herramienta de docente.
+- [x] `feature/plugin-jwt-signing`: `token_issuer` firma JWT HS256 de 300 s con `sub`, `courseid`, `iss`, `aud`, `iat`, `exp` y `jti`; `get_backend_token` lo entrega por AJAX con la sesión del usuario. El secreto queda en los ajustes del plugin.
+- [x] `feature/api-jwt-guard`: verificación con `node:crypto` (solo HS256), guard global con `@Public()` y `jti` de un solo uso en Redis.
+- [x] `feature/moodle-access-check`: `local_ai_assistant_check_access` con la capacidad de sistema `checkaccess`, solo para el usuario de integración; caché de 120 s en Redis.
+- [x] `feature/course-scope-guard`: `CourseAccessGuard` global: exige `use`, que `:courseId` coincida con el token y las capacidades de `@RequireCapability`.
+- [x] `feature/audit-log`: `AuditService` registra `auth.denied` y `access.denied` sin tokens ni datos personales.
+- [x] `feature/plugin-assistant-shell`: página del asistente (Mustache + AMD compilado con Rollup) enlazada desde el curso; verificada en Chrome.
+- [x] Pruebas negativas: token inválido, expirado y reutilizado, curso ajeno y estudiante, en pruebas unitarias, e2e y contra Moodle real.
 
 **Entregables (H1):** Moodle funcional, plugin inicial y backend conectado y autenticado.
 
 **Criterio de aceptación:** las pruebas negativas de autorización de la sección 13.2 relacionadas pasan al 100 %.
+**Resultado:** cumplido (SEC-01, SEC-02, SEC-03 y SEC-09). Hito H1 alcanzado; resultados de la fase en [`docs/resultados/fase-2.md`](resultados/fase-2.md) y flujo en [`docs/architecture/autenticacion-autorizacion.md`](architecture/autenticacion-autorizacion.md).
+
+**Desvíos:**
+
+- Se añadió `feature/api-cors`: el navegador llama al backend desde Moodle, así que el backend acepta solo los orígenes de `CORS_ORIGINS`.
+- La verificación del JWT no usa `jose`: su versión vigente es solo ESM y falla con Jest en CommonJS. Se implementó con `node:crypto`.
+- Los módulos AMD se compilan con Rollup (`pnpm build:amd`) en lugar del grunt de Moodle; CI verifica que `amd/build` esté al día.
+- `moodle.sh install` ahora configura el secreto JWT y la URL del backend del plugin a partir del `.env` (`moodle.sh configure`).
+- La URL del backend por defecto del plugin pasó a `http://localhost:3000/api/v1`: la usa el navegador, no el servidor de Moodle.
 
 ---
 
@@ -528,7 +537,7 @@ de modelos propios y publicación masiva sin revisión.
 | S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10  |
 | S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético |
 | S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo    |
-| S3     | Pendiente |            |            |                                                                                          |
+| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                  |
 | S4     | Pendiente |            |            |                                                                                          |
 | S5     | Pendiente |            |            |                                                                                          |
 | S6     | Pendiente |            |            |                                                                                          |
