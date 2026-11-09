@@ -60,6 +60,7 @@ describe("MoodleClient", () => {
   it.each([
     ["invalidtoken", MoodleAuthError],
     ["nopermissions", MoodlePermissionError],
+    ["accessexception", MoodlePermissionError],
     ["invalidparameter", MoodleApiError],
   ])("convierte la excepción %s de Moodle en %p", async (errorcode, ErrorClass) => {
     const fetchFn = jest
