@@ -1,6 +1,6 @@
 # ADR-003: Worker documental en TypeScript
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada de forma provisional (implementada en el Sprint 4; falta confirmarla con los sílabos de D-03)
 - **Fecha:** 2026-11-09
 - **Sprint:** S0 (confirmar en S1 con los sílabos de D-03)
 
@@ -21,4 +21,8 @@ Escribir el worker en TypeScript (`apps/document-worker`) con bibliotecas de Nod
 ## Consecuencias
 
 - Contratos compartidos con el backend sin generar tipos entre lenguajes.
-- Se debe probar con los sílabos reales en el Sprint 4 antes de cerrar la decisión.
+- Implementación del Sprint 4 (`apps/document-worker`):
+  - PDF con pdf.js 6: texto por página, encabezados reconocidos por tamaño de letra y párrafos por separación vertical. pdf.js no reconstruye tablas: su contenido llega como párrafos.
+  - DOCX con fflate y fast-xml-parser: encabezados por estilo (incluidos los nombres localizados de Word), párrafos y tablas. Las páginas se estiman con los saltos que guardó Word.
+  - OCR con Poppler (`pdftoppm`) y Tesseract en español, instalados en la imagen. Solo pasan por OCR las páginas sin texto, y el documento se marca con confianza baja.
+- Queda por medir la calidad con los sílabos reales; si las tablas de los PDF resultan críticas, se evalúa un extractor en Python solo para ese paso.

@@ -1,6 +1,6 @@
 # ADR-004: Cola de trabajos con BullMQ y Redis
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada (implementada en el Sprint 4)
 - **Fecha:** 2026-11-09
 - **Sprint:** S0
 
@@ -23,3 +23,4 @@ Usar BullMQ con Redis para los trabajos asíncronos. El estado de negocio (docum
 
 - Redis se añade al Docker Compose.
 - Los trabajos deben ser idempotentes porque pueden ejecutarse más de una vez.
+- Implementación del Sprint 4: BullMQ 6 con las colas `document-text`, `document-text-results` (flujo padre/hijo, ver ADR-013) y `maintenance` (planificadores para borrar archivos vencidos cada día y volver a encolar cargas atascadas cada 5 minutos).
