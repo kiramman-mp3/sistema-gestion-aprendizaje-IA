@@ -316,15 +316,25 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** recibir un sílabo de forma segura y obtener su texto estructurado.
 
-- [ ] `feature/syllabus-upload`: `POST /syllabi` con validación de extensión, MIME real (magic bytes), tamaño, checksum y antivirus (ClamAV).
-- [ ] `feature/job-queue`: BullMQ + Redis; estados de trabajo y reintentos.
-- [ ] `feature/document-worker`: extracción de texto PDF/DOCX conservando página, encabezados y tablas. Incluye su servicio en `docker-compose.yml` (movido desde S2).
-- [ ] `feature/ocr-fallback`: OCR para PDF escaneados, con marca de baja confianza.
-- [ ] `feature/syllabus-status`: `GET /syllabi/:id` con estado y progreso.
-- [ ] `feature/plugin-syllabus-upload-ui`: pantalla de carga con progreso.
-- [ ] Política de retención de archivos temporales.
+- [x] `feature/syllabus-upload`: `POST /syllabi` con validación de extensión, MIME real (magic bytes), tamaño, checksum y antivirus (ClamAV).
+- [x] `feature/job-queue`: BullMQ + Redis; estados de trabajo y reintentos.
+- [x] `feature/document-worker`: extracción de texto PDF/DOCX conservando página, encabezados y tablas. Incluye su servicio en `docker-compose.yml` (movido desde S2).
+- [x] `feature/ocr-fallback`: OCR para PDF escaneados, con marca de baja confianza.
+- [x] `feature/syllabus-status`: `GET /syllabi/:id` con estado y progreso.
+- [x] `feature/plugin-syllabus-upload-ui`: pantalla de carga con progreso.
+- [x] Política de retención de archivos temporales.
 
 **Criterio de aceptación:** los sílabos del conjunto de referencia se procesan; un archivo con extensión falsa se rechaza.
+**Resultado:** cumplido en parte. Un archivo con extensión falsa se rechaza (FUN-02) y un archivo con malware se rechaza y se audita (SEC-05), probados contra ClamAV real. Se procesaron PDF digitales, DOCX y un PDF escaneado sintéticos; el conjunto de referencia de sílabos reales sigue pendiente de D-03. Detalle en [`docs/architecture/procesamiento-silabos.md`](architecture/procesamiento-silabos.md).
+
+**Desvíos:**
+
+- El worker documental no tiene acceso a la base de datos: devuelve el texto por un flujo padre/hijo de BullMQ y el backend lo valida y lo guarda ([ADR-013](architecture/adr/0013-worker-sin-base-de-datos.md)).
+- Se añadió el estado `TEXT_READY` y las columnas `extracted_text`, `page_count` y `text_extracted_at` (migración `20261110090000_document_text`), y un índice único por URL de Moodle en `integration_accounts` (`20261109200000_integration_account_unique_url`).
+- pdf.js no reconstruye tablas de un PDF: su contenido llega como párrafos. En DOCX las tablas sí se conservan y las páginas son estimadas.
+- El OCR usa Poppler y Tesseract instalados en la imagen del worker, no una biblioteca de Node: en el host de Windows no hay OCR.
+- ADR-003 (worker en TypeScript) queda aceptada de forma provisional: falta confirmarla con los sílabos reales de D-03.
+- Se corrigieron dos fallas del Sprint 3: el `typecheck` del backend fallaba en la prueba de CORS y los módulos AMD compilados no estaban versionados, así que `check:amd` no comprobaba nada.
 
 ### Sprint 5 · Semanas 11–12 — Extracción estructurada con IA y revisión
 
@@ -532,19 +542,19 @@ de modelos propios y publicación masiva sin revisión.
 
 ## 📈 Seguimiento
 
-| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                    |
-| ------ | --------- | ---------- | ---------- | ---------------------------------------------------------------------------------------- |
-| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10  |
-| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético |
-| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo    |
-| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                  |
-| S4     | Pendiente |            |            |                                                                                          |
-| S5     | Pendiente |            |            |                                                                                          |
-| S6     | Pendiente |            |            |                                                                                          |
-| S7     | Pendiente |            |            |                                                                                          |
-| S8     | Pendiente |            |            |                                                                                          |
-| S9     | Pendiente |            |            |                                                                                          |
-| S10    | Pendiente |            |            |                                                                                          |
-| S11    | Pendiente |            |            |                                                                                          |
-| S12    | Pendiente |            |            |                                                                                          |
-| S13    | Pendiente |            |            |                                                                                          |
+| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                                 |
+| ------ | --------- | ---------- | ---------- | ----------------------------------------------------------------------------------------------------- |
+| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10               |
+| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético              |
+| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo                 |
+| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                               |
+| S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03) |
+| S5     | Pendiente |            |            |                                                                                                       |
+| S6     | Pendiente |            |            |                                                                                                       |
+| S7     | Pendiente |            |            |                                                                                                       |
+| S8     | Pendiente |            |            |                                                                                                       |
+| S9     | Pendiente |            |            |                                                                                                       |
+| S10    | Pendiente |            |            |                                                                                                       |
+| S11    | Pendiente |            |            |                                                                                                       |
+| S12    | Pendiente |            |            |                                                                                                       |
+| S13    | Pendiente |            |            |                                                                                                       |
