@@ -5,6 +5,7 @@ import { LoggerModule } from "nestjs-pino";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { validateEnv, type Env } from "./config/env";
 import { buildLoggerParams } from "./config/logger";
+import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { MoodleModule } from "./integrations/moodle/moodle.module";
 
@@ -20,6 +21,7 @@ import { MoodleModule } from "./integrations/moodle/moodle.module";
         }),
     }),
     HealthModule,
+    DatabaseModule,
     MoodleModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
