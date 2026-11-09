@@ -1,8 +1,16 @@
 # Modelo de datos de la base auxiliar
 
-Versión 0.1 · Sprint 1. Amplía la sección 8 del
+Versión 0.2 · Sprint 2. Amplía la sección 8 del
 [documento de requisitos](../requisitos/implementacion_lms_inteligente_ia.md) con las entidades que
-faltaban y unifica los estados. Se implementa con Prisma desde el Sprint 2 (ADR-002).
+faltaban y unifica los estados.
+
+**Implementación:** [`apps/api/prisma/schema.prisma`](../../apps/api/prisma/schema.prisma) y la
+migración `20261109163904_init`. Diferencias con este documento:
+
+- Todas las tablas tienen `id` UUID y `created_at`; las que se editan tienen además `updated_at`.
+- `embedding` es `vector` sin dimensión y sin índice HNSW hasta elegir el modelo de embeddings (D-07).
+- Las extensiones `vector` y `pgcrypto` se crean al inicio de la migración inicial, no en el esquema de Prisma (su soporte es una función en vista previa).
+- `audit_events.integration_account_id` es opcional: un intento no autenticado no tiene cuenta asociada.
 
 ## Principios
 
