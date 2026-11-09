@@ -31,7 +31,7 @@ if ($hassiteconfig) {
         'local_ai_assistant/backendurl',
         new lang_string('backendurl', 'local_ai_assistant'),
         new lang_string('backendurl_desc', 'local_ai_assistant'),
-        'http://host.docker.internal:3000/api/v1',
+        'http://localhost:3000/api/v1',
         PARAM_URL
     ));
 
