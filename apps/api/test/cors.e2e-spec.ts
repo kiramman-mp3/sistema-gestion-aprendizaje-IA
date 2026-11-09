@@ -9,8 +9,8 @@ describe("CORS (e2e)", () => {
     process.env.LOG_LEVEL = "fatal";
     process.env.CORS_ORIGINS = "http://moodle.test";
     // ConfigModule valida el entorno al importar AppModule: se importa después de definirlo.
-    const { AppModule } = await import("../src/app.module");
-    const { configureApp } = await import("../src/app.setup");
+    const { AppModule } = await import("../src/app.module.js");
+    const { configureApp } = await import("../src/app.setup.js");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication({ logger: false });
     configureApp(app);

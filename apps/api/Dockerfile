@@ -21,6 +21,8 @@ WORKDIR /app
 COPY --from=build --chown=node:node /out/node_modules ./node_modules
 COPY --from=build --chown=node:node /out/package.json ./package.json
 COPY --from=build --chown=node:node /repo/apps/api/dist ./dist
+# El volumen de archivos subidos hereda este dueño al crearse por primera vez.
+RUN mkdir -p /var/lib/smart-lms/storage && chown node:node /var/lib/smart-lms/storage
 USER node
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

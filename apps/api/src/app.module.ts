@@ -9,8 +9,11 @@ import { validateEnv, type Env } from "./config/env";
 import { buildLoggerParams } from "./config/logger";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
+import { IntegrationAccountModule } from "./integrations/integration-account.module";
 import { MoodleModule } from "./integrations/moodle/moodle.module";
 import { RedisModule } from "./redis/redis.module";
+import { StorageModule } from "./storage/storage.module";
+import { SyllabiModule } from "./syllabi/syllabi.module";
 
 @Module({
   imports: [
@@ -38,6 +41,9 @@ import { RedisModule } from "./redis/redis.module";
     AuditModule,
     AuthModule,
     MoodleModule,
+    IntegrationAccountModule,
+    StorageModule,
+    SyllabiModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
 })

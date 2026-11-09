@@ -99,7 +99,8 @@ enum AuditOutcome {
 model IntegrationAccount {
   id             String            @id @default(uuid()) @db.Uuid
   name           String
-  moodleBaseUrl  String            @map("moodle_base_url")
+  /// Un sitio Moodle tiene una sola cuenta de integración.
+  moodleBaseUrl  String            @unique @map("moodle_base_url")
   /// Referencia al gestor de secretos; nunca el token.
   tokenSecretRef String            @map("token_secret_ref")
   jwtKeyRef      String            @map("jwt_key_ref")

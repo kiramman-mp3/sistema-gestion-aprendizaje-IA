@@ -37,3 +37,6 @@ infra/.cache/
 
 # Cliente de Prisma generado (pnpm --filter @smart-lms/api prisma:generate)
 apps/api/src/generated/
+
+# Archivos subidos en desarrollo (STORAGE_DIR)
+apps/api/var/
