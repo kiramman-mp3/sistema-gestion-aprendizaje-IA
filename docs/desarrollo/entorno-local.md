@@ -5,14 +5,14 @@ datos sintéticos; nunca se cargan datos reales de estudiantes.
 
 ## Piezas
 
-| Pieza            | Cómo se levanta                         | Dirección                         |
-| ---------------- | --------------------------------------- | --------------------------------- |
-| Moodle 5.1.8     | `infra/scripts/moodle.sh` (moodle-docker) | <http://localhost:8000>         |
-| Base de Moodle   | moodle-docker (PostgreSQL)              | Solo dentro de Docker             |
-| Base auxiliar    | `docker compose` (PostgreSQL + pgvector) | `localhost:${APP_DB_PORT:-5433}` |
-| Redis            | `docker compose`                        | `localhost:${REDIS_PORT:-6379}`   |
-| Backend          | `pnpm --filter @smart-lms/api dev`      | `http://localhost:${PORT}/api/v1` |
-| Plugin           | Montado en vivo en `public/local/ai_assistant` | Administración de Moodle   |
+| Pieza          | Cómo se levanta                                | Dirección                         |
+| -------------- | ---------------------------------------------- | --------------------------------- |
+| Moodle 5.1.8   | `infra/scripts/moodle.sh` (moodle-docker)      | <http://localhost:8000>           |
+| Base de Moodle | moodle-docker (PostgreSQL)                     | Solo dentro de Docker             |
+| Base auxiliar  | `docker compose` (PostgreSQL + pgvector)       | `localhost:${APP_DB_PORT:-5433}`  |
+| Redis          | `docker compose`                               | `localhost:${REDIS_PORT:-6379}`   |
+| Backend        | `pnpm --filter @smart-lms/api dev`             | `http://localhost:${PORT}/api/v1` |
+| Plugin         | Montado en vivo en `public/local/ai_assistant` | Administración de Moodle          |
 
 ```mermaid
 graph LR
@@ -102,30 +102,30 @@ Los pasos deben seguir este orden.
 
 ## Uso diario
 
-| Tarea                              | Comando                                              |
-| ---------------------------------- | ---------------------------------------------------- |
-| Levantar todo                      | `docker compose up -d && bash infra/scripts/moodle.sh up` |
-| Detener Moodle                     | `bash infra/scripts/moodle.sh down`                  |
-| Detener base auxiliar y Redis      | `docker compose down`                                |
-| Backend en modo desarrollo         | `pnpm --filter @smart-lms/api dev`                   |
-| Crear una migración                | `pnpm --filter @smart-lms/api prisma:migrate -- --name <nombre>` |
-| Rotar el token de Moodle           | `bash infra/scripts/moodle.sh compose exec webserver php /opt/smart-lms/cli/setup_integration.php --rotate` |
-| Revisar el código PHP              | `bash infra/scripts/phpcs.sh`                        |
-| Preparar PHPUnit (una vez por instalación) | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php public/admin/tool/phpunit/cli/init.php` |
-| Pruebas PHPUnit del plugin         | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver vendor/bin/phpunit --testsuite local_ai_assistant_testsuite` |
-| Backend en contenedor              | `docker compose --profile api up -d --build` (ver problemas conocidos) |
+| Tarea                                      | Comando                                                                                                                                 |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Levantar todo                              | `docker compose up -d && bash infra/scripts/moodle.sh up`                                                                               |
+| Detener Moodle                             | `bash infra/scripts/moodle.sh down`                                                                                                     |
+| Detener base auxiliar y Redis              | `docker compose down`                                                                                                                   |
+| Backend en modo desarrollo                 | `pnpm --filter @smart-lms/api dev`                                                                                                      |
+| Crear una migración                        | `pnpm --filter @smart-lms/api prisma:migrate -- --name <nombre>`                                                                        |
+| Rotar el token de Moodle                   | `bash infra/scripts/moodle.sh compose exec webserver php /opt/smart-lms/cli/setup_integration.php --rotate`                             |
+| Revisar el código PHP                      | `bash infra/scripts/phpcs.sh`                                                                                                           |
+| Preparar PHPUnit (una vez por instalación) | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php public/admin/tool/phpunit/cli/init.php`                  |
+| Pruebas PHPUnit del plugin                 | `MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver vendor/bin/phpunit --testsuite local_ai_assistant_testsuite` |
+| Backend en contenedor                      | `docker compose --profile api up -d --build` (ver problemas conocidos)                                                                  |
 
 ## Datos sintéticos
 
 `infra/moodle/cli/seed.php` crea datos deterministas:
 
-| Elemento     | Detalle                                                                 |
-| ------------ | ----------------------------------------------------------------------- |
-| Cursos       | `IS-501-DEMO` (12 estudiantes) y `BD-301-DEMO` (8 estudiantes)          |
-| Docentes     | `docente1` (edición, IS-501), `docente2` (sin edición, IS-501), `docente3` (edición, BD-301) |
-| Estudiantes  | `estudiante01` a `estudiante12`                                         |
-| Tareas       | 3 en IS-501 y 2 en BD-301, vencidas y por vencer, con entregas sin enviar, en borrador, a tiempo y tardías; calificadas total, parcialmente o sin calificar |
-| Contraseña   | `Demo#2026` por defecto (`seed --password=...` para cambiarla)          |
+| Elemento    | Detalle                                                                                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cursos      | `IS-501-DEMO` (12 estudiantes) y `BD-301-DEMO` (8 estudiantes)                                                                                              |
+| Docentes    | `docente1` (edición, IS-501), `docente2` (sin edición, IS-501), `docente3` (edición, BD-301)                                                                |
+| Estudiantes | `estudiante01` a `estudiante12`                                                                                                                             |
+| Tareas      | 3 en IS-501 y 2 en BD-301, vencidas y por vencer, con entregas sin enviar, en borrador, a tiempo y tardías; calificadas total, parcialmente o sin calificar |
+| Contraseña  | `Demo#2026` por defecto (`seed --password=...` para cambiarla)                                                                                              |
 
 `docente3` no tiene acceso a `IS-501-DEMO`: sirve para la prueba SEC-01 (curso ajeno).
 
@@ -154,11 +154,11 @@ Si otro proyecto usa un puerto, cámbialo en `.env`:
 
 ## Problemas conocidos
 
-| Síntoma                                              | Causa y solución                                                                  |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `rootdirpublic` al abrir Moodle                      | El servidor web apunta a la raíz y no a `public/`. Revisa que `local.yml` se copió con `moodle.sh setup`. |
-| `Could not open input file: C:/Program Files/Git/...` | Git Bash convirtió la ruta. Los scripts ya usan `MSYS_NO_PATHCONV=1`; si ejecutas `docker exec` a mano, añádelo. |
-| `port is already allocated`                          | Otro contenedor usa el puerto. Cambia la variable correspondiente en `.env`.      |
-| `Cannot find module './internal/class.js'` en pruebas | Falta generar el cliente: `pnpm --filter @smart-lms/api prisma:generate`.        |
-| `"moodle": "down"` con el perfil `api`               | Moodle redirige a su `wwwroot` (`http://localhost:8000`), inaccesible desde el contenedor. Para desarrollar, ejecuta el backend en el host. |
-| `ERR_PNPM_IGNORED_BUILDS` en CI o Docker             | Un paquete nuevo trae scripts de instalación. Decide si se permiten en `allowBuilds` de `pnpm-workspace.yaml`. |
+| Síntoma                                               | Causa y solución                                                                                                                            |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rootdirpublic` al abrir Moodle                       | El servidor web apunta a la raíz y no a `public/`. Revisa que `local.yml` se copió con `moodle.sh setup`.                                   |
+| `Could not open input file: C:/Program Files/Git/...` | Git Bash convirtió la ruta. Los scripts ya usan `MSYS_NO_PATHCONV=1`; si ejecutas `docker exec` a mano, añádelo.                            |
+| `port is already allocated`                           | Otro contenedor usa el puerto. Cambia la variable correspondiente en `.env`.                                                                |
+| `Cannot find module './internal/class.js'` en pruebas | Falta generar el cliente: `pnpm --filter @smart-lms/api prisma:generate`.                                                                   |
+| `"moodle": "down"` con el perfil `api`                | Moodle redirige a su `wwwroot` (`http://localhost:8000`), inaccesible desde el contenedor. Para desarrollar, ejecuta el backend en el host. |
+| `ERR_PNPM_IGNORED_BUILDS` en CI o Docker              | Un paquete nuevo trae scripts de instalación. Decide si se permiten en `allowBuilds` de `pnpm-workspace.yaml`.                              |
