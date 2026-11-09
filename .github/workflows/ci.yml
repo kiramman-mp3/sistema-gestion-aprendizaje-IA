@@ -36,6 +36,9 @@ jobs:
       - name: Formato
         run: pnpm format:check
 
+      - name: Contrato OpenAPI
+        run: pnpm lint:api
+
       - name: Tipos
         run: pnpm typecheck
 
