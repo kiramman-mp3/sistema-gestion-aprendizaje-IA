@@ -188,13 +188,15 @@ Una historia se considera terminada cuando:
 
 **Decisiones a cerrar (sección 19 del documento de requisitos):**
 
-- [ ] D-01 Versión de Moodle de la institución.
-- [ ] D-02 Moodle nuevo o integración con una instancia existente.
+Registro detallado en [`docs/architecture/decisiones-sprint-0.md`](architecture/decisiones-sprint-0.md).
+
+- [x] D-01 Versión de Moodle de la institución. → Moodle 5.1.
+- [x] D-02 Moodle nuevo o integración con una instancia existente. → Instancia nueva local con datos sintéticos.
 - [ ] D-03 Tipos y formatos de sílabo; reunir de 10 a 20 sílabos reales anonimizados.
-- [ ] D-04 Estructura de parciales y ponderaciones (régimen LOES o LOEI).
+- [ ] D-04 Estructura de parciales y ponderaciones (régimen LOES o LOEI). → Parcial: régimen LOES; falta el reglamento con parciales y pesos.
 - [ ] D-05 Tipos de actividad que se crearán automáticamente (propuesta: `assign`, `forum`, `quiz` vacío, `label`/`page`).
-- [ ] D-06 Disponibilidad de servicios web y permisos administrativos.
-- [ ] D-07 Proveedor de IA, modelo y presupuesto mensual.
+- [x] D-06 Disponibilidad de servicios web y permisos administrativos. → Disponibles en la instancia local.
+- [ ] D-07 Proveedor de IA, modelo y presupuesto mensual. → Sin definir; se trabaja con `LlmProvider` (ADR-009).
 - [ ] D-08 Política institucional sobre datos personales y proveedores externos.
 - [ ] D-09 Docentes, cursos y estudiantes para el piloto.
 - [ ] D-10 Calendario disponible para desarrollar y validar.
@@ -202,11 +204,16 @@ Una historia se considera terminada cuando:
 **Tareas técnicas:**
 
 - [x] Inicializar Git con `main`, `develop` y el flujo de ramas de `CLAUDE.md`.
-- [ ] `chore/monorepo-setup`: `pnpm` workspaces, `.editorconfig`, `.gitattributes` (EOL LF), `.gitignore`, `.env.example`.
-- [ ] `chore/lint-format`: ESLint + Prettier para TS; `phpcs` con el estándar `moodle` para el plugin.
-- [ ] `ci/base-pipeline`: CI con lint, pruebas y build en cada push a `develop` y ramas de trabajo.
-- [ ] `docs/adr-template`: plantilla de ADR y registro de ADR-001 a ADR-012.
-- [ ] `docs/readme`: README inicial según la estructura de `CLAUDE.md`.
+- [x] `chore/monorepo-setup`: `pnpm` workspaces, `.editorconfig`, `.gitattributes` (EOL LF), `.gitignore`, `.env.example`.
+- [x] `chore/lint-format`: ESLint + Prettier para TS. (`phpcs` se movió al Sprint 2: aún no hay código PHP.)
+- [x] `ci/base-pipeline`: CI con lint, pruebas y build en cada push a `develop` y ramas de trabajo. (Pendiente de verificar en GitHub: el repositorio aún no tiene remoto.)
+- [x] `docs/adr-template`: plantilla de ADR y registro de ADR-001 a ADR-012.
+- [x] `docs/readme`: README inicial según la estructura de `CLAUDE.md`.
+
+**Desvíos:**
+
+- TypeScript fijado en `~6.0`: `typescript-eslint` 8 aún no admite TypeScript 7.
+- `phpcs` con el estándar `moodle` pasa al Sprint 2, junto con el esqueleto del plugin.
 
 **Entregables:** decisiones D-01 a D-10 documentadas, repositorio con CI en verde y ADRs iniciales.
 
@@ -248,6 +255,7 @@ validados por el tutor y Moodle local de desarrollo.
 - [ ] `chore/docker-dev-env`: Docker Compose con Moodle (versión fijada), su base de datos, PostgreSQL 17 + `pgvector`, Redis, `api` y `document-worker`, con healthchecks y redes.
 - [ ] `chore/moodle-seed`: script de datos sintéticos: cursos, docentes, estudiantes, tareas, entregas y calificaciones.
 - [ ] `feature/moodle-local-plugin-skeleton`: plugin `local_ai_assistant` con `version.php`, `settings.php`, `db/access.php` (capacidades `local/ai_assistant:use`, `:publish`, `:viewanalytics`), `lang/es`, `lang/en` y proveedor de privacidad.
+- [ ] `chore/phpcs`: `phpcs` con el estándar `moodle` en local (vía Docker) y en CI. (Movido desde S0.)
 - [ ] `feature/api-skeleton`: NestJS con módulos `health`, `common` (guards, filters, interceptors), configuración validada y logs estructurados.
 - [ ] `feature/prisma-base-schema`: esquema Prisma inicial y primera migración.
 - [ ] `feature/moodle-client`: cliente de servicios web de Moodle con tipos, timeouts, reintentos y mapeo de errores.
@@ -495,19 +503,19 @@ de modelos propios y publicación masiva sin revisión.
 
 ## 📈 Seguimiento
 
-| Sprint | Estado    | Inicio     | Fin        | Notas                        |
-| ------ | --------- | ---------- | ---------- | ---------------------------- |
-| S0     | En curso  | 2026-11-16 | 2026-11-29 | Repositorio Git inicializado |
-| S1     | Pendiente |            |            |                              |
-| S2     | Pendiente |            |            |                              |
-| S3     | Pendiente |            |            |                              |
-| S4     | Pendiente |            |            |                              |
-| S5     | Pendiente |            |            |                              |
-| S6     | Pendiente |            |            |                              |
-| S7     | Pendiente |            |            |                              |
-| S8     | Pendiente |            |            |                              |
-| S9     | Pendiente |            |            |                              |
-| S10    | Pendiente |            |            |                              |
-| S11    | Pendiente |            |            |                              |
-| S12    | Pendiente |            |            |                              |
-| S13    | Pendiente |            |            |                              |
+| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                   |
+| ------ | --------- | ---------- | ---------- | --------------------------------------------------------------------------------------- |
+| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10 |
+| S1     | Pendiente |            |            |                                                                                         |
+| S2     | Pendiente |            |            |                                                                                         |
+| S3     | Pendiente |            |            |                                                                                         |
+| S4     | Pendiente |            |            |                                                                                         |
+| S5     | Pendiente |            |            |                                                                                         |
+| S6     | Pendiente |            |            |                                                                                         |
+| S7     | Pendiente |            |            |                                                                                         |
+| S8     | Pendiente |            |            |                                                                                         |
+| S9     | Pendiente |            |            |                                                                                         |
+| S10    | Pendiente |            |            |                                                                                         |
+| S11    | Pendiente |            |            |                                                                                         |
+| S12    | Pendiente |            |            |                                                                                         |
+| S13    | Pendiente |            |            |                                                                                         |
