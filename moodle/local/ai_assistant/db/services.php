@@ -27,8 +27,17 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// Plugin-specific external functions are added from sprint 3 (check_access) and sprint 7 (publishing).
-$functions = [];
+$functions = [
+    // Called from the browser (AJAX, user session). Not part of the integration service.
+    'local_ai_assistant_get_backend_token' => [
+        'classname' => \local_ai_assistant\external\get_backend_token::class,
+        'description' => 'Returns a short-lived token that identifies the current user and course to the backend.',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => 'local/ai_assistant:use',
+    ],
+];
 
 $services = [
     'Smart LMS integration' => [
