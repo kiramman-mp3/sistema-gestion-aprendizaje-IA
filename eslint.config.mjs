@@ -5,13 +5,28 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/generated/**", "moodle/**"],
+    ignores: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/coverage/**",
+      "**/generated/**",
+      // Módulos AMD compilados por infra/amd/rollup.config.mjs.
+      "moodle/**/amd/build/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     languageOptions: {
       globals: { ...globals.node },
+    },
+  },
+  {
+    // Código del plugin que se ejecuta en el navegador dentro de Moodle.
+    files: ["moodle/**/amd/src/**/*.js"],
+    languageOptions: {
+      sourceType: "module",
+      globals: { ...globals.browser },
     },
   },
   prettier,

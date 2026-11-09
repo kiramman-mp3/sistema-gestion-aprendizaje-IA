@@ -48,6 +48,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Módulos AMD del plugin al día
+        run: pnpm check:amd
+
   php:
     name: Estándar de código Moodle (PHP)
     runs-on: ubuntu-latest
