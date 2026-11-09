@@ -1,0 +1,69 @@
+# Servicios de desarrollo del backend. Moodle se levanta aparte con moodle-docker (ADR-011):
+#   infra/scripts/moodle.sh setup && infra/scripts/moodle.sh up
+#
+# Uso:
+#   docker compose up -d                  # base auxiliar y Redis (el backend corre en el host: pnpm dev)
+#   docker compose --profile api up -d    # además, el backend en un contenedor
+services:
+  app-db:
+    image: pgvector/pgvector:0.8.6-pg17
+    environment:
+      POSTGRES_DB: ai_assistant
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:?Define APP_DB_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:${APP_DB_PORT:-5433}:5432"
+    volumes:
+      - app_db_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d ai_assistant"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8.8.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    profiles: ["api"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://app:${APP_DB_PASSWORD}@app-db:5432/ai_assistant
+      REDIS_URL: redis://redis:6379
+      # Moodle corre en el host (moodle-docker) y se expone en el puerto 8000.
+      MOODLE_BASE_URL: ${MOODLE_BASE_URL_FROM_DOCKER:-http://host.docker.internal:8000}
+      MOODLE_TOKEN: ${MOODLE_TOKEN:-}
+      PLUGIN_JWT_SECRET: ${PLUGIN_JWT_SECRET:-}
+    ports:
+      - "127.0.0.1:3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      app-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  app_db_data:
+  redis_data:

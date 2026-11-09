@@ -32,5 +32,8 @@ tmp/
 .DS_Store
 Thumbs.db
 
+# Moodle y moodle-docker descargados por infra/scripts/moodle.sh
+infra/.cache/
+
 # Cliente de Prisma generado (pnpm --filter @smart-lms/api prisma:generate)
 apps/api/src/generated/

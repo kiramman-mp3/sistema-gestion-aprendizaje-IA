@@ -12,7 +12,16 @@ import { RedisModule } from "./redis/redis.module";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      validate: validateEnv,
+      // El .env vive en la raíz del monorepo; `pnpm dev` se ejecuta desde apps/api.
+      envFilePath: [".env", "../../.env"],
+      expandVariables: true,
+      // Las pruebas no deben depender del .env local del desarrollador.
+      ignoreEnvFile: process.env.NODE_ENV === "test",
+    }),
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
