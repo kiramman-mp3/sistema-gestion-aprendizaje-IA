@@ -14,6 +14,17 @@ export const envSchema = z.object({
   MOODLE_TOKEN: z.string().min(1).optional(),
   MOODLE_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   PLUGIN_JWT_SECRET: z.string().min(32).optional(),
+  /** Orígenes del navegador que pueden llamar a la API (el wwwroot de Moodle), separados por comas. */
+  CORS_ORIGINS: z
+    .string()
+    .default("")
+    .transform((value) =>
+      value
+        .split(",")
+        .map((origin) => origin.trim().replace(/\/+$/, ""))
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.url())),
 });
 
 export type Env = z.infer<typeof envSchema>;
