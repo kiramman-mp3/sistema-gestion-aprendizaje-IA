@@ -1,0 +1,15 @@
+{
+  "name": "smart-lms",
+  "version": "0.0.0",
+  "private": true,
+  "description": "LMS inteligente basado en Moodle con asistente de IA para docentes",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present run build",
+    "test": "pnpm -r --if-present run test",
+    "typecheck": "pnpm -r --if-present run typecheck"
+  }
+}
