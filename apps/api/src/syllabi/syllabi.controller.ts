@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -37,6 +39,15 @@ export class SyllabiController {
     @UploadedFile() file: UploadedDocument | undefined,
   ): Promise<SyllabusDocumentDto> {
     return this.syllabi.upload(auth, parseCourseId(courseId), file);
+  }
+
+  /** Estado y progreso del procesamiento (RF-04). */
+  @Get(":syllabusId")
+  findOne(
+    @Auth() auth: AuthContext,
+    @Param("syllabusId") id: string,
+  ): Promise<SyllabusDocumentDto> {
+    return this.syllabi.findOne(auth, id);
   }
 }
 
