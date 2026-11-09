@@ -14,9 +14,10 @@ partir de su sílabo, consultar en lenguaje natural la información real del cur
 recomendaciones pedagógicas basadas en evidencias.
 
 Es un proyecto de desarrollo de software y titulación para una institución de educación superior de
-Ecuador. Terminó la **Fase 2** del [roadmap](docs/ROADMAP.md) (hito H1, versión `v0.1.0`): el plugin de
-Moodle, el backend y Moodle se comunican con autenticación y permisos verificados, con datos
-sintéticos. Las funciones de IA empiezan en la Fase 3.
+Ecuador. Terminó el **Sprint 4** del [roadmap](docs/ROADMAP.md): sobre la versión `v0.1.0` (hito H1,
+plugin, backend y Moodle autenticados), el docente ya sube su sílabo y el sistema extrae su texto con
+páginas, encabezados y tablas, con OCR para documentos escaneados. Todo se prueba con datos
+sintéticos. La extracción estructurada con IA llega en el Sprint 5.
 
 > [!TIP]
 > Para levantar el entorno completo, sigue la [guía del entorno local](docs/desarrollo/entorno-local.md).
@@ -56,16 +57,16 @@ gestionan la plataforma.
 
 ## 🖼️ Capturas
 
-| Página del asistente                                                                                                   |
-| ---------------------------------------------------------------------------------------------------------------------- |
-| <img width="420" src="docs/capturas/asistente-conexion.jpg" alt="Página del asistente en Moodle conectada al backend"> |
-| <sub>El docente del curso ve la conexión con el backend y sus permisos (Moodle local, datos sintéticos).</sub>         |
+| Página del asistente                                                                                                   | Carga del sílabo                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| <img width="420" src="docs/capturas/asistente-conexion.jpg" alt="Página del asistente en Moodle conectada al backend"> | <img width="420" src="docs/capturas/carga-silabo.jpg" alt="Sílabo escaneado procesado con OCR en la página del asistente"> |
+| <sub>El docente del curso ve la conexión con el backend y sus permisos (Moodle local, datos sintéticos).</sub>         | <sub>Un sílabo escaneado sintético se procesó con OCR y quedó marcado para revisión.</sub>                                 |
 
 ---
 
 ## ✨ Características
 
-Implementado hasta el Sprint 3:
+Implementado hasta el Sprint 4:
 
 - **Entorno reproducible:** Moodle 5.1.8 con `moodle-docker`, base auxiliar PostgreSQL 17 con `pgvector`, Redis y datos sintéticos deterministas, levantados con dos scripts.
 - **Integración con mínimo privilegio:** usuario técnico de Moodle con un rol que solo permite usar REST, autorizado en un único servicio restringido definido por el plugin.
@@ -76,10 +77,15 @@ Implementado hasta el Sprint 3:
 - **Auditoría:** los rechazos de autenticación y de acceso quedan registrados sin tokens ni datos personales.
 - **Página del asistente en Moodle:** enlazada desde el curso, comprueba la conexión con el backend y muestra los permisos del docente.
 - **Contrato del sílabo:** esquema Zod v1 con reglas de consistencia y exportación a JSON Schema.
+- **Carga segura de sílabos:** PDF y DOCX de hasta 10 MB, validados por su contenido real, sin macros, con límite de descompresión y analizados con ClamAV antes de guardarse; un archivo malicioso se rechaza y se audita.
+- **Extracción de texto en segundo plano:** un worker aislado, sin acceso a la base de datos, extrae el texto con su página, encabezados y tablas; el backend valida el resultado antes de guardarlo.
+- **OCR para sílabos escaneados:** las páginas sin texto pasan por Tesseract en español y el documento se marca con confianza baja.
+- **Progreso visible en Moodle:** la página del asistente sube el sílabo, muestra el avance y explica el resultado o el error.
+- **Retención de archivos:** el original se borra al vencer su plazo (30 días por defecto) y las cargas que no se pudieron encolar se reintentan solas.
 
 Planificadas para el MVP según el [documento de requisitos](docs/requisitos/implementacion_lms_inteligente_ia.md):
 
-- **Planificación asistida:** convierte un sílabo en una propuesta de secciones y actividades que el docente edita y aprueba antes de publicar.
+- **Planificación asistida:** convierte el texto del sílabo en una propuesta de secciones y actividades que el docente edita y aprueba antes de publicar.
 - **Asistente conversacional:** responde preguntas sobre entregas, pendientes de calificar y notas consultando Moodle mediante herramientas explícitas, nunca con SQL libre.
 - **Analítica del rendimiento:** indicadores documentados y cálculos deterministas, sin que el modelo de IA calcule notas.
 - **Asistente pedagógico:** recomendaciones basadas en evidencias observables, sin diagnósticos ni decisiones académicas automáticas.
@@ -89,13 +95,15 @@ Planificadas para el MVP según el [documento de requisitos](docs/requisitos/imp
 ## 🛠️ Tecnologías Utilizadas
 
 - **Frontend:** plugin local de Moodle 5.1 (`local_ai_assistant`, PHP 8.3).
-- **Backend:** NestJS 11 con TypeScript 6, configuración validada con Zod, logs con `pino` y cliente REST propio para Moodle.
+- **Backend:** NestJS 11 con TypeScript 6, configuración validada con Zod, logs con `pino`, cliente REST propio para Moodle y cliente propio de clamd.
+- **Worker documental:** Node con TypeScript, pdf.js 6 para PDF, fflate y fast-xml-parser para DOCX, Poppler y Tesseract para OCR.
+- **Cola de trabajos:** BullMQ 6 sobre Redis, con flujos padre/hijo y planificadores.
 - **Base de datos:** PostgreSQL 17 con `pgvector` 0.8.6 mediante Prisma 7 y el adaptador `pg`; Redis 8.8 con `ioredis`.
 - **IA:** proveedor LLM por definir (D-07) detrás de la interfaz `LlmProvider`.
 - **Contratos:** Zod 4 en `packages/contracts`, con exportación a JSON Schema.
-- **Pruebas:** Vitest en `packages/*`; Jest y Supertest en el backend; PHPUnit en el plugin.
+- **Pruebas:** Vitest en `packages/*` y en el worker; Jest y Supertest en el backend; PHPUnit en el plugin.
 - **Calidad:** ESLint, Prettier, Redocly CLI (contrato OpenAPI), `phpcs` con `moodle-cs` y GitHub Actions.
-- **Infraestructura:** Docker Compose y `moodle-docker`.
+- **Infraestructura:** Docker Compose (con ClamAV 1.5 y el worker aislado) y `moodle-docker`.
 
 El estado de cada decisión está en el [registro de ADR](docs/architecture/adr/README.md).
 
@@ -111,7 +119,11 @@ graph TD
     B --> A[Orquestador de IA]
     A --> L[Proveedor LLM]
     A --> R[RAG con pgvector]
-    B --> Q[Cola BullMQ y worker documental]
+    B --> AV[ClamAV]
+    B --> FS[(Almacén de archivos)]
+    B --> Q[Cola BullMQ]
+    Q --> DW[Worker documental y OCR]
+    DW -->|solo lectura| FS
     B --> T[Herramientas académicas]
     T --> W[Moodle Web Services y funciones del plugin]
     B --> AUX[(PostgreSQL auxiliar)]
@@ -121,8 +133,8 @@ graph TD
 
 Moodle es la fuente de verdad de los datos académicos. El backend valida permisos y consulta Moodle;
 la IA interpreta, consulta herramientas y propone, y el docente conserva la decisión final. Hoy están
-construidos el plugin base, el backend con su base auxiliar, Redis y el cliente de Moodle; el JWT, la
-IA, la cola y el RAG llegan en los sprints 3 a 9.
+construidos el plugin, el backend con autenticación y permisos, la carga con antivirus, la cola y el
+worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 
 ---
 
@@ -132,6 +144,10 @@ IA, la cola y el RAG llegan en los sprints 3 a 9.
 .
 ├── .github/workflows/ci.yml        # CI: lint, formato, contrato API, tipos, pruebas, build y phpcs
 ├── apps/
+│   ├── document-worker/            # Worker documental: PDF, DOCX y OCR (sin acceso a la base)
+│   │   ├── src/extract/            # Extractores de PDF, DOCX y OCR
+│   │   ├── src/processor.ts        # Procesa un trabajo de la cola document-text
+│   │   └── Dockerfile              # Imagen con Poppler y Tesseract en español
 │   └── api/                        # Backend NestJS
 │       ├── prisma/                 # Esquema y migraciones de la base auxiliar
 │       ├── prisma.config.ts        # Configuración de Prisma (lee el .env de la raíz)
@@ -143,15 +159,20 @@ IA, la cola y el RAG llegan en los sprints 3 a 9.
 │       │   ├── health/             # GET /api/v1/health e indicadores
 │       │   ├── database/           # PrismaService
 │       │   ├── redis/              # Conexión a Redis
-│       │   └── integrations/moodle # Cliente REST de Moodle
+│       │   ├── antivirus/          # Cliente de clamd y servicio de análisis
+│       │   ├── storage/            # Almacén de archivos subidos
+│       │   ├── syllabi/            # POST y GET /syllabi, encolado y resultados del worker
+│       │   ├── queue/              # Nombres de colas y conexión de BullMQ
+│       │   ├── maintenance/        # Retención de archivos y reintento de cargas
+│       │   └── integrations/       # Cliente REST de Moodle y cuenta de integración
 │       ├── test/                   # Pruebas e2e
 │       └── Dockerfile              # Imagen del backend
 ├── packages/
-│   └── contracts/                  # Esquema del sílabo v1, reglas y JSON Schema
+│   └── contracts/                  # Esquema del sílabo v1, contratos de la cola de texto y JSON Schema
 ├── moodle/local/ai_assistant/      # Plugin de Moodle
 │   ├── classes/external/           # get_backend_token (AJAX) y check_access (integración)
 │   ├── classes/local/              # Emisor de tokens para el backend
-│   ├── amd/src/ y amd/build/       # Módulo JavaScript de la página y su build
+│   ├── amd/src/ y amd/build/       # Módulos de la página (conexión y carga del sílabo) y su build
 │   ├── templates/                  # Plantilla Mustache de la página
 │   ├── db/                         # Capacidades y servicios web
 │   └── index.php, lib.php          # Página del asistente y enlace en el curso
@@ -172,7 +193,7 @@ IA, la cola y el RAG llegan en los sprints 3 a 9.
 │   ├── testing/                    # Plan de pruebas
 │   ├── levantamiento/              # Guía de entrevista, catálogo de sílabos, consentimiento
 │   └── prototipos/                 # Prototipos de baja fidelidad
-├── docker-compose.yml              # Base auxiliar, Redis y backend (perfil api)
+├── docker-compose.yml              # Base auxiliar y Redis; perfiles antivirus, worker y api
 ├── .env.example                    # Variables de entorno de referencia
 ├── package.json                    # Scripts del workspace
 └── pnpm-workspace.yaml             # Paquetes y política de scripts de instalación
@@ -185,7 +206,7 @@ IA, la cola y el RAG llegan en los sprints 3 a 9.
 - Node.js 24 o superior (el repositorio usa la versión de `.nvmrc`).
 - pnpm 12.
 - Git; en Windows, Git Bash para los scripts de `infra/scripts/`.
-- Docker Desktop o Docker Engine con Compose v2, y unos 2 GB libres para Moodle y las imágenes.
+- Docker Desktop o Docker Engine con Compose v2, unos 3 GB libres para Moodle y las imágenes, y 1,5 GB de memoria para ClamAV.
 
 En producción se necesitarán además una instancia de Moodle 5.1 accesible por HTTPS, un gestor de
 secretos y un proveedor de IA; se definen en el Sprint 13.
@@ -204,10 +225,10 @@ conocidos. En resumen:
    cp .env.example .env
    ```
 
-2. Levantar la base auxiliar y Redis, y aplicar las migraciones.
+2. Levantar la base auxiliar, Redis y ClamAV, y aplicar las migraciones.
 
    ```bash
-   docker compose up -d
+   docker compose --profile antivirus up -d
    pnpm --filter @smart-lms/api prisma:deploy
    ```
 
@@ -220,27 +241,33 @@ conocidos. En resumen:
    bash infra/scripts/moodle.sh seed
    ```
 
-4. Arrancar el backend.
+4. Arrancar el backend y el worker documental.
 
    ```bash
    pnpm --filter @smart-lms/api dev
+   WORKER_STORAGE_SOURCE=./apps/api/var/storage docker compose --profile worker up -d --build document-worker
    ```
 
-| Variable                | Uso                                                                 |
-| ----------------------- | ------------------------------------------------------------------- |
-| `PORT`                  | Puerto del backend en el host                                       |
-| `APP_DB_PORT`           | Puerto de la base auxiliar en el host (por defecto 5433)            |
-| `APP_DB_PASSWORD`       | Contraseña de la base auxiliar                                      |
-| `DATABASE_URL`          | Conexión a PostgreSQL                                               |
-| `REDIS_PORT`            | Puerto de Redis en el host                                          |
-| `REDIS_URL`             | Conexión a Redis                                                    |
-| `MOODLE_BASE_URL`       | URL de Moodle                                                       |
-| `MOODLE_TOKEN`          | Token del usuario de integración de Moodle                          |
-| `MOODLE_ADMIN_PASSWORD` | Contraseña del administrador de la instancia local                  |
-| `PLUGIN_JWT_SECRET`     | Secreto compartido para firmar JWT plugin–backend (≥ 32 caracteres) |
-| `CORS_ORIGINS`          | Orígenes del navegador permitidos (el `wwwroot` de Moodle)          |
-| `AI_PROVIDER`           | Proveedor de IA (pendiente, decisión D-07)                          |
-| `AI_API_KEY`            | Clave del proveedor de IA                                           |
+| Variable                  | Uso                                                                 |
+| ------------------------- | ------------------------------------------------------------------- |
+| `PORT`                    | Puerto del backend en el host                                       |
+| `APP_DB_PORT`             | Puerto de la base auxiliar en el host (por defecto 5433)            |
+| `APP_DB_PASSWORD`         | Contraseña de la base auxiliar                                      |
+| `DATABASE_URL`            | Conexión a PostgreSQL                                               |
+| `REDIS_PORT`              | Puerto de Redis en el host                                          |
+| `REDIS_URL`               | Conexión a Redis                                                    |
+| `MOODLE_BASE_URL`         | URL de Moodle                                                       |
+| `MOODLE_TOKEN`            | Token del usuario de integración de Moodle                          |
+| `MOODLE_ADMIN_PASSWORD`   | Contraseña del administrador de la instancia local                  |
+| `PLUGIN_JWT_SECRET`       | Secreto compartido para firmar JWT plugin–backend (≥ 32 caracteres) |
+| `CORS_ORIGINS`            | Orígenes del navegador permitidos (el `wwwroot` de Moodle)          |
+| `STORAGE_DIR`             | Carpeta de los archivos subidos (relativa a `apps/api`)             |
+| `SYLLABUS_RETENTION_DAYS` | Días que se conserva el archivo original (por defecto 30)           |
+| `CLAMAV_PORT`             | Puerto de ClamAV en el host (por defecto 3310)                      |
+| `CLAMAV_URL`              | clamd por TCP; obligatoria en producción                            |
+| `WORKER_STORAGE_SOURCE`   | Carpeta del host que el worker monta en solo lectura                |
+| `AI_PROVIDER`             | Proveedor de IA (pendiente, decisión D-07)                          |
+| `AI_API_KEY`              | Clave del proveedor de IA                                           |
 
 > [!WARNING]
 > Los secretos nunca se guardan en el repositorio. `.env` está en `.gitignore`.
@@ -263,6 +290,9 @@ conocidos. En resumen:
 | `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                |
 | `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                        |
 | `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                       |
+| `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                            |
+| `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                           |
+| `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                     |
 | `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                       |
 | `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                          |
 | `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose` |
@@ -270,7 +300,7 @@ conocidos. En resumen:
 
 ### Producción local
 
-`docker compose --profile api up -d --build` ejecuta el backend en un contenedor. Con el Moodle local,
+`docker compose --profile api up -d --build` ejecuta el backend, el worker y ClamAV en contenedores, con un volumen compartido para los archivos. Con el Moodle local,
 `/health` informa `moodle: down` porque Moodle redirige a `http://localhost:8000`; para desarrollar
 contra Moodle, ejecuta el backend en el host.
 
@@ -279,6 +309,30 @@ contra Moodle, ejecuta el backend en el host.
 ## 🚀 Despliegue
 
 Pendiente. El entorno de producción se define en el Sprint 13 (ver [roadmap](docs/ROADMAP.md)).
+
+---
+
+## 🔌 API
+
+Prefijo `/api/v1`. Todas las rutas salvo `/health` exigen el JWT del plugin. Contrato completo en
+[`docs/api/openapi.yaml`](docs/api/openapi.yaml).
+
+| Método | Ruta           | Qué hace                                                    |
+| ------ | -------------- | ----------------------------------------------------------- |
+| GET    | `/health`      | Estado de la base, Redis, Moodle y el antivirus             |
+| GET    | `/session`     | Identidad, roles y capacidades del docente en el curso      |
+| POST   | `/syllabi`     | Carga un sílabo (multipart) y encola la extracción de texto |
+| GET    | `/syllabi/:id` | Estado, progreso, páginas y confianza de la extracción      |
+
+El flujo de carga y extracción está en [`docs/architecture/procesamiento-silabos.md`](docs/architecture/procesamiento-silabos.md).
+
+### Migraciones
+
+| Migración                                       | Cambio                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------- |
+| `20261109163904_init`                           | Esquema inicial de 15 tablas y extensiones `vector` y `pgcrypto` |
+| `20261109200000_integration_account_unique_url` | Una cuenta de integración por sitio Moodle                       |
+| `20261110090000_document_text`                  | Estado `TEXT_READY` y texto extraído del sílabo                  |
 
 ---
 
@@ -312,7 +366,8 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 - [ ] Entrevistas, catálogo de sílabos y validación de prototipos con docentes (Sprint 1)
 - [x] Entorno Moodle, plugin base, backend, base auxiliar y cliente de Moodle (Sprint 2)
 - [x] Autenticación plugin–backend, autorización, auditoría y página del asistente (Sprint 3)
-- [ ] Procesamiento de sílabos (Sprints 4–5)
+- [x] Carga segura de sílabos, cola, extracción de texto y OCR (Sprint 4)
+- [ ] Extracción estructurada con IA y revisión del docente (Sprint 5)
 - [ ] Generación y publicación de cursos (Sprints 6–7)
 - [ ] Asistente conversacional (Sprints 8–9)
 - [ ] Analítica y asistente pedagógico (Sprints 10–11)
@@ -325,7 +380,7 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 
 | Nombre       | Commits |
 | ------------ | ------- |
-| kiramman-mp3 | 136     |
+| kiramman-mp3 | 185     |
 
 ---
 

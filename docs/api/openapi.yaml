@@ -74,6 +74,10 @@ paths:
       tags: [syllabi]
       operationId: uploadSyllabus
       summary: Cargar un sílabo (RF-03)
+      description: |
+        Valida la extensión, el contenido real (magic bytes), macros y tamaño descomprimido de DOCX,
+        y analiza el archivo con ClamAV antes de guardarlo. Después encola la extracción de texto.
+        `courseId` debe ser el curso del token.
       requestBody:
         required: true
         content:
@@ -90,7 +94,9 @@ paths:
                   description: PDF o DOCX de hasta 10 MB
       responses:
         "202":
-          description: Archivo aceptado; el procesamiento continúa en segundo plano
+          description: |
+            Archivo aceptado; el procesamiento continúa en segundo plano. El estado es `PROCESSING`, o
+            `UPLOADED` si la cola no respondió (se encola en menos de 5 minutos).
           content:
             application/json:
               schema:
@@ -102,7 +108,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "409":
-          description: El mismo archivo ya fue cargado para el curso
+          description: |
+            El mismo archivo ya fue cargado para el curso (`DUPLICATE_SYLLABUS`). `details[0].message`
+            trae el id del sílabo existente.
           content:
             application/json:
               schema:
@@ -114,7 +122,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "415":
-          description: Tipo de archivo no permitido
+          description: |
+            Tipo de archivo no permitido: `EXTENSION_NOT_ALLOWED`, `MIME_MISMATCH`,
+            `MACROS_NOT_ALLOWED` o `ARCHIVE_TOO_LARGE`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: El antivirus detectó contenido malicioso (`MALWARE_DETECTED`); queda auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: |
+            El antivirus no respondió (`ANTIVIRUS_UNAVAILABLE`) o falló la autenticación (ver `/session`).
+            El archivo no se acepta.
           content:
             application/json:
               schema:
@@ -124,7 +148,8 @@ paths:
     get:
       tags: [syllabi]
       operationId: getSyllabus
-      summary: Estado y metadatos de un sílabo
+      summary: Estado y metadatos de un sílabo (RF-04)
+      description: Un sílabo de otro curso responde 404, igual que uno que no existe.
       parameters:
         - $ref: "#/components/parameters/SyllabusId"
       responses:
@@ -798,13 +823,23 @@ components:
           type: string
         status:
           type: string
-          enum: [UPLOADED, REJECTED, PROCESSING, EXTRACTED, REVIEWED, FAILED]
+          enum: [UPLOADED, REJECTED, PROCESSING, TEXT_READY, EXTRACTED, REVIEWED, FAILED]
         progress:
           type: [integer, "null"]
           minimum: 0
           maximum: 100
+        pageCount:
+          type: [integer, "null"]
+          description: Páginas del documento; en DOCX son estimadas
+        textConfidence:
+          type: [string, "null"]
+          enum: [high, low, null]
+          description: "`low` si parte del texto salió de OCR"
         errorCode:
           type: [string, "null"]
+          description: |
+            Motivo de `FAILED`: `ENCRYPTED_DOCUMENT`, `CORRUPT_DOCUMENT`, `EMPTY_DOCUMENT`,
+            `DOCUMENT_TOO_COMPLEX`, `INVALID_WORKER_RESULT` o `TEXT_EXTRACTION_FAILED`
         latestExtractionVersion:
           type: [integer, "null"]
         createdAt:
