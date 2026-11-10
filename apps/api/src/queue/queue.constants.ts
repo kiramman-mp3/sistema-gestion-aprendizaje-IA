@@ -7,6 +7,9 @@ export { DOCUMENT_TEXT_QUEUE } from "@smart-lms/contracts";
  */
 export const DOCUMENT_TEXT_RESULTS_QUEUE = "document-text-results";
 
+/** Cola de publicación de propuestas en Moodle (RF-09); la procesa el backend. */
+export const PROPOSAL_PUBLISH_QUEUE = "proposal-publish";
+
 /** Opciones de conexión de BullMQ a partir de `REDIS_URL`. */
 export function bullConnection(redisUrl: string) {
   // Los workers de BullMQ exigen reintentos ilimitados por comando: esperan bloqueados en Redis.

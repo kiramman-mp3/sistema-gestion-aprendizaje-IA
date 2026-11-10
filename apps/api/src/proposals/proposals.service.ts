@@ -22,7 +22,7 @@ import {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Cliente de Prisma o el de una transacción. */
-type Db = PrismaService | Prisma.TransactionClient;
+export type Db = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
 export class ProposalsService {
@@ -228,7 +228,8 @@ export class ProposalsService {
 
   // -------------------------------------------------------------------------------------------
 
-  private async loadForCourse(auth: AuthContext, id: string): Promise<ProposalWithItems> {
+  /** Una propuesta de otro curso responde 404, igual que una inexistente (RF-02). */
+  async loadForCourse(auth: AuthContext, id: string): Promise<ProposalWithItems> {
     const proposal = UUID.test(id) ? await this.load(this.prisma, id) : null;
     if (!proposal || proposal.moodleCourseId !== auth.courseId) {
       throw new NotFoundException({
@@ -256,7 +257,7 @@ export class ProposalsService {
     return proposal;
   }
 
-  private issuesOf(proposal: ProposalWithItems) {
+  issuesOf(proposal: ProposalWithItems) {
     const data: ProposalItemData[] = proposal.items.map((item) => ({
       id: item.id,
       parentId: item.parentId,
@@ -278,7 +279,7 @@ export class ProposalsService {
    * Cambia el estado solo si nadie lo cambió desde que se leyó la propuesta: dos peticiones
    * simultáneas no pueden aprobar o editar la misma versión.
    */
-  private async moveStatus(
+  async moveStatus(
     db: Db,
     id: string,
     from: ProposalWithItems["status"],
