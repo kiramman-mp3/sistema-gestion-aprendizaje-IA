@@ -74,10 +74,10 @@ ese contrato con datos de prueba.
 
 ### Sprint 7 · Publicación en Moodle (hito H3)
 
-- [ ] `feature/moodle-create-section` y `feature/moodle-create-module` en el plugin (funciones externas con validación de parámetros y capacidades).
-- [ ] `feature/publish-job`: publicación idempotente en la cola, ítem por ítem, con reanudación tras fallos parciales.
-- [ ] `feature/plugin-publish-summary` y confirmación explícita antes de publicar.
-- [ ] Pruebas: publicación repetida, caída de Moodle a mitad y permisos insuficientes.
+- [x] `feature/moodle-create-section` y `feature/moodle-create-module` en el plugin (funciones externas con validación de parámetros y capacidades).
+- [x] `feature/publish-job`: publicación idempotente en la cola, ítem por ítem, con reanudación tras fallos parciales.
+- [x] `feature/plugin-publish-summary` y confirmación explícita antes de publicar.
+- [x] Pruebas: publicación repetida, caída de Moodle a mitad y permisos insuficientes.
 
 ### Sprints 9 a 11 · Interfaces en Moodle
 
