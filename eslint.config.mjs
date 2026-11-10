@@ -22,8 +22,8 @@ export default tseslint.config(
     },
   },
   {
-    // Código del plugin que se ejecuta en el navegador dentro de Moodle.
-    files: ["moodle/**/amd/src/**/*.js"],
+    // Código del plugin que se ejecuta en el navegador dentro de Moodle y sus pruebas (DOM simulado).
+    files: ["moodle/**/amd/src/**/*.js", "infra/amd/tests/**/*.mjs"],
     languageOptions: {
       sourceType: "module",
       globals: { ...globals.browser },
