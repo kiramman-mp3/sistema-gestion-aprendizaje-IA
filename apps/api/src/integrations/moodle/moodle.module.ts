@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env";
 import { HealthService } from "../../health/health.service";
 import { MoodleClient } from "./moodle.client";
+import { MoodleRead, MoodleReadService } from "./moodle-read.service";
 import { MoodleService } from "./moodle.service";
 
 @Module({
@@ -18,8 +19,9 @@ import { MoodleService } from "./moodle.service";
         }),
     },
     MoodleService,
+    { provide: MoodleRead, useClass: MoodleReadService },
   ],
-  exports: [MoodleService],
+  exports: [MoodleService, MoodleRead],
 })
 export class MoodleModule implements OnModuleInit {
   private readonly logger = new Logger(MoodleModule.name);

@@ -122,7 +122,10 @@ export class AiOrchestratorService {
           continue;
         }
         toolsUsed.push(call.name);
-        structured[call.name] = outcome.output.data;
+        // Dos llamadas a la misma herramienta con otros argumentos no se pisan entre sí.
+        let key = call.name;
+        for (let n = 2; key in structured; n++) key = `${call.name}#${n}`;
+        structured[key] = outcome.output.data;
         intent ??= outcome.output.intent ?? null;
         incomplete ||= outcome.output.incomplete === true;
         for (const source of outcome.output.sources) {
