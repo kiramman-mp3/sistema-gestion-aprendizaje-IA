@@ -63,6 +63,17 @@ $capabilities = [
         ],
     ],
 
+    // Administer the assistant for the institution: read the audit log and configure the difficulty rules. It is
+    // checked in the course of the token, so a role assigned at the system level (a manager) holds it everywhere.
+    'local/ai_assistant:administer' => [
+        'riskbitmask' => RISK_PERSONAL | RISK_CONFIG,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+
     // Create sections and activities on behalf of a teacher who approved a proposal. Only for the backend
     // integration user: it is the teacher's own capabilities that each call checks.
     'local/ai_assistant:createcontent' => [

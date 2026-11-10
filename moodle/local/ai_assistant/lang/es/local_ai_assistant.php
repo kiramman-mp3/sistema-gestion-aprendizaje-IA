@@ -24,6 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['ai_assistant:administer'] = 'Administrar el asistente de IA: auditoría y reglas de dificultad';
 $string['ai_assistant:checkaccess'] = 'Consultar qué pueden hacer otros usuarios con el asistente (solo integración)';
 $string['ai_assistant:createcontent'] = 'Crear secciones y actividades de una propuesta aprobada (solo integración)';
 $string['ai_assistant:publish'] = 'Publicar estructuras de curso generadas con IA';
@@ -77,6 +78,7 @@ $string['assistant'] = 'Asistente IA';
 $string['backendnotconfigured'] = 'La URL del backend no está configurada. Pide al administrador del sitio que complete los ajustes del plugin.';
 $string['backendurl'] = 'URL del backend';
 $string['backendurl_desc'] = 'URL base de la API del backend de Smart LMS, incluido el prefijo /api/v1. La usa el navegador, así que debe ser accesible desde los equipos de los usuarios y estar permitida en CORS_ORIGINS del backend.';
+$string['capadmin'] = 'Administrar el asistente';
 $string['cappublish'] = 'Publicar estructuras de curso';
 $string['capuse'] = 'Usar el asistente';
 $string['capviewanalytics'] = 'Ver analítica';
