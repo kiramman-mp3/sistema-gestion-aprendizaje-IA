@@ -60,6 +60,7 @@ const SMART_LMS_CAPABILITIES = [
     'webservice/rest:use',
     'local/ai_assistant:checkaccess',
     'local/ai_assistant:createcontent',
+    'local/ai_assistant:readdata',
 ];
 
 \core\session\manager::set_user(get_admin());
