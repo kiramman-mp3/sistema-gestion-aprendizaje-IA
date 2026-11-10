@@ -166,7 +166,11 @@ services:
     pids_limit: 100
     networks: [internal]
     healthcheck:
-      test: ["CMD-SHELL", 'redis-cli -a "$$(cat /run/secrets/redis_password)" --no-auth-warning ping | grep -q PONG']
+      test:
+        [
+          "CMD-SHELL",
+          'redis-cli -a "$$(cat /run/secrets/redis_password)" --no-auth-warning ping | grep -q PONG',
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
