@@ -81,22 +81,22 @@ ese contrato con datos de prueba.
 
 ### Sprints 9 a 11 · Interfaces en Moodle
 
-- [ ] `feature/plugin-chat-ui`: chat con streaming, fuentes y errores.
-- [ ] `feature/activity-unit-mapping`: mapeo manual de actividades a unidades y resultados.
-- [ ] `feature/plugin-teacher-dashboard`: panel con indicadores y alertas explicables.
-- [ ] `feature/plugin-student-analysis` y `feature/recommendation-follow-up`.
+- [x] `feature/plugin-chat-ui`: chat con streaming, fuentes y errores.
+- [x] `feature/activity-unit-mapping`: mapeo manual de actividades a unidades y resultados.
+- [x] `feature/plugin-teacher-dashboard`: panel con indicadores y alertas explicables.
+- [x] `feature/plugin-student-analysis` y `feature/recommendation-follow-up`.
 
 ### Sprint 12 · Pruebas
 
-- [ ] Pruebas end-to-end de CU-01 a CU-05.
-- [ ] Prueba de carga básica (RNF-01 a RNF-03) y revisión OWASP Top 10.
+- [ ] Pruebas end-to-end de CU-01 a CU-05. **Parcial:** CU-02 y CU-03 se verifican de punta a punta con `pnpm smoke:publicacion`; CU-01, CU-04 y CU-05 necesitan la API de la línea de IA.
+- [x] Prueba de carga básica y revisión OWASP Top 10 ([resultados](../security/revision-owasp.md)). Con el proveedor de IA real faltan RNF-01 a RNF-03.
 - [ ] Piloto con docentes: medición frente a la línea base, encuesta SUS y entrevistas.
 
 ### Sprint 13 · Despliegue
 
-- [ ] `chore/production-compose` con TLS, límites de recursos y secretos fuera del repositorio.
-- [ ] Copias de seguridad cifradas con prueba de restauración, monitoreo y procedimiento de incidentes.
-- [ ] Manual de instalación y operación, y manual del docente (`docs/user-manual/`).
+- [x] `chore/production-compose` con TLS, límites de recursos y secretos fuera del repositorio.
+- [x] Copias de seguridad cifradas con prueba de restauración, monitoreo básico y procedimiento de incidentes.
+- [x] Manual de instalación y operación, y manual del docente (`docs/operacion/`, `docs/user-manual/`).
 
 ### Con la institución
 
