@@ -80,4 +80,13 @@ $capabilities = [
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [],
     ],
+
+    // Read academic data of a course on behalf of a teacher (ids only, ADR-017). Only for the backend
+    // integration user: each call checks the teacher's own viewanalytics capability.
+    'local/ai_assistant:readdata' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
 ];
