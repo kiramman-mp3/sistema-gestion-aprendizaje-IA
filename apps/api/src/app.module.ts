@@ -15,6 +15,7 @@ import { MoodleModule } from "./integrations/moodle/moodle.module";
 import { LlmModule } from "./llm/llm.module";
 import { MaintenanceModule } from "./maintenance/maintenance.module";
 import { MappingsModule } from "./mappings/mappings.module";
+import { RecommendationsModule } from "./recommendations/recommendations.module";
 import { ProposalsModule } from "./proposals/proposals.module";
 import { RedisModule } from "./redis/redis.module";
 import { StorageModule } from "./storage/storage.module";
@@ -51,6 +52,7 @@ import { SyllabiModule } from "./syllabi/syllabi.module";
     LlmModule,
     SyllabiModule,
     AssistantModule,
+    RecommendationsModule,
     ProposalsModule,
     MappingsModule,
     MaintenanceModule,
