@@ -195,6 +195,94 @@ describe("Publicación de propuestas (e2e)", () => {
     });
   });
 
+  describe("relación con las unidades del sílabo", () => {
+    it("cada actividad creada queda relacionada con su unidad; las secciones no", async () => {
+      const proposal = await approvedProposal();
+
+      await publish(proposal.id).expect(202);
+
+      const [first, second] = [...moodle.modules.values()];
+      expect(store.mappings).toEqual([
+        expect.objectContaining({
+          moodleCourseId: 7,
+          moodleCmId: first!.cmid,
+          unitRef: "gradingPeriods[0].units[0]",
+          learningOutcomeIds: ["RA1"],
+          source: "PROPOSAL",
+        }),
+        expect.objectContaining({
+          moodleCmId: second!.cmid,
+          unitRef: "gradingPeriods[1].units[0]",
+          source: "PROPOSAL",
+        }),
+      ]);
+    });
+
+    it("no sobrescribe lo que el docente relacionó a mano", async () => {
+      const proposal = await approvedProposal();
+      store.mappings.push({
+        integrationAccountId: "cuenta-1",
+        moodleCourseId: 7,
+        moodleCmId: 101,
+        unitRef: "gradingPeriods[1].units[0]",
+        learningOutcomeIds: [],
+        source: "MANUAL",
+      });
+
+      await publish(proposal.id).expect(202);
+
+      expect(store.mappings.find((m) => m.moodleCmId === 101)).toMatchObject({
+        unitRef: "gradingPeriods[1].units[0]",
+        source: "MANUAL",
+      });
+    });
+
+    it("una unidad creada por el docente (sin ruta en el sílabo) no se relaciona", async () => {
+      const proposal = await approvedProposal();
+      const items = proposal.items.slice(0, 2).map((item) => ({ ...item }));
+      items.push({
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        itemType: "SECTION",
+        title: "Extra",
+      } as never);
+      items.push({
+        id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        parentId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        itemType: "FORUM",
+        title: "Foro",
+        learningOutcomeIds: ["RA1"],
+      } as never);
+      await call("patch", `/proposals/${proposal.id}`, { items }).expect(200);
+      await call("post", `/proposals/${proposal.id}/approve`).expect(200);
+
+      await publish(proposal.id).expect(202);
+
+      expect(store.mappings.map((m) => m.unitRef)).toEqual(["gradingPeriods[0].units[0]"]);
+    });
+
+    it("si no se puede escribir la relación, la publicación termina igual", async () => {
+      const proposal = await approvedProposal();
+      store.breakMappings = true;
+
+      const started = await publish(proposal.id).expect(202);
+
+      expect((await operation(proposal.id, started.body.id)).body.status).toBe("SUCCEEDED");
+      expect(statusOf()).toBe("PUBLISHED");
+      expect(store.mappings).toEqual([]);
+    });
+
+    it("al reanudar tras un fallo no duplica las relaciones", async () => {
+      const proposal = await approvedProposal();
+      moodle.failAtCall = 4;
+      await publish(proposal.id).expect(202);
+      expect(store.mappings).toHaveLength(1);
+
+      await publish(proposal.id).expect(202);
+
+      expect(store.mappings).toHaveLength(2);
+    });
+  });
+
   describe("seguimiento desde la propuesta", () => {
     it("una propuesta nunca publicada no tiene operación", async () => {
       const proposal = await approvedProposal();

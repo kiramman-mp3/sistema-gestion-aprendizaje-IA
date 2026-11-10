@@ -58,6 +58,15 @@ export interface StoredOperation {
   finishedAt: Date | null;
 }
 
+export interface StoredMapping {
+  integrationAccountId: string;
+  moodleCourseId: number;
+  moodleCmId: number;
+  unitRef: string;
+  learningOutcomeIds: string[];
+  source: string;
+}
+
 export const DOC_ID = "d0000000-0000-4000-8000-000000000001";
 export const OTHER_COURSE_DOC_ID = "d0000000-0000-4000-8000-000000000002";
 export const UNREVIEWED_DOC_ID = "d0000000-0000-4000-8000-000000000003";
@@ -68,6 +77,9 @@ export class ProposalsStore {
   proposals: StoredProposal[] = [];
   items: StoredItem[] = [];
   operations: StoredOperation[] = [];
+  mappings: StoredMapping[] = [];
+  /** Hace fallar la escritura de relaciones, para comprobar que no detiene la publicación. */
+  breakMappings = false;
   /** Hace que la próxima `updateMany` no encuentre filas, como si otra petición se hubiera adelantado. */
   loseNextRace = false;
 
@@ -102,6 +114,8 @@ export class ProposalsStore {
     this.proposals = [];
     this.items = [];
     this.operations = [];
+    this.mappings = [];
+    this.breakMappings = false;
     this.loseNextRace = false;
   }
 
@@ -207,6 +221,23 @@ export class ProposalsStore {
               .slice(0, 1)
               .map((operation) => ({ id: operation.id, status: operation.status })),
           });
+        },
+      },
+      integrationAccount: { upsert: async () => ({ id: "cuenta-1" }) },
+      activityUnitMapping: {
+        createMany: async ({ data }: { data: StoredMapping[]; skipDuplicates?: boolean }) => {
+          if (this.breakMappings) throw new Error("tabla de relaciones no disponible");
+          let count = 0;
+          for (const row of data) {
+            const exists = this.mappings.some(
+              (m) => m.moodleCourseId === row.moodleCourseId && m.moodleCmId === row.moodleCmId,
+            );
+            if (!exists) {
+              this.mappings.push(clone(row));
+              count += 1;
+            }
+          }
+          return { count };
         },
       },
       publishOperation: {
