@@ -18,6 +18,20 @@ import { IS_PUBLIC } from "./public.decorator";
 /** Duración de la ventana de conteo. */
 const WINDOW_SECONDS = 60;
 
+/**
+ * Tiempo máximo que se espera al contador. Sin Redis, el cliente puede quedarse reintentando la conexión: la
+ * petición no debe quedar colgada por un contador (se deja pasar y se registra).
+ */
+const STORE_TIMEOUT_MS = 500;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`sin respuesta en ${ms} ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 /** Cuenta las peticiones de un usuario en una ventana; devuelve cuántas lleva, contando la actual. */
 export abstract class RateLimitStore {
   abstract hit(key: string, windowSeconds: number): Promise<number>;
@@ -90,7 +104,10 @@ export class RateLimitGuard implements CanActivate {
     const window = Math.floor(now / (WINDOW_SECONDS * 1000));
     let count: number;
     try {
-      count = await this.store.hit(`rl:${auth.moodleUserId}:${window}`, WINDOW_SECONDS);
+      count = await withTimeout(
+        this.store.hit(`rl:${auth.moodleUserId}:${window}`, WINDOW_SECONDS),
+        STORE_TIMEOUT_MS,
+      );
     } catch (error) {
       this.logger.warn(`No se pudo contar la petición: ${String(error)}`);
       return true;
