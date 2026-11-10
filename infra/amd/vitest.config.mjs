@@ -20,6 +20,9 @@ export default defineConfig({
       "local_ai_assistant/chat_model": path(
         "../../moodle/local/ai_assistant/amd/src/chat_model.js",
       ),
+      "local_ai_assistant/analytics_model": path(
+        "../../moodle/local/ai_assistant/amd/src/analytics_model.js",
+      ),
       "local_ai_assistant/publish_panel": path(
         "../../moodle/local/ai_assistant/amd/src/publish_panel.js",
       ),

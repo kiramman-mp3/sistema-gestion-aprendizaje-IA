@@ -20,3 +20,11 @@ export const streamBackend = async (courseId, path, options) => {
   stream.calls.push({ courseId, path, json: options.json, signal: options.signal });
   return stream.handler({ courseId, path, ...options });
 };
+
+/** Nombres de los estudiantes que Moodle entrega por AJAX; `null` simula un fallo. */
+export const students = { list: [], fails: false };
+
+export const getCourseStudents = async () => {
+  if (students.fails) throw new Error("ajax");
+  return students.list;
+};

@@ -38,6 +38,16 @@ $functions = [
         'capabilities' => 'local/ai_assistant:use',
     ],
 
+    // Called from the browser (AJAX): the names of the students stay in Moodle (ADR-010).
+    'local_ai_assistant_get_course_students' => [
+        'classname' => \local_ai_assistant\external\get_course_students::class,
+        'description' => 'Lists the students of a course with their names, for the analytics screens.',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => 'local/ai_assistant:viewanalytics',
+    ],
+
     // Called by the backend with the integration token (ADR-007).
     'local_ai_assistant_check_access' => [
         'classname' => \local_ai_assistant\external\check_access::class,

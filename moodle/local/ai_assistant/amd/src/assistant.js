@@ -41,6 +41,16 @@ const getBackendToken = (courseId) =>
   Ajax.call([{ methodname: "local_ai_assistant_get_backend_token", args: { courseid: courseId } }])[0];
 
 /**
+ * Lists the students of the course with their names. Moodle answers it with the teacher's session: the
+ * names never go through the backend.
+ *
+ * @param {number} courseId
+ * @returns {Promise<Array<{id: number, fullname: string}>>}
+ */
+export const getCourseStudents = (courseId) =>
+  Ajax.call([{ methodname: "local_ai_assistant_get_course_students", args: { courseid: courseId } }])[0];
+
+/**
  * Calls the backend with a fresh token. Each token is accepted only once.
  *
  * @param {number} courseId
