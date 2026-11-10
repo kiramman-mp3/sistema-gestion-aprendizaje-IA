@@ -107,7 +107,7 @@ jobs:
           echo "$(cd ci/vendor/bin; pwd)" >> "$GITHUB_PATH"
 
       - name: Instalar Moodle con el plugin
-        run: moodle-plugin-ci install --plugin ./plugin-source/moodle/local/ai_assistant --db-host=127.0.0.1
+        run: moodle-plugin-ci install --plugin ./plugin-source/moodle/local/ai_assistant --db-host=127.0.0.1 --db-user=postgres --db-pass=postgres
 
       - name: PHPUnit
         run: moodle-plugin-ci phpunit --fail-on-warning
