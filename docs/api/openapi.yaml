@@ -23,6 +23,8 @@ tags:
     description: Asistente conversacional (CU-04)
   - name: analytics
     description: Indicadores, evidencias y recomendaciones (CU-05)
+  - name: mappings
+    description: Relación de las actividades de Moodle con las unidades del sílabo
   - name: admin
     description: Configuración y auditoría (CU-06, CU-07)
   - name: health
@@ -498,6 +500,25 @@ paths:
       description: |
         Con `Accept: text/event-stream` la respuesta se envía por eventos SSE (`token`, `tool`,
         `final`, `error`). Con `Accept: application/json` se devuelve la respuesta completa.
+
+        **Formato de los eventos** (cada uno es `event: <nombre>` y `data: <JSON en una línea>`, separados por
+        una línea en blanco). El plugin los lee con `moodle/local/ai_assistant/amd/src/sse.js`:
+
+        | Evento  | `data`                                                  | Cuándo                                        |
+        | ------- | ------------------------------------------------------ | --------------------------------------------- |
+        | `tool`  | `{"name": "get_assignment_submissions"}`                | El asistente empieza a consultar datos        |
+        | `token` | `{"text": "Tres "}`                                     | Un trozo de la respuesta, en orden            |
+        | `final` | un `ChatResponse` completo                              | Siempre al terminar bien; su `answer` reemplaza a los tokens |
+        | `error` | `{"code": "AI_PROVIDER_UNAVAILABLE", "message": "..."}` | El flujo no puede continuar; no se inventa respuesta |
+
+        Orden esperado: cero o más `tool` y `token`, y un único `final` o `error`. Un flujo que se corta sin
+        `final` ni `error` se muestra como respuesta interrumpida. Los errores previos al flujo (permisos, límite
+        de uso, proveedor caído) se responden como JSON con su código HTTP. El texto de `answer` se muestra
+        siempre como texto, nunca como HTML. `sources[].type` decide el enlace: `moodle_activity` abre
+        `mod/view.php?id=<id>`, `moodle_gradebook` el calificador del curso y `document` solo si trae `url`.
+        Una respuesta con `incompleteData: true` muestra el aviso de datos incompletos.
+
+        Referencia ejecutable: `pnpm mock:ai` (`infra/mocks/ai-api.mjs`).
       requestBody:
         required: true
         content:
@@ -534,13 +555,19 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "429":
-          description: Límite de uso alcanzado (RNF-07)
+          description: |
+            `RATE_LIMITED`: límite de peticiones por usuario y minuto (Retry-After indica cuántos segundos
+            esperar) o límite de uso y costo de IA por docente (RNF-07)
+          headers:
+            Retry-After:
+              schema:
+                type: integer
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
         "503":
-          description: Proveedor de IA no disponible; no se inventa respuesta
+          description: Proveedor de IA no disponible (`AI_PROVIDER_UNAVAILABLE`); no se inventa respuesta
           content:
             application/json:
               schema:
@@ -694,6 +721,98 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /courses/{courseId}/activity-mappings:
+    get:
+      tags: [mappings]
+      operationId: getActivityMappings
+      summary: Unidades del sílabo revisado y actividades ya relacionadas
+      description: |
+        Requiere `use`. Las unidades y los resultados salen de la última versión del sílabo revisado del curso
+        (`REVIEWED`); sin sílabo revisado las listas vienen vacías. Las actividades de Moodle las lista el plugin
+        con la sesión del docente (`local_ai_assistant_get_course_activities`).
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+      responses:
+        "200":
+          description: Unidades, resultados de aprendizaje y relaciones
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityMappings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /courses/{courseId}/activity-mappings/{cmId}:
+    put:
+      tags: [mappings]
+      operationId: saveActivityMapping
+      summary: Relacionar una actividad con una unidad y sus resultados de aprendizaje
+      description: |
+        Requiere `publish`. Reemplaza la relación de la actividad y la marca `MANUAL`; una relación creada al
+        publicar una propuesta (`PROPOSAL`) se reemplaza igual. La unidad y los resultados deben existir en el
+        sílabo revisado.
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+        - $ref: "#/components/parameters/CmId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [unitRef]
+              properties:
+                unitRef:
+                  type: string
+                  examples: ["gradingPeriods[0].units[1]"]
+                learningOutcomeIds:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Relación guardada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityMapping"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "`NO_REVIEWED_SYLLABUS`: el curso no tiene un sílabo revisado"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [mappings]
+      operationId: deleteActivityMapping
+      summary: Quitar la relación de una actividad
+      description: Requiere `publish`.
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+        - $ref: "#/components/parameters/CmId"
+      responses:
+        "204":
+          description: Relación quitada
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "`MAPPING_NOT_FOUND`: la actividad no estaba relacionada"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /admin/difficulty-rules:
     get:
       tags: [admin]
@@ -805,6 +924,14 @@ components:
       required: true
       schema:
         type: integer
+    CmId:
+      name: cmId
+      in: path
+      required: true
+      description: Id de la actividad en Moodle (course module)
+      schema:
+        type: integer
+        minimum: 1
     StudentId:
       name: studentId
       in: path
@@ -1202,6 +1329,11 @@ components:
           type: string
 
     CourseAnalytics:
+      description: |
+        Las señales solo traen el id del estudiante: el plugin resuelve los nombres con Moodle (función AJAX
+        `local_ai_assistant_get_course_students`), así que ni los nombres ni los datos personales pasan por el
+        backend o el proveedor de IA (ADR-010). Una señal debe explicar por qué existe (`explanation`) y no es
+        un diagnóstico. Un indicador sin dato lleva `value: null` (se muestra como guion, nunca como cero).
       type: object
       required: [courseId, computedAt, indicators, signals]
       properties:
@@ -1237,7 +1369,9 @@ components:
           type: integer
         observed:
           type: array
-          description: Datos observados en Moodle
+          description: |
+            Datos observados en Moodle, tal como están. El plugin los muestra sin interpretarlos: `{label, value}`
+            se muestra como una fila; cualquier otro objeto, campo por campo.
           items:
             type: object
         computed:
@@ -1285,6 +1419,64 @@ components:
           type: array
           items:
             type: string
+
+    ActivityMapping:
+      type: object
+      required: [moodleCmId, unitRef, learningOutcomeIds, source]
+      properties:
+        moodleCmId:
+          type: integer
+        unitRef:
+          type: string
+          description: Ruta de la unidad en la extracción
+        learningOutcomeIds:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+          enum: [PROPOSAL, MANUAL]
+          description: "`PROPOSAL` si se creó al publicar una propuesta; `MANUAL` si la eligió el docente"
+
+    ActivityMappings:
+      type: object
+      required: [syllabusId, extractionVersion, units, outcomes, mappings]
+      properties:
+        syllabusId:
+          type: [string, "null"]
+          format: uuid
+        extractionVersion:
+          type: [integer, "null"]
+        units:
+          type: array
+          items:
+            type: object
+            required: [unitRef, title, periodName, learningOutcomeIds]
+            properties:
+              unitRef:
+                type: string
+              title:
+                type: string
+              periodName:
+                type: string
+              learningOutcomeIds:
+                type: array
+                items:
+                  type: string
+        outcomes:
+          type: array
+          items:
+            type: object
+            required: [id, description]
+            properties:
+              id:
+                type: string
+              description:
+                type: string
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityMapping"
 
     DifficultyRule:
       type: object
