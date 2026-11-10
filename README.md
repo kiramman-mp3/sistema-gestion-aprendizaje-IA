@@ -104,7 +104,7 @@ Planificadas para el MVP según el [documento de requisitos](docs/requisitos/imp
 - **Base de datos:** PostgreSQL 17 con `pgvector` 0.8.6 mediante Prisma 7 y el adaptador `pg`; Redis 8.8 con `ioredis`.
 - **IA:** proveedor LLM por definir (D-07) detrás de la interfaz `LlmProvider`.
 - **Contratos:** Zod 4 en `packages/contracts`, con exportación a JSON Schema.
-- **Pruebas:** Vitest en `packages/*` y en el worker; Jest y Supertest en el backend; PHPUnit en el plugin.
+- **Pruebas:** Vitest en `packages/*`, en el worker y en el JavaScript del plugin (con jsdom); Jest y Supertest en el backend; PHPUnit en el plugin.
 - **Calidad:** ESLint, Prettier, Redocly CLI (contrato OpenAPI), `phpcs` con `moodle-cs` y GitHub Actions.
 - **Infraestructura:** Docker Compose (con ClamAV 1.5 y el worker aislado) y `moodle-docker`.
 
@@ -175,14 +175,14 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 ├── moodle/local/ai_assistant/      # Plugin de Moodle
 │   ├── classes/external/           # get_backend_token (AJAX) y check_access (integración)
 │   ├── classes/local/              # Emisor de tokens para el backend
-│   ├── amd/src/ y amd/build/       # Módulos de la página (conexión y carga del sílabo) y su build
+│   ├── amd/src/ y amd/build/       # Módulos de la página (conexión, carga del sílabo y editor de la extracción) y su build
 │   ├── templates/                  # Plantilla Mustache de la página
 │   ├── db/                         # Capacidades y servicios web
 │   └── index.php, lib.php          # Página del asistente y enlace en el curso
 ├── infra/
 │   ├── docker/                     # Init de PostgreSQL e imagen de phpcs
 │   ├── moodle/                     # local.yml de moodle-docker, Apache y scripts CLI (integración, seed)
-│   ├── amd/                        # Configuración de Rollup para los módulos AMD
+│   ├── amd/                        # Rollup de los módulos AMD y pruebas de su JavaScript (Vitest + jsdom)
 │   └── scripts/                    # moodle.sh y phpcs.sh
 ├── docs/
 │   ├── ROADMAP.md                  # Plan por fases y sprints
@@ -299,6 +299,7 @@ conocidos. En resumen:
 | `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                        |
 | `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                       |
 | `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                            |
+| `pnpm --filter @smart-lms/plugin-js test`        | Pruebas del JavaScript del plugin (modelo y editor de la extracción)     |
 | `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                           |
 | `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                     |
 | `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                       |
@@ -375,7 +376,7 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 - [x] Entorno Moodle, plugin base, backend, base auxiliar y cliente de Moodle (Sprint 2)
 - [x] Autenticación plugin–backend, autorización, auditoría y página del asistente (Sprint 3)
 - [x] Carga segura de sílabos, cola, extracción de texto y OCR (Sprint 4)
-- [ ] Extracción estructurada con IA y revisión del docente (Sprint 5)
+- [ ] Extracción estructurada con IA y revisión del docente (Sprint 5; el editor del plugin ya está, falta la extracción con IA)
 - [ ] Generación y publicación de cursos (Sprints 6–7)
 - [ ] Asistente conversacional (Sprints 8–9)
 - [ ] Analítica y asistente pedagógico (Sprints 10–11)

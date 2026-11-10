@@ -346,10 +346,12 @@ validados por el tutor y Moodle local de desarrollo.
 - [ ] Reglas: no inventar fechas, ponderaciones ni actividades; los campos ausentes quedan `null` y pendientes.
 - [ ] Defensa contra prompt injection: el texto del documento va delimitado como datos.
 - [ ] `feature/extraction-versioning`: `POST /syllabi/:id/extract`, `GET /syllabi/:id/extraction` y versiones en `syllabus_extractions`.
-- [ ] `feature/plugin-extraction-editor`: editor de unidades, temas, resultados, fechas y ponderaciones con indicador de confianza.
+- [x] `feature/plugin-extraction-editor`: editor de unidades, temas, resultados, fechas y ponderaciones con indicador de confianza. Contrato esperado del backend y pruebas en [`docs/architecture/editor-extraccion.md`](architecture/editor-extraccion.md).
 - [ ] Primera medición de precisión, exhaustividad y F1 sobre el conjunto de referencia.
 
 **Entregables (H2):** sílabo convertido en extracción editable y versionada.
+
+**Avance:** el editor del plugin está terminado y probado en un DOM simulado con la extracción de ejemplo de `packages/contracts`; falta integrarlo con la API real de la línea de IA (`POST /syllabi/:id/extract`, `GET` y `PUT /syllabi/:id/extraction`).
 
 **Criterio de aceptación:** un sílabo sin fechas no recibe fechas inventadas; F1 de unidades medido y registrado.
 
@@ -550,7 +552,7 @@ de modelos propios y publicación masiva sin revisión.
 | S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo                 |
 | S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                               |
 | S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03) |
-| S5     | Pendiente |            |            |                                                                                                       |
+| S5     | En curso  | 2026-11-09 |            | Editor de la extracción terminado (plugin); pendientes proveedor LLM, extracción con IA, API y F1     |
 | S6     | Pendiente |            |            |                                                                                                       |
 | S7     | Pendiente |            |            |                                                                                                       |
 | S8     | Pendiente |            |            |                                                                                                       |
