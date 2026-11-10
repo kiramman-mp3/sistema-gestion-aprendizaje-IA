@@ -65,7 +65,10 @@ class publisher {
         string $name,
         string $summary
     ): array {
-        global $DB;
+        global $CFG, $DB;
+
+        // A web service request does not load the course library by itself (PHPUnit and CLI do).
+        require_once($CFG->dirroot . '/course/lib.php');
 
         self::require_item_uuid($itemuuid);
         $course = self::course_for_teacher($userid, $courseid, ['moodle/course:update']);
@@ -123,7 +126,10 @@ class publisher {
         string $intro,
         string $duedate
     ): array {
-        global $DB, $USER;
+        global $CFG, $DB, $USER;
+
+        // A web service request does not load the course library by itself (PHPUnit and CLI do).
+        require_once($CFG->dirroot . '/course/lib.php');
 
         self::require_item_uuid($itemuuid);
         if (!in_array($modname, self::MODULES, true)) {
