@@ -46,6 +46,18 @@ export interface StoredItem {
   publishError: string | null;
 }
 
+export interface StoredOperation {
+  id: string;
+  proposalId: string;
+  idempotencyKey: string;
+  requestedBy: number;
+  status: string;
+  createdCount: number;
+  failedCount: number;
+  createdAt: Date;
+  finishedAt: Date | null;
+}
+
 export const DOC_ID = "d0000000-0000-4000-8000-000000000001";
 export const OTHER_COURSE_DOC_ID = "d0000000-0000-4000-8000-000000000002";
 export const UNREVIEWED_DOC_ID = "d0000000-0000-4000-8000-000000000003";
@@ -55,6 +67,7 @@ export class ProposalsStore {
   extractions: StoredExtraction[] = [];
   proposals: StoredProposal[] = [];
   items: StoredItem[] = [];
+  operations: StoredOperation[] = [];
   /** Hace que la próxima `updateMany` no encuentre filas, como si otra petición se hubiera adelantado. */
   loseNextRace = false;
 
@@ -88,6 +101,7 @@ export class ProposalsStore {
     ]);
     this.proposals = [];
     this.items = [];
+    this.operations = [];
     this.loseNextRace = false;
   }
 
@@ -190,7 +204,75 @@ export class ProposalsStore {
           });
         },
       },
+      publishOperation: {
+        findUnique: async ({
+          where,
+          include,
+        }: {
+          where: { id?: string; idempotencyKey?: string };
+          include?: { proposal?: unknown };
+        }) => {
+          const operation = this.operations.find((o) =>
+            where.id !== undefined ? o.id === where.id : o.idempotencyKey === where.idempotencyKey,
+          );
+          if (!operation) return null;
+          if (!include?.proposal) return clone(operation);
+          const proposal = this.proposals.find((p) => p.id === operation.proposalId)!;
+          const items = this.items
+            .filter((item) => item.proposalId === proposal.id)
+            .sort((a, b) => a.position - b.position);
+          return clone({ ...operation, proposal: { ...proposal, items } });
+        },
+        create: async ({
+          data,
+        }: {
+          data: Partial<StoredOperation> & { idempotencyKey: string };
+        }) => {
+          if (this.operations.some((o) => o.idempotencyKey === data.idempotencyKey)) {
+            throw Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+          }
+          const operation = {
+            status: "RUNNING",
+            createdCount: 0,
+            failedCount: 0,
+            createdAt: new Date("2026-11-09T12:00:00Z"),
+            finishedAt: null,
+            ...data,
+          } as StoredOperation;
+          this.operations.push(operation);
+          return clone(operation);
+        },
+        update: async ({
+          where,
+          data,
+        }: {
+          where: { id: string };
+          data: Partial<StoredOperation>;
+        }) => {
+          const operation = this.operations.find((o) => o.id === where.id)!;
+          Object.assign(operation, data);
+          return clone(operation);
+        },
+      },
       proposalItem: {
+        update: async ({ where, data }: { where: { id: string }; data: Partial<StoredItem> }) => {
+          const item = this.items.find((i) => i.id === where.id)!;
+          Object.assign(item, data);
+          return clone(item);
+        },
+        updateMany: async ({
+          where,
+          data,
+        }: {
+          where: { proposalId: string; publishStatus: string };
+          data: Partial<StoredItem>;
+        }) => {
+          const matching = this.items.filter(
+            (i) => i.proposalId === where.proposalId && i.publishStatus === where.publishStatus,
+          );
+          for (const item of matching) Object.assign(item, data);
+          return { count: matching.length };
+        },
         createMany: async ({ data }: { data: Partial<StoredItem>[] }) => {
           for (const row of data) {
             this.items.push({
