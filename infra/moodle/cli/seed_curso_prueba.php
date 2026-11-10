@@ -300,7 +300,7 @@ foreach ($completed as $cmid => $userids) {
 }
 $summary[] = sprintf('Finalización · %d actividades completadas en total (seguimiento manual)', $totalcompleted);
 
-// Último acceso al curso, en días atrás. Los estudiantes 08 a 10 llevan más de dos semanas sin entrar.
+// Se registra el último acceso al curso, en días atrás. Los estudiantes 08 a 10 llevan más de dos semanas sin entrar.
 // El estudiante 11 nunca entró.
 $daysago = [1 => 0, 2 => 1, 3 => 2, 4 => 3, 5 => 5, 6 => 6, 7 => 9, 8 => 16, 9 => 20, 10 => 25, 12 => 2];
 foreach ($daysago as $number => $days) {
