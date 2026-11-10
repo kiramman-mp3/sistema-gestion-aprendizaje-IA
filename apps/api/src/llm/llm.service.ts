@@ -1,5 +1,6 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
 import { z } from "zod";
+import { EmbeddingProvider, type EmbeddingResult } from "./embedding-provider";
 import { LlmError } from "./llm.errors";
 import {
   estimateTokens,
@@ -44,6 +45,13 @@ export interface ChatRequest {
   onToken?: (text: string) => void;
 }
 
+export interface EmbedRequest {
+  /** Para qué se llama, por ejemplo `rag_indexing`; queda en el registro de consumo. */
+  purpose: string;
+  texts: string[];
+  timeoutMs?: number;
+}
+
 export interface StructuredResult<T> {
   data: T;
   model: string;
@@ -60,7 +68,71 @@ export class LlmService {
     private readonly provider: LlmProvider,
     private readonly usageRecorder: LlmUsageRecorder,
     @Inject(LLM_LIMITS) private readonly limits: LlmLimits,
+    @Optional() private readonly embeddings?: EmbeddingProvider,
   ) {}
+
+  /** Similitud mínima que el proveedor de embeddings considera una coincidencia. */
+  get embeddingMinScore(): number | null {
+    return this.embeddings?.minScore ?? null;
+  }
+
+  /** Dimensión de los vectores del proveedor de embeddings (la fija la base de datos, ADR-019). */
+  get embeddingDimensions(): number | null {
+    return this.embeddings?.dimensions ?? null;
+  }
+
+  /**
+   * Vectores de una tanda de textos. Aplica el mismo tiempo límite y el mismo tope de entrada que las demás
+   * llamadas, y deja el consumo registrado. Sin proveedor, o si falla, responde `AI_PROVIDER_UNAVAILABLE`.
+   */
+  async embed(request: EmbedRequest): Promise<EmbeddingResult> {
+    const startedAt = Date.now();
+    const provider = this.embeddings;
+    const estimatedInput = estimateTokens(request.texts.join(" "));
+    const record = (outcome: LlmUsageEntry["outcome"], model: string | null): void =>
+      this.usageRecorder.record({
+        purpose: request.purpose,
+        provider: provider?.name ?? "none",
+        model,
+        inputTokens: estimatedInput,
+        outputTokens: 0,
+        durationMs: Date.now() - startedAt,
+        outcome,
+      });
+
+    try {
+      if (!provider) {
+        throw new LlmError(
+          "AI_PROVIDER_UNAVAILABLE",
+          "No hay un proveedor de embeddings configurado.",
+        );
+      }
+      if (estimatedInput > this.limits.maxInputTokens) {
+        throw new LlmError(
+          "AI_LIMIT_EXCEEDED",
+          `La entrada (~${estimatedInput} tokens) supera el límite de ${this.limits.maxInputTokens}.`,
+        );
+      }
+      const result = await this.withTimeout(request.timeoutMs, (signal) =>
+        provider.embed(request.texts, signal),
+      );
+      if (
+        result.vectors.length !== request.texts.length ||
+        result.vectors.some((vector) => vector.length !== provider.dimensions)
+      ) {
+        throw new LlmError(
+          "AI_INVALID_OUTPUT",
+          "El proveedor de embeddings devolvió vectores que no corresponden a lo pedido.",
+        );
+      }
+      record("ok", result.model);
+      return result;
+    } catch (error) {
+      const llmError = this.toLlmError(error);
+      record(llmError.code, provider?.model ?? null);
+      throw llmError;
+    }
+  }
 
   async generateStructured<T>(request: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const startedAt = Date.now();

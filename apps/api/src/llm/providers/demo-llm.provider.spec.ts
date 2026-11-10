@@ -109,6 +109,29 @@ describe("DemoLlmProvider · chat", () => {
     expect(result.answer).toContain(expectedTool);
   });
 
+  it("la búsqueda en documentos recibe la pregunta y cita la página del pasaje", async () => {
+    const run = assistant([
+      tool("search_course_documents", {
+        found: 1,
+        passages: [{ page: 2, text: "Bibliografía básica: libros." }],
+      }),
+    ]);
+
+    const result = await run("¿Qué dice el sílabo sobre la bibliografía?");
+
+    expect(result.toolsUsed).toEqual(["search_course_documents"]);
+    expect(result.answer).toContain("página 2");
+    expect(result.answer).toContain("Bibliografía básica: libros.");
+  });
+
+  it("si la búsqueda no encuentra nada, lo dice y no inventa", async () => {
+    const run = assistant([tool("search_course_documents", { found: 0, passages: [] })]);
+
+    const result = await run("¿Qué dice el documento sobre becas?");
+
+    expect(result.answer).toContain("No encontré esa información");
+  });
+
   it("deja claro que es una demostración en toda respuesta", async () => {
     const result = await assistant([])("Hola");
 

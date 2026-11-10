@@ -82,9 +82,17 @@ export class DemoLlmProvider extends LlmProvider {
         request.tools.map((t) => t.name),
       );
       if (tool) {
+        const question = lastUserText(request.messages);
         return {
           kind: "tool_calls",
-          calls: [{ id: `demo-${request.messages.length}`, name: tool, arguments: {} }],
+          calls: [
+            {
+              id: `demo-${request.messages.length}`,
+              name: tool,
+              // La búsqueda en documentos necesita la pregunta; las demás herramientas no reciben argumentos.
+              arguments: tool === "search_course_documents" ? { query: question } : {},
+            },
+          ],
           model: "demo-1",
           usage: { inputTokens, outputTokens: 20 },
         };
@@ -111,15 +119,20 @@ function lastUserText(messages: LlmChatMessage[]): string {
 
 /** Elige la herramienta por palabras clave; solo entre las que la petición ofrece. */
 function chooseTool(question: string, available: string[]): string | null {
-  const wanted = /unidad|rendimiento/.test(question)
-    ? "get_unit_performance"
-    : /pendiente|calificar|corregir/.test(question)
-      ? "get_pending_grading"
-      : /nota|promedio|calificaci/.test(question)
-        ? "get_grade_summary"
-        : /actividad|tarea|foro|cuestionario/.test(question)
-          ? "get_course_activities"
-          : null;
+  const wanted =
+    /document|silabo|sílabo|bibliograf|metodolog|objetivo|programa anal|criterios? de evaluaci/.test(
+      question,
+    )
+      ? "search_course_documents"
+      : /unidad|rendimiento/.test(question)
+        ? "get_unit_performance"
+        : /pendiente|calificar|corregir/.test(question)
+          ? "get_pending_grading"
+          : /nota|promedio|calificaci/.test(question)
+            ? "get_grade_summary"
+            : /actividad|tarea|foro|cuestionario/.test(question)
+              ? "get_course_activities"
+              : null;
   return wanted !== null && available.includes(wanted) ? wanted : null;
 }
 
@@ -131,6 +144,23 @@ function summarize(message: Extract<LlmChatMessage, { role: "tool" }>): string {
     /<resultado_herramienta[^>]*>\s*([\s\S]*?)\s*<\/resultado_herramienta>/.exec(
       message.content,
     )?.[1] ?? "";
+  if (message.name === "search_course_documents") return summarizeDocuments(data);
   const shown = data.length > 400 ? `${data.slice(0, 400)}…` : data;
   return `${DEMO_NOTICE} Consulté «${message.name}» y obtuve: ${shown}`;
+}
+
+/** Respuesta de demostración a una búsqueda en documentos: cita el pasaje más cercano y su página, o dice que no halló nada. */
+function summarizeDocuments(data: string): string {
+  try {
+    const parsed = JSON.parse(data) as { passages?: { page: number | null; text: string }[] };
+    const first = parsed.passages?.[0];
+    if (!first) {
+      return `${DEMO_NOTICE} No encontré esa información en los documentos del curso.`;
+    }
+    const where = first.page ? ` (página ${first.page})` : "";
+    const text = first.text.length > 300 ? `${first.text.slice(0, 300)}…` : first.text;
+    return `${DEMO_NOTICE} Según el documento del curso${where}: «${text}»`;
+  } catch {
+    return `${DEMO_NOTICE} No pude leer el resultado de la búsqueda en los documentos.`;
+  }
 }
