@@ -45,6 +45,11 @@ export const envSchema = z.object({
   /** Tokens estimados de entrada a partir de los cuales no se llama al proveedor. */
   AI_MAX_INPUT_TOKENS: z.coerce.number().int().positive().default(32_000),
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(8_192),
+  /** Días que se conserva una conversación con el asistente. Provisional hasta la política D-08. */
+  AI_CONVERSATION_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
+  /** Tope de uso de IA por docente en 24 horas (RNF-07): mensajes y tokens (entrada + salida). */
+  AI_DAILY_MESSAGES_PER_TEACHER: z.coerce.number().int().positive().default(200),
+  AI_DAILY_TOKENS_PER_TEACHER: z.coerce.number().int().positive().default(500_000),
   /** Clave con la que se derivan los seudónimos de estudiantes (ADR-010). Obligatoria en producción con IA. */
   PSEUDONYM_SECRET: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
 });

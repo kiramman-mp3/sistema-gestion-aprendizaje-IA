@@ -40,6 +40,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
+      // Una excepción puede pedir `Retry-After` (límites de uso) sin conocer la respuesta HTTP.
+      const retryAfter = (exception as { retryAfterSeconds?: unknown }).retryAfterSeconds;
+      if (typeof retryAfter === "number" && retryAfter > 0) {
+        response.setHeader("Retry-After", String(Math.ceil(retryAfter)));
+      }
       response.status(status).json(toApiError(status, exception.getResponse()));
       return;
     }
