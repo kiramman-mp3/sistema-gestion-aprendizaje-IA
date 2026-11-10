@@ -173,22 +173,22 @@ model SyllabusExtraction {
 }
 
 model DocumentChunk {
-  id             String                 @id @default(uuid()) @db.Uuid
-  documentId     String                 @map("document_id") @db.Uuid
+  id             String                      @id @default(uuid()) @db.Uuid
+  documentId     String                      @map("document_id") @db.Uuid
   /// Duplicado a propósito para filtrar por curso antes de buscar (RF-14).
-  moodleCourseId Int                    @map("moodle_course_id")
+  moodleCourseId Int                         @map("moodle_course_id")
   page           Int?
-  chunkIndex     Int                    @map("chunk_index")
+  chunkIndex     Int                         @map("chunk_index")
   content        String
-  /// La dimensión y el índice HNSW se fijan al elegir el modelo de embeddings (D-07).
-  embedding      Unsupported("vector")?
-  embeddingModel String?                @map("embedding_model")
-  createdAt      DateTime               @default(now()) @map("created_at")
+  /// vector(1024) con índice HNSW por coseno: es la dimensión de los embeddings de demostración (ADR-019).
+  embedding      Unsupported("vector(1024)")?
+  embeddingModel String?                     @map("embedding_model")
+  createdAt      DateTime                    @default(now()) @map("created_at")
 
   document SyllabusDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
+  @@unique([documentId, chunkIndex])
   @@index([moodleCourseId])
-  @@index([documentId, chunkIndex])
   @@map("document_chunks")
 }
 

@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AntivirusModule } from "../antivirus/antivirus.module";
+import { RagModule } from "../rag/rag.module";
 import { DocumentTextResultsHandler } from "./document-text-results.handler";
 import { DocumentTextResultsWorker } from "./document-text-results.worker";
 import { SyllabusExtractorService } from "./extraction/syllabus-extractor.service";
@@ -9,7 +10,7 @@ import { SyllabiService } from "./syllabi.service";
 import { SyllabusProcessingService } from "./syllabus-processing.service";
 
 @Module({
-  imports: [AntivirusModule],
+  imports: [AntivirusModule, RagModule],
   controllers: [SyllabiController],
   providers: [
     SyllabiService,

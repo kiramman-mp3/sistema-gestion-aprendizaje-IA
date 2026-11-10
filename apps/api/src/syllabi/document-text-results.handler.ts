@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { DOCUMENT_TEXT_ERROR_CODES, documentTextSchema } from "@smart-lms/contracts";
 import { AuditService } from "../audit/audit.service";
 import { PrismaService } from "../database/prisma.service";
+import { DocumentIndexService } from "../rag/document-index.service";
 
 /** Código guardado cuando el worker falla por una causa que no está en el contrato. */
 export const GENERIC_TEXT_ERROR = "TEXT_EXTRACTION_FAILED";
@@ -25,6 +26,7 @@ export class DocumentTextResultsHandler {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly index: DocumentIndexService,
   ) {}
 
   async handle(documentId: string, outcome: ChildOutcome): Promise<void> {
@@ -49,6 +51,8 @@ export class DocumentTextResultsHandler {
           ocr: parsed.data.ocr,
           confidence: parsed.data.confidence,
         });
+        // La indexación para la búsqueda no retrasa ni hace fallar el procesamiento del documento (RF-14).
+        void this.index.indexDocumentSafely(documentId);
       }
       return;
     }
