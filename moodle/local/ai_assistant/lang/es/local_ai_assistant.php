@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['ai_assistant:checkaccess'] = 'Consultar qué pueden hacer otros usuarios con el asistente (solo integración)';
+$string['ai_assistant:createcontent'] = 'Crear secciones y actividades de una propuesta aprobada (solo integración)';
 $string['ai_assistant:publish'] = 'Publicar estructuras de curso generadas con IA';
 $string['ai_assistant:use'] = 'Usar el asistente docente con IA';
 $string['ai_assistant:viewanalytics'] = 'Ver la analítica y las evidencias de estudiantes del asistente';

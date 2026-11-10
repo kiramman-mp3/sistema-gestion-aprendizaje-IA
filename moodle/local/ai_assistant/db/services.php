@@ -46,6 +46,15 @@ $functions = [
         'ajax' => false,
         'capabilities' => 'local/ai_assistant:checkaccess',
     ],
+
+    // Called by the backend to publish an approved proposal (RF-09, ADR-008).
+    'local_ai_assistant_publish_section' => [
+        'classname' => \local_ai_assistant\external\publish_section::class,
+        'description' => 'Creates the section of an approved proposal item, or returns the one already created for it.',
+        'type' => 'write',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:createcontent',
+    ],
 ];
 
 $services = [
@@ -54,6 +63,7 @@ $services = [
         'functions' => [
             'core_webservice_get_site_info',
             'local_ai_assistant_check_access',
+            'local_ai_assistant_publish_section',
         ],
         'restrictedusers' => 1,
         'enabled' => 1,
