@@ -5,6 +5,14 @@ import {
   addSection,
   availableActions,
   canMove,
+  canPublish,
+  createdItems,
+  describeFailureCode,
+  failedItems,
+  moodleUrl,
+  newIdempotencyKey,
+  progressOf,
+  publishPhase,
   findFieldErrors,
   generalIssues,
   issuesForItem,
@@ -270,4 +278,132 @@ describe("acciones disponibles", () => {
       });
     },
   );
+});
+
+describe("publicación en Moodle", () => {
+  const published = () =>
+    sample().map((i) => ({ ...i, publishStatus: "CREATED", moodleItemId: i.position + 100 }));
+
+  it("la clave de idempotencia cumple el formato del backend y es distinta cada vez", () => {
+    const keys = [newIdempotencyKey(), newIdempotencyKey()];
+
+    for (const key of keys) {
+      expect(key).toMatch(/^[A-Za-z0-9._:-]{16,128}$/);
+    }
+    expect(keys[0]).not.toBe(keys[1]);
+  });
+
+  it("cada estado de la propuesta corresponde a una fase de la pantalla", () => {
+    expect(publishPhase({ status: "NEEDS_REVIEW" })).toBe("none");
+    expect(publishPhase({ status: "DRAFT" })).toBe("none");
+    expect(publishPhase({ status: "REJECTED" })).toBe("none");
+    expect(publishPhase({ status: "APPROVED" })).toBe("ready");
+    expect(publishPhase({ status: "PUBLISHING" })).toBe("running");
+    expect(publishPhase({ status: "FAILED" })).toBe("failed");
+    expect(publishPhase({ status: "PUBLISHED" })).toBe("done");
+  });
+
+  it("calcula el progreso sin pasarse del total", () => {
+    expect(progressOf({ createdCount: 2, totalCount: 4 })).toEqual({
+      created: 2,
+      total: 4,
+      percent: 50,
+    });
+    expect(progressOf({ createdCount: 9, totalCount: 4 })).toEqual({
+      created: 4,
+      total: 4,
+      percent: 100,
+    });
+    expect(progressOf({ createdCount: 0, totalCount: 0 })).toEqual({
+      created: 0,
+      total: 0,
+      percent: 0,
+    });
+  });
+
+  it("arma el enlace de una sección y el de una actividad", () => {
+    expect(moodleUrl({ itemType: "SECTION", moodleItemId: 13 }, "http://moodle.test/", 7)).toBe(
+      "http://moodle.test/course/view.php?id=7&sectionid=13",
+    );
+    expect(moodleUrl({ itemType: "ASSIGN", moodleItemId: 21 }, "http://moodle.test", 7)).toBe(
+      "http://moodle.test/mod/view.php?id=21",
+    );
+  });
+
+  it("lista lo creado en el orden mostrado, con su enlace", () => {
+    const items = published();
+
+    const created = createdItems(items, "http://moodle.test", 7);
+
+    expect(created.map((i) => i.id)).toEqual(["s1", "a1", "a2", "s2", "a3"]);
+    expect(created[0].url).toBe("http://moodle.test/course/view.php?id=7&sectionid=100");
+    expect(created[1].url).toBe("http://moodle.test/mod/view.php?id=101");
+  });
+
+  it("no lista lo que no se creó", () => {
+    const items = published().map((i) =>
+      i.id === "a2"
+        ? { ...i, publishStatus: "FAILED", moodleItemId: null, publishError: "MOODLE_UNAVAILABLE" }
+        : i.id === "s2" || i.id === "a3"
+          ? { ...i, publishStatus: "PENDING", moodleItemId: null }
+          : i,
+    );
+
+    expect(createdItems(items, "http://moodle.test", 7).map((i) => i.id)).toEqual(["s1", "a1"]);
+    expect(failedItems(items)).toEqual([{ id: "a2", title: "a2", error: "MOODLE_UNAVAILABLE" }]);
+  });
+
+  it("traduce los códigos de fallo del backend", () => {
+    expect(describeFailureCode("MOODLE_PERMISSION")).toEqual({
+      key: "moodle_permission",
+      detail: null,
+    });
+    expect(describeFailureCode("MOODLE_UNAVAILABLE")).toEqual({
+      key: "moodle_unavailable",
+      detail: null,
+    });
+    expect(describeFailureCode("MOODLE_BAD_RESPONSE")).toEqual({
+      key: "moodle_bad_response",
+      detail: null,
+    });
+    expect(describeFailureCode("MOODLE_ERROR:invalidparameter")).toEqual({
+      key: "moodle_error",
+      detail: "invalidparameter",
+    });
+    expect(describeFailureCode("PUBLISH_ERROR")).toEqual({ key: "publish_error", detail: null });
+    expect(describeFailureCode("algo raro")).toEqual({ key: "publish_error", detail: null });
+  });
+
+  describe("cuándo se puede publicar", () => {
+    const state = (overrides = {}) => ({
+      confirmed: true,
+      dirty: false,
+      busy: false,
+      ...overrides,
+    });
+
+    it("una propuesta aprobada y confirmada, sin cambios pendientes", () => {
+      expect(canPublish({ status: "APPROVED" }, state())).toBe(true);
+    });
+
+    it("sin confirmación explícita no se publica", () => {
+      expect(canPublish({ status: "APPROVED" }, state({ confirmed: false }))).toBe(false);
+    });
+
+    it("con cambios sin guardar o una llamada en curso no se publica", () => {
+      expect(canPublish({ status: "APPROVED" }, state({ dirty: true }))).toBe(false);
+      expect(canPublish({ status: "APPROVED" }, state({ busy: true }))).toBe(false);
+    });
+
+    it("una publicación fallida se puede reanudar", () => {
+      expect(canPublish({ status: "FAILED" }, state({ confirmed: false }))).toBe(true);
+    });
+
+    it.each(["DRAFT", "NEEDS_REVIEW", "PUBLISHING", "PUBLISHED", "REJECTED"])(
+      "una propuesta %s no se publica",
+      (status) => {
+        expect(canPublish({ status }, state())).toBe(false);
+      },
+    );
+  });
 });

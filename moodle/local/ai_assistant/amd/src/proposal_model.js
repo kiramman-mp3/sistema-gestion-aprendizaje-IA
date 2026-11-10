@@ -269,3 +269,129 @@ export const availableActions = (proposal, dirty, items) => {
       proposal.status === "NEEDS_REVIEW" && !dirty && !proposal.issues.some((issue) => issue.severity === "error"),
   };
 };
+
+// ---------------------------------------------------------------------------------------------
+// Publishing to Moodle
+// ---------------------------------------------------------------------------------------------
+
+/** States from which a publication can be started (or resumed after a failure). */
+export const PUBLISHABLE_STATUSES = ["APPROVED", "FAILED"];
+
+/**
+ * A key that identifies one attempt to publish. Sending the same key again returns the same operation
+ * instead of publishing twice, so it is created once per attempt and kept while the attempt is open.
+ *
+ * @returns {string} 16 to 128 characters from the set the backend accepts.
+ */
+export const newIdempotencyKey = () => `pub-${crypto.randomUUID()}`;
+
+/**
+ * Which part of the publication screen applies to a proposal.
+ *
+ * @param {{status: string}} proposal
+ * @returns {"none"|"ready"|"running"|"failed"|"done"}
+ */
+export const publishPhase = (proposal) => {
+  switch (proposal.status) {
+    case "APPROVED":
+      return "ready";
+    case "PUBLISHING":
+      return "running";
+    case "FAILED":
+      return "failed";
+    case "PUBLISHED":
+      return "done";
+    default:
+      return "none";
+  }
+};
+
+/**
+ * Progress of an operation.
+ *
+ * @param {{createdCount: number, totalCount: number}} operation
+ * @returns {{created: number, total: number, percent: number}}
+ */
+export const progressOf = (operation) => {
+  const total = Math.max(operation.totalCount, 0);
+  const created = Math.min(operation.createdCount, total);
+  return { created, total, percent: total === 0 ? 0 : Math.round((created / total) * 100) };
+};
+
+/**
+ * Link to what was created in Moodle: sections open the course at that section, activities use the
+ * generic activity link, which Moodle redirects to the right page.
+ *
+ * @param {{itemType: string, moodleItemId: number}} item
+ * @param {string} wwwroot Moodle base URL.
+ * @param {number} courseId
+ * @returns {string}
+ */
+export const moodleUrl = (item, wwwroot, courseId) => {
+  const base = wwwroot.replace(/\/+$/, "");
+  return item.itemType === "SECTION"
+    ? `${base}/course/view.php?id=${courseId}&sectionid=${item.moodleItemId}`
+    : `${base}/mod/view.php?id=${item.moodleItemId}`;
+};
+
+/**
+ * What was created in the course, in display order, with a link to each.
+ *
+ * @param {object[]} items
+ * @param {string} wwwroot
+ * @param {number} courseId
+ * @returns {Array<{id: string, title: string, itemType: string, parentId: string|null, url: string}>}
+ */
+export const createdItems = (items, wwwroot, courseId) =>
+  orderedItems(items)
+    .filter((item) => item.publishStatus === "CREATED" && item.moodleItemId !== null)
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      itemType: item.itemType,
+      parentId: item.parentId,
+      url: moodleUrl(item, wwwroot, courseId),
+    }));
+
+/**
+ * The elements that failed, with the reason the backend recorded.
+ *
+ * @param {object[]} items
+ * @returns {Array<{id: string, title: string, error: string}>}
+ */
+export const failedItems = (items) =>
+  orderedItems(items)
+    .filter((item) => item.publishStatus === "FAILED")
+    .map((item) => ({ id: item.id, title: item.title, error: item.publishError ?? "PUBLISH_ERROR" }));
+
+/**
+ * Turns a failure code from the backend into the name of the message to show and its detail.
+ *
+ * @param {string} code For example `MOODLE_UNAVAILABLE` or `MOODLE_ERROR:invalidparameter`.
+ * @returns {{key: string, detail: string|null}}
+ */
+export const describeFailureCode = (code) => {
+  const known = {
+    MOODLE_PERMISSION: "moodle_permission",
+    MOODLE_UNAVAILABLE: "moodle_unavailable",
+    MOODLE_BAD_RESPONSE: "moodle_bad_response",
+  };
+  if (known[code]) {
+    return { key: known[code], detail: null };
+  }
+  if (code.startsWith("MOODLE_ERROR:")) {
+    return { key: "moodle_error", detail: code.slice("MOODLE_ERROR:".length) };
+  }
+  return { key: "publish_error", detail: null };
+};
+
+/**
+ * Whether the publish button can be used: the proposal is approved (or failed and can resume), the
+ * teacher confirmed, nothing is half edited and no call is in flight.
+ *
+ * @param {{status: string}} proposal
+ * @param {{confirmed: boolean, dirty: boolean, busy: boolean}} state
+ * @returns {boolean}
+ */
+export const canPublish = (proposal, { confirmed, dirty, busy }) =>
+  PUBLISHABLE_STATUSES.includes(proposal.status) && !dirty && !busy && (proposal.status === "FAILED" || confirmed);

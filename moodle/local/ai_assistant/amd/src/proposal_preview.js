@@ -27,6 +27,7 @@
 
 import { callBackend } from "local_ai_assistant/assistant";
 import * as Model from "local_ai_assistant/proposal_model";
+import { loadPanelStrings, PublishPanel } from "local_ai_assistant/publish_panel";
 import { createStrings, el, uniqueId } from "local_ai_assistant/ui";
 
 const PLAIN_STRINGS = [
@@ -86,6 +87,11 @@ class Preview {
     this.busy = false;
     this.collapsed = new Set();
     this.updaters = [];
+    this.publishPanel = new PublishPanel({
+      courseId,
+      isDirty: () => this.dirty,
+      onFinished: () => this.open(this.proposal.id),
+    });
     window.addEventListener("beforeunload", (event) => {
       if (this.dirty) {
         event.preventDefault();
@@ -212,6 +218,7 @@ class Preview {
     this.summary = el("div", { class: "mb-3", "aria-live": "polite" });
     this.general = el("div", { class: "mb-3" });
     this.status = el("div", { class: "mt-3", "aria-live": "polite" });
+    this.publishBox = el("div");
     this.saveButton = el("button", { type: "button", class: "btn btn-primary", onclick: () => this.save() }, str("save"));
     this.approveButton = el("button", { type: "button", class: "btn btn-success", onclick: () => this.approve() }, str("approve"));
     this.approveHint = el("span", { class: "small text-muted align-self-center" });
@@ -236,7 +243,10 @@ class Preview {
       })),
       el("div", { class: "d-flex gap-2 flex-wrap" }, this.saveButton, this.approveButton, this.approveHint),
       this.status,
+      this.publishBox,
     );
+    this.publishPanel.attach(this.publishBox);
+    this.publishPanel.update(this.proposal);
     this.refresh();
     if (focusId) {
       this.root.querySelector(`[data-item="${focusId}"]`)?.focus();
@@ -293,6 +303,8 @@ class Preview {
     for (const update of this.updaters) {
       update(fieldErrors);
     }
+    // The publication panel depends on whether there are unsaved edits.
+    this.publishPanel.render();
   }
 
   issueLine(issue) {
@@ -591,7 +603,7 @@ export const open = async (courseId, proposalId) => {
   if (!root) {
     return;
   }
-  await loadStrings();
+  await Promise.all([loadStrings(), loadPanelStrings()]);
   await new Preview(root, courseId).open(proposalId);
 };
 
@@ -608,7 +620,7 @@ export const generate = async (courseId, syllabusId, extractionVersion) => {
   if (!root) {
     return;
   }
-  await loadStrings();
+  await Promise.all([loadStrings(), loadPanelStrings()]);
   await new Preview(root, courseId).generate(syllabusId, extractionVersion);
 };
 
