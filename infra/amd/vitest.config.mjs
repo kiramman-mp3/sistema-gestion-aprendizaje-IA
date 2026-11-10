@@ -16,6 +16,10 @@ export default defineConfig({
       ),
       "local_ai_assistant/ui": path("../../moodle/local/ai_assistant/amd/src/ui.js"),
       "core/config": path("./tests/stubs/config.mjs"),
+      "local_ai_assistant/sse": path("../../moodle/local/ai_assistant/amd/src/sse.js"),
+      "local_ai_assistant/chat_model": path(
+        "../../moodle/local/ai_assistant/amd/src/chat_model.js",
+      ),
       "local_ai_assistant/publish_panel": path(
         "../../moodle/local/ai_assistant/amd/src/publish_panel.js",
       ),

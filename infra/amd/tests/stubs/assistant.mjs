@@ -12,3 +12,11 @@ export const callBackend = async (courseId, path, options = {}) => {
   backend.calls.push(call);
   return backend.handler(call);
 };
+
+/** Flujo simulado del chat: la prueba decide qué eventos llegan o qué error ocurre. */
+export const stream = { calls: [], handler: async () => {} };
+
+export const streamBackend = async (courseId, path, options) => {
+  stream.calls.push({ courseId, path, json: options.json, signal: options.signal });
+  return stream.handler({ courseId, path, ...options });
+};
