@@ -11,6 +11,7 @@ import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { IntegrationAccountModule } from "./integrations/integration-account.module";
 import { MoodleModule } from "./integrations/moodle/moodle.module";
+import { LlmModule } from "./llm/llm.module";
 import { MaintenanceModule } from "./maintenance/maintenance.module";
 import { MappingsModule } from "./mappings/mappings.module";
 import { ProposalsModule } from "./proposals/proposals.module";
@@ -46,6 +47,7 @@ import { SyllabiModule } from "./syllabi/syllabi.module";
     MoodleModule,
     IntegrationAccountModule,
     StorageModule,
+    LlmModule,
     SyllabiModule,
     ProposalsModule,
     MappingsModule,
