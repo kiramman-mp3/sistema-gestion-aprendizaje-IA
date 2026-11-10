@@ -1,9 +1,5 @@
 import type { z } from "zod";
-import {
-  MoodleResponseError,
-  MoodleUnavailableError,
-  toMoodleApiError,
-} from "./moodle.errors";
+import { MoodleResponseError, MoodleUnavailableError, toMoodleApiError } from "./moodle.errors";
 import { encodeMoodleParams, type MoodleParamValue } from "./moodle.params";
 
 export interface MoodleClientOptions {

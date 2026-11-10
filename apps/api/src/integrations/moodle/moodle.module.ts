@@ -32,7 +32,9 @@ export class MoodleModule implements OnModuleInit {
 
   onModuleInit(): void {
     if (!this.config.get("MOODLE_BASE_URL", { infer: true })) {
-      this.logger.warn("MOODLE_BASE_URL no está definida; la integración con Moodle está inactiva.");
+      this.logger.warn(
+        "MOODLE_BASE_URL no está definida; la integración con Moodle está inactiva.",
+      );
       return;
     }
     this.health.register(this.moodle);
