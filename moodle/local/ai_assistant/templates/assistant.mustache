@@ -19,7 +19,8 @@
 
     Shell of the assistant page. The AMD module local_ai_assistant/assistant fills the status area
     after checking the connection with the backend. The module local_ai_assistant/extraction_editor
-    draws the syllabus extraction editor inside the extraction-editor region.
+    draws the syllabus extraction editor inside the extraction-editor region, and
+    local_ai_assistant/proposal_preview draws the course proposal inside the proposal-preview region.
 
     Context variables required for this template:
     * courseid - Course id.
@@ -75,5 +76,7 @@
     </section>
 
     <section class="card card-body mb-3 d-none" data-region="extraction-editor"></section>
+
+    <section class="card card-body mb-3 d-none" data-region="proposal-preview"></section>
     {{/backendconfigured}}
 </div>

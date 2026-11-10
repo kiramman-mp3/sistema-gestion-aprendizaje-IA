@@ -29,6 +29,7 @@
 
 import { callBackend } from "local_ai_assistant/assistant";
 import * as Model from "local_ai_assistant/extraction_model";
+import { generate as generateProposal } from "local_ai_assistant/proposal_preview";
 import { createStrings, el, uniqueId } from "local_ai_assistant/ui";
 
 /** Strings without parameters. The key is `extraction_<name>`; the map is read as `t.<name>`. */
@@ -42,7 +43,7 @@ const PLAIN_STRINGS = [
   "field_topics", "field_topic", "field_startdate", "field_enddate", "field_outcomes",
   "field_activitytitle", "field_activitytype", "field_description", "field_due", "field_requiresreview",
   "field_instrument", "field_item", "nooutcomes", "untitled", "source_ai", "source_teacher",
-  "add_outcome", "add_period", "add_unit", "add_activity", "add_topic", "add_item", "add_instrument",
+  "add_outcome", "add_period", "add_unit", "add_activity", "add_topic", "add_item", "add_instrument", "generateproposal",
   "reason_missing", "reason_ambiguous", "reason_low_confidence", "reason_inconsistent",
   "error_required", "error_weight", "error_date", "error_outcomeid",
   ...Model.ACTIVITY_TYPES.map((type) => `acttype_${type}`),
@@ -183,6 +184,11 @@ class Editor {
     this.orphans = el("div", { class: "mb-3" });
     this.status = el("div", { class: "mt-3", "aria-live": "polite" });
     this.saveButton = el("button", { type: "button", class: "btn btn-primary", onclick: () => this.save() }, str("save"));
+    this.proposalButton = el(
+      "button",
+      { type: "button", class: "btn btn-outline-primary", onclick: () => generateProposal(this.courseId, this.syllabusId, this.version) },
+      str("generateproposal"),
+    );
 
     const form = el(
       "form",
@@ -202,7 +208,7 @@ class Editor {
       this.orphans,
       this.issues,
       form,
-      el("div", { class: "mt-3" }, this.saveButton),
+      el("div", { class: "mt-3 d-flex gap-2 flex-wrap" }, this.saveButton, this.proposalButton),
       this.status,
     );
     this.refresh();
@@ -229,6 +235,8 @@ class Editor {
       parts.push(el("span", { class: "badge bg-danger me-2" }, str("summary_errors", summary.errors)));
     }
     this.summary.replaceChildren(...(parts.length ? parts : [el("span", { class: "badge bg-success" }, str("summary_clear"))]));
+    // The proposal is built from a saved version the teacher reviewed, never from unsaved edits.
+    this.proposalButton.classList.toggle("d-none", this.dirty || this.source !== "TEACHER");
     this.saveButton.disabled = this.saving || !summary.canSave;
     this.saveButton.title = summary.canSave ? "" : str("fixerrors");
 
