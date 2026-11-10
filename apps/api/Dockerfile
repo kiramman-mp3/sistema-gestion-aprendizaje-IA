@@ -15,6 +15,12 @@ COPY packages/contracts packages/contracts
 RUN pnpm --filter @smart-lms/api... build \
   && pnpm --filter @smart-lms/api deploy --prod --legacy /out
 
+# Aplica las migraciones de Prisma (docker-compose.prod.yml, servicio `migrate`). Necesita el CLI de Prisma,
+# que es una dependencia de desarrollo y por eso no está en la imagen final.
+FROM build AS migrate
+WORKDIR /repo/apps/api
+CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
+
 FROM node:26.13.0-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
