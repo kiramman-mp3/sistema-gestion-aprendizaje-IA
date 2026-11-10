@@ -195,6 +195,33 @@ describe("Publicación de propuestas (e2e)", () => {
     });
   });
 
+  describe("seguimiento desde la propuesta", () => {
+    it("una propuesta nunca publicada no tiene operación", async () => {
+      const proposal = await approvedProposal();
+
+      const res = await call("get", `/proposals/${proposal.id}`).expect(200);
+
+      expect(res.body.lastPublishOperation).toBeNull();
+    });
+
+    it("la propuesta indica su última operación, para retomar el seguimiento", async () => {
+      const proposal = await approvedProposal();
+      moodle.failAtCall = 3;
+      const first = await publish(proposal.id).expect(202);
+      expect((await call("get", `/proposals/${proposal.id}`)).body.lastPublishOperation).toEqual({
+        id: first.body.id,
+        status: "FAILED",
+      });
+
+      const resumed = await publish(proposal.id).expect(202);
+
+      expect((await call("get", `/proposals/${proposal.id}`)).body.lastPublishOperation).toEqual({
+        id: resumed.body.id,
+        status: "SUCCEEDED",
+      });
+    });
+  });
+
   describe("repetición e idempotencia (SEC-04)", () => {
     it("la misma clave devuelve la misma operación y no crea nada más", async () => {
       const proposal = await approvedProposal();
