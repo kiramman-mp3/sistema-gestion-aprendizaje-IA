@@ -29,7 +29,7 @@ services:
   # Termina TLS (certificados de Let's Encrypt automáticos) y reenvía /api/v1 al backend.
   proxy:
     <<: *hardening
-    image: caddy:2.10.2-alpine
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
     cap_add: ["NET_BIND_SERVICE"]
     ports:
       - "80:80"
@@ -130,7 +130,7 @@ services:
 
   app-db:
     <<: *hardening
-    image: pgvector/pgvector:0.8.6-pg17
+    image: pgvector/pgvector:0.8.6-pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
     # La imagen de Postgres necesita estas capacidades para arrancar y cambiar de usuario.
     cap_add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
     environment:
@@ -153,7 +153,7 @@ services:
 
   redis:
     <<: *hardening
-    image: redis:8.8.4-alpine
+    image: redis:8.8.4-alpine@sha256:c027ae0f677dcf73d74038256f5b88c9ba7b11ccbfae97e96a9f091208d36125
     command:
       - sh
       - -c
@@ -178,7 +178,7 @@ services:
   # Antivirus de los archivos subidos (RF-03). Sin él, el backend no arranca en producción.
   clamav:
     <<: *hardening
-    image: clamav/clamav:1.5.4
+    image: clamav/clamav:1.5.4@sha256:45fe5149fbee5a46509c9848ef20d0c354b7b2323c9369f285939a37cf33422a
     cap_drop: []
     volumes:
       - clamav_data:/var/lib/clamav
