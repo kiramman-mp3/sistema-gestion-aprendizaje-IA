@@ -41,6 +41,11 @@ export interface LlmToolCall {
   name: string;
   /** Argumentos tal como los devolvió el modelo; `LlmService` no los interpreta, el orquestador los valida. */
   arguments: unknown;
+  /**
+   * Dato opaco del proveedor que debe volver con la llamada en el turno siguiente (por ejemplo, la «firma de
+   * pensamiento» de Gemini 3). Quien no lo usa lo ignora; el orquestador lo conserva sin leerlo.
+   */
+  signature?: string;
 }
 
 /** Mensaje de la conversación que se entrega al modelo. El contenido ya viene seudonimizado. */
