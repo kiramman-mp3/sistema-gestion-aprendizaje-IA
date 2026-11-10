@@ -173,6 +173,39 @@ MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php /o
 Los plazos son relativos a hoy. Con `--recrear` se borra el curso y se vuelve a crear; los usuarios `prueba_*` se
 conservan. Sin esa opción, si el curso ya existe, el script se detiene.
 
+### Docentes y administrador de prueba
+
+`infra/moodle/cli/seed_docentes_prueba.php` (necesita `AN-401-PRUEBA`) crea, de forma idempotente, usuarios para probar permisos,
+snapshots, auditoría y reglas:
+
+| Usuario           | Rol                                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| `prueba_docente2` | Docente con edición en `AN-401-PRUEBA` (sus snapshots y conversaciones son aparte)       |
+| `prueba_tutor`    | Docente sin edición (ve la analítica, no publica)                                        |
+| `prueba_admin`    | Gestor asignado en el sistema: tiene `local/ai_assistant:administer` en todos los cursos |
+
+Con `prueba_ajeno` (sin matrícula) y `prueba_docente` (de `seed_curso_prueba.php`) completan los casos de permisos. Contraseña
+`Demo#2026` por defecto.
+
+### Servicios para la verificación de punta a punta
+
+```bash
+# Antivirus y worker documental (el worker lee el almacén del backend que corre en el host)
+docker compose --profile antivirus up -d
+WORKER_STORAGE_SOURCE=./apps/api/var/storage docker compose --profile worker up -d --build document-worker
+# Backend con el proveedor de demostración
+AI_PROVIDER=mock pnpm --filter @smart-lms/api dev
+```
+
+| Comando                                    | Qué verifica                                                                                                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm smoke:publicacion`                   | Propuesta → aprobación → publicación en Moodle, sin duplicados                                                                                   |
+| `pnpm smoke:asistente`                     | Chat (SSE, seudónimos, criterio, aclaración, errores), analítica, aislamiento, administración, reglas y snapshots de dos docentes                |
+| `pnpm smoke:silabos`                       | Carga de 12 sílabos sintéticos con ClamAV y el worker (incluido el OCR), extracción, rechazos, búsqueda en documentos y aislamiento entre cursos |
+| `pnpm eval:text` / `pnpm eval:text:docker` | Qué parte del contenido de cada sílabo sintético llega al texto extraído (la versión Docker incluye el OCR)                                      |
+
+Cada uno borra lo que crea. Los sílabos sintéticos se regeneran con `pnpm synthetic:syllabi` (los escaneados necesitan Docker).
+
 Con el backend en marcha (`AI_PROVIDER=mock pnpm --filter @smart-lms/api dev`), `pnpm smoke:asistente` comprueba el
 chat y la analítica contra este curso.
 

@@ -69,7 +69,7 @@ gestionan la plataforma.
 
 ## ✨ Características
 
-Implementado hasta el Sprint 4:
+Base:
 
 - **Entorno reproducible:** Moodle 5.1.8 con `moodle-docker`, base auxiliar PostgreSQL 17 con `pgvector`, Redis y datos sintéticos deterministas, levantados con dos scripts.
 - **Integración con mínimo privilegio:** usuario técnico de Moodle con un rol que solo permite usar REST, autorizado en un único servicio restringido definido por el plugin.
@@ -86,12 +86,15 @@ Implementado hasta el Sprint 4:
 - **Progreso visible en Moodle:** la página del asistente sube el sílabo, muestra el avance y explica el resultado o el error.
 - **Retención de archivos:** el original se borra al vencer su plazo (30 días por defecto) y las cargas que no se pudieron encolar se reintentan solas.
 
-Planificadas para el MVP según el [documento de requisitos](docs/requisitos/implementacion_lms_inteligente_ia.md):
+Asistente y analítica (hechos):
 
-- **Planificación asistida:** convierte el texto del sílabo en una propuesta de secciones y actividades que el docente edita y aprueba antes de publicar.
-- **Asistente conversacional:** responde preguntas sobre entregas, pendientes de calificar y notas consultando Moodle mediante herramientas explícitas, nunca con SQL libre.
-- **Analítica del rendimiento:** indicadores documentados y cálculos deterministas, sin que el modelo de IA calcule notas.
-- **Asistente pedagógico:** recomendaciones basadas en evidencias observables, sin diagnósticos ni decisiones académicas automáticas.
+- **Planificación asistida:** convierte el texto del sílabo en una propuesta de secciones y actividades que el docente edita, aprueba y publica en Moodle sin duplicados.
+- **Asistente conversacional:** responde sobre entregas, pendientes de calificar, notas, rendimiento por unidad, evidencias de un estudiante y lo que dicen los documentos del curso (con página), consultando Moodle con herramientas explícitas, nunca con SQL libre. Cada respuesta indica el criterio aplicado y, si la pregunta es ambigua, pide una sola aclaración.
+- **Privacidad por diseño:** el modelo solo ve seudónimos; los nombres los pone la sesión de Moodle del docente. Las lecturas de Moodle devuelven solo ids.
+- **Analítica del rendimiento:** indicadores documentados y cálculos deterministas, señales de dificultad con su explicación y evolución de los indicadores en el tiempo (un snapshot por día y docente).
+- **Asistente pedagógico:** recomendaciones basadas en evidencias observables y en el sílabo del curso, con un validador que impide diagnósticos y etiquetas.
+- **Administración:** consulta de la auditoría (sin nombres ni notas) y configuración de las reglas de dificultad por institución o curso, para quien tenga la capacidad `local/ai_assistant:administer`.
+- **Operación:** producción con TLS y red interna, copias cifradas con prueba de restauración, monitoreo de salud y alertas de errores y consumo de IA.
 
 ---
 
@@ -102,7 +105,7 @@ Planificadas para el MVP según el [documento de requisitos](docs/requisitos/imp
 - **Worker documental:** Node con TypeScript, pdf.js 6 para PDF, fflate y fast-xml-parser para DOCX, Poppler y Tesseract para OCR.
 - **Cola de trabajos:** BullMQ 6 sobre Redis, con flujos padre/hijo y planificadores.
 - **Base de datos:** PostgreSQL 17 con `pgvector` 0.8.6 mediante Prisma 7 y el adaptador `pg`; Redis 8.8 con `ioredis`.
-- **IA:** proveedor LLM por definir (D-07) detrás de la interfaz `LlmProvider`.
+- **IA:** proveedor LLM y de embeddings por definir (D-07) detrás de las interfaces `LlmProvider` y `EmbeddingProvider`; con `AI_PROVIDER=mock` hay un proveedor de demostración. Búsqueda en documentos (RAG) con `pgvector` (vectores de 1024 dimensiones, índice HNSW por coseno).
 - **Contratos:** Zod 4 en `packages/contracts`, con exportación a JSON Schema.
 - **Pruebas:** Vitest en `packages/*`, en el worker y en el JavaScript del plugin (con jsdom); Jest y Supertest en el backend; PHPUnit en el plugin.
 - **Calidad:** ESLint, Prettier, Redocly CLI (contrato OpenAPI), `phpcs` con `moodle-cs` y GitHub Actions.
@@ -169,7 +172,9 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │       │   ├── proposals/          # Propuestas de curso: generador, validación, estados y API
 │       │   ├── assistant/          # Chat: POST /assistant/chat (SSE), orquestador, herramientas y límites de uso
 │       │   ├── analytics/          # Indicadores, señales de dificultad, evidencias del estudiante y GET /analytics
-│       │   ├── llm/                # Interfaz del proveedor de IA, límites, consumo y proveedor de demostración
+│       │   ├── llm/                # Interfaces del proveedor de IA y de embeddings, límites, consumo y proveedores de demostración
+│       │   ├── rag/                # Fragmentos de los documentos, indexación con pgvector y búsqueda por curso
+│       │   ├── admin/              # GET /audit y administración de las reglas de dificultad (capacidad `admin`)
 │       │   ├── privacy/            # Seudonimización de estudiantes y datos personales
 │       │   ├── recommendations/    # Recomendaciones pedagógicas, seguimiento docente y validador de lenguaje
 │       │   ├── queue/              # Nombres de colas y conexión de BullMQ
@@ -192,8 +197,9 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │   ├── amd/                        # Rollup de los módulos AMD y pruebas de su JavaScript (Vitest + jsdom)
 │   ├── mocks/                      # API de IA simulada para desarrollar la interfaz (`pnpm mock:ai`)
 │   ├── loadtest/                   # Prueba de carga básica (`pnpm loadtest`)
-│   ├── monitoring/                 # check-health.sh: salud, contenedores, copias y disco
-│   └── scripts/                    # moodle.sh, phpcs.sh, copias, restauración, verificación de punta a punta y medición del F1
+│   ├── synthetic-syllabi/          # Generador de los sílabos sintéticos de prueba (`pnpm synthetic:syllabi`)
+│   ├── monitoring/                 # check-health.sh (salud, contenedores, copias, disco) y check-ai-usage.sh (errores y consumo de IA)
+│   └── scripts/                    # moodle.sh, phpcs.sh, copias, restauración, verificaciones de punta a punta (`smoke:*`) y mediciones (F1, texto extraído)
 ├── docs/
 │   ├── ROADMAP.md                  # Plan por fases y sprints
 │   ├── equipo/                     # Reparto del trabajo entre el equipo
@@ -205,6 +211,9 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │   ├── api/openapi.yaml            # Contrato OpenAPI v0 del backend
 │   ├── security/                   # Análisis de privacidad (LOPDP), revisión OWASP y seguridad de la IA
 │   ├── testing/                    # Plan de pruebas
+│   ├── user-manual/                # Manual del docente, del administrador y guion de capacitación
+│   ├── operacion/                  # Instalación, operación diaria e incidentes
+│   ├── thesis/                     # Capítulos técnicos de la tesis
 │   ├── levantamiento/              # Guía de entrevista, catálogo de sílabos, consentimiento
 │   └── prototipos/                 # Prototipos de baja fidelidad
 ├── CONTRIBUTING.md                 # Cómo contribuir: ramas, commits, pruebas y PR
@@ -293,6 +302,7 @@ conocidos. En resumen:
 | `AI_MAX_OUTPUT_TOKENS`                 | Tope de tokens de salida (8192)                                                                 |
 | `PSEUDONYM_SECRET`                     | Clave de los seudónimos de estudiantes (≥ 32 caracteres); obligatoria en producción con IA      |
 | `AI_CONVERSATION_RETENTION_DAYS`       | Días que se conserva una conversación con el asistente (90, provisional)                        |
+| `ANALYTICS_SNAPSHOT_RETENTION_DAYS`    | Días que se conservan los snapshots de indicadores del panel (365, provisional)                 |
 | `AI_DAILY_MESSAGES_PER_TEACHER`        | Mensajes por docente en 24 horas antes de responder 429 (200)                                   |
 | `AI_DAILY_TOKENS_PER_TEACHER`          | Tokens por docente en 24 horas antes de responder 429 (500000)                                  |
 | `AI_DAILY_RECOMMENDATIONS_PER_TEACHER` | Recomendaciones pedagógicas por docente en 24 horas antes de responder 429 (50)                 |
@@ -306,31 +316,35 @@ conocidos. En resumen:
 
 ### Desarrollo
 
-| Comando                                          | Qué hace                                                                          |
-| ------------------------------------------------ | --------------------------------------------------------------------------------- |
-| `pnpm lint`                                      | ESLint en todo el repositorio                                                     |
-| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                                        |
-| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                                       |
-| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                                                |
-| `pnpm test`                                      | Pruebas de todos los paquetes                                                     |
-| `pnpm build`                                     | Compila todos los paquetes                                                        |
-| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                                            |
-| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                         |
-| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                                 |
-| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                                |
-| `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                                     |
-| `pnpm --filter @smart-lms/plugin-js test`        | Pruebas del JavaScript del plugin (modelo y editor de la extracción)              |
-| `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                                    |
-| `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                              |
-| `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                                |
-| `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                                   |
-| `pnpm mock:ai`                                   | API de IA simulada (puerto 3100) para probar la interfaz sin el LLM               |
-| `pnpm loadtest -- --scenario session`            | Prueba de carga básica del backend (también `--scenario chat`)                    |
-| `pnpm smoke:publicacion`                         | Verificación de punta a punta de CU-02 y CU-03 con Moodle real                    |
-| `pnpm smoke:asistente`                           | Verificación del chat y la analítica con la API real, Moodle y el curso de prueba |
-| `pnpm eval:extraction [dir] [--check]`           | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia    |
-| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`          |
-| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle                               |
+| Comando                                          | Qué hace                                                                                                    |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                      | ESLint en todo el repositorio                                                                               |
+| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                                                                  |
+| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                                                                 |
+| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                                                                          |
+| `pnpm test`                                      | Pruebas de todos los paquetes                                                                               |
+| `pnpm build`                                     | Compila todos los paquetes                                                                                  |
+| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                                                                      |
+| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                                                   |
+| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                                                           |
+| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                                                          |
+| `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                                                               |
+| `pnpm --filter @smart-lms/plugin-js test`        | Pruebas del JavaScript del plugin (modelo y editor de la extracción)                                        |
+| `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                                                              |
+| `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                                                        |
+| `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                                                          |
+| `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                                                             |
+| `pnpm mock:ai`                                   | API de IA simulada (puerto 3100) para probar la interfaz sin el LLM                                         |
+| `pnpm loadtest -- --scenario session`            | Prueba de carga básica del backend (también `--scenario chat`)                                              |
+| `pnpm smoke:publicacion`                         | Verificación de punta a punta de CU-02 y CU-03 con Moodle real                                              |
+| `pnpm smoke:asistente`                           | Verificación del chat, la analítica, la administración y los snapshots con la API real y el curso de prueba |
+| `pnpm smoke:silabos`                             | Carga, antivirus, worker, OCR, extracción y búsqueda en documentos con los sílabos sintéticos               |
+| `pnpm synthetic:syllabi`                         | Regenera los 12 sílabos sintéticos (los escaneados usan Docker)                                             |
+| `pnpm eval:text` / `pnpm eval:text:docker`       | Qué parte del contenido de un sílabo llega al texto que extrae el worker (con OCR en Docker)                |
+| `bash infra/monitoring/check-ai-usage.sh`        | Alertas de errores y consumo de IA (para cron)                                                              |
+| `pnpm eval:extraction [dir] [--check]`           | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia                              |
+| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`                                    |
+| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle                                                         |
 
 ### Producción local
 
@@ -394,11 +408,14 @@ Prefijo `/api/v1`. Todas las rutas salvo `/health` exigen el JWT del plugin. Con
 | GET    | `/analytics/courses/:courseId`                                     | Indicadores del curso y señales de dificultad con su explicación (`viewanalytics`)                                    |
 | GET    | `/analytics/courses/:courseId/students/:studentId`                 | Evidencias del estudiante: observado, calculado y desconocido (`viewanalytics`)                                       |
 | POST   | `/analytics/courses/:courseId/students/:studentId/recommendations` | Genera una recomendación pedagógica; `422` si faltan datos (`viewanalytics`)                                          |
+| GET    | `/analytics/courses/:courseId/history`                             | Evolución de los indicadores: los snapshots del propio docente (`viewanalytics`)                                      |
 | POST   | `/recommendations/:id/followups`                                   | Registra el seguimiento docente de una recomendación (`viewanalytics`)                                                |
+| GET    | `/audit`                                                           | Auditoría filtrable y paginada, sin nombres ni notas (`admin`)                                                        |
+| GET    | `/admin/difficulty-rules`                                          | Reglas de las señales de dificultad de la institución o de un curso (`admin`)                                         |
+| PUT    | `/admin/difficulty-rules/:rule`                                    | Guarda una regla de la institución o de un curso (`admin`)                                                            |
+| DELETE | `/admin/difficulty-rules/:rule`                                    | Quita la configuración propia de una regla (`admin`)                                                                  |
 
-Las herramientas del chat y la analítica leen de Moodle con funciones que el plugin todavía no tiene: con Moodle real esas rutas responden
-`503 MOODLE_UNAVAILABLE` hasta que existan ([pendiente de José](docs/equipo/pendiente-de-jose.md)). Con `AI_PROVIDER=mock` la extracción, el chat
-y las recomendaciones responden con datos de demostración.
+Las herramientas del chat, la analítica y las recomendaciones leen de Moodle con las siete funciones de lectura del plugin ([lecturas de Moodle](docs/architecture/lecturas-moodle.md)). Con `AI_PROVIDER=mock` la extracción, el chat y las recomendaciones responden con datos de demostración y lo avisan.
 
 El flujo de carga y extracción de texto está en [`docs/architecture/procesamiento-silabos.md`](docs/architecture/procesamiento-silabos.md); el de la extracción con IA, en [`docs/architecture/extraccion-ia.md`](docs/architecture/extraccion-ia.md); el del chat, en [`docs/architecture/asistente-chat.md`](docs/architecture/asistente-chat.md); el de la analítica y las recomendaciones, en [`docs/architecture/analitica.md`](docs/architecture/analitica.md); el de propuestas, en [`docs/architecture/propuestas.md`](docs/architecture/propuestas.md); el de publicación, en [`docs/architecture/publicacion.md`](docs/architecture/publicacion.md); las pantallas del chat, la analítica y la relación de actividades, en [`docs/architecture/interfaces-plugin.md`](docs/architecture/interfaces-plugin.md); y lo que espera la interfaz de la línea de IA, en [`docs/equipo/integracion-con-ia.md`](docs/equipo/integracion-con-ia.md).
 
@@ -409,6 +426,9 @@ El flujo de carga y extracción de texto está en [`docs/architecture/procesamie
 | `20261109163904_init`                           | Esquema inicial de 15 tablas y extensiones `vector` y `pgcrypto` |
 | `20261109200000_integration_account_unique_url` | Una cuenta de integración por sitio Moodle                       |
 | `20261110090000_document_text`                  | Estado `TEXT_READY` y texto extraído del sílabo                  |
+| `20261110130000_analytics_snapshot_day`         | Snapshots de indicadores: uno por día, curso y docente           |
+| `20261110140000_document_chunks_vector`         | `vector(1024)`, índice HNSW y fragmento único por documento      |
+| `20261110141000_document_chunks_drop_old_index` | Quita el índice simple que reemplaza el único                    |
 
 El plugin de Moodle tiene su propia tabla, `local_ai_assistant_items` (relaciona cada elemento publicado con su sección o actividad), creada por `db/install.xml` y `db/upgrade.php`; tras actualizar el plugin se aplica con `admin/cli/upgrade.php`.
 
@@ -448,10 +468,10 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 - [ ] Extracción estructurada con IA y revisión del docente (Sprint 5; hechos el editor y la API, falta medir el F1 con sílabos reales)
 - [x] Propuesta de curso: generador, validación, estados, API y vista previa (Sprint 6)
 - [x] Publicación idempotente en Moodle, con confirmación, resumen y reanudación (Sprint 7)
-- [ ] Asistente conversacional (Sprints 8–9; hechos el chat, el orquestador, la seudonimización y los límites de uso; faltan las funciones de lectura de Moodle y el RAG)
-- [ ] Analítica y asistente pedagógico (Sprints 10–11; hechos el panel del plugin, los indicadores, las señales, las evidencias, las recomendaciones y el seguimiento; faltan los snapshots, las reglas por API y medir la pertinencia con un modelo real)
-- [ ] Evaluación con docentes (Sprint 12; hechas la revisión OWASP y la prueba de carga, faltan los casos de IA y el piloto)
-- [ ] Despliegue y documentación final (Sprint 13; hechos el entorno de producción, las copias, el monitoreo y los manuales, falta el despliegue real, la tesis y la versión 1.0)
+- [x] Asistente conversacional (Sprints 8–9): chat, orquestador, seudonimización, límites de uso, lecturas de Moodle, búsqueda en documentos (RAG), criterio aplicado y aclaración única; falta repetir las pruebas de ataque y medir la calidad con el proveedor real
+- [ ] Analítica y asistente pedagógico (Sprints 10–11): hechos el panel, los indicadores, las señales, las evidencias, los snapshots, las reglas por API, las recomendaciones y el seguimiento; falta medir la pertinencia de las recomendaciones con un modelo real
+- [ ] Evaluación con docentes (Sprint 12): hechas la revisión OWASP, la prueba de carga, los casos SEC-06 y SEC-07 con un modelo simulado y las verificaciones de punta a punta; faltan los casos con el proveedor real, la medición de RNF-01 a RNF-03, la calidad de la IA y el piloto con la encuesta SUS
+- [ ] Despliegue y documentación final (Sprint 13): hechos el entorno de producción, las copias con prueba de restauración, el monitoreo y las alertas, los manuales y los capítulos técnicos de la tesis; faltan el despliegue real, la capacitación y la versión 1.0
 
 ---
 

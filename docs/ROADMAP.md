@@ -431,8 +431,8 @@ validados por el tutor y Moodle local de desarrollo.
 - [x] `feature/tool-grade-summary`: `get_course_grade_summary` con cálculos deterministas y normalización de escalas. Hecha como `get_grade_summary` (una nota ausente no cuenta como cero); verificada con Moodle real: 11, 8 y 9 notas, sin la calificación oculta.
 - [x] `feature/pseudonymization`: el LLM recibe seudónimos; la respuesta lleva los seudónimos y `data.students` con su id de Moodle, y el plugin los sustituye por el nombre ([ADR-010](architecture/adr/0010-seudonimizacion.md)).
 - [x] `feature/chat-api`: `POST /assistant/chat` con streaming SSE o JSON, conversación persistida e historial con límite de contexto (20 mensajes).
-- [ ] Respuestas con actividad, curso, fecha de consulta, criterio aplicado, enlace a Moodle y aviso de datos incompletos.
-- [ ] Aclaración única cuando la pregunta es ambigua.
+- [x] Respuestas con actividad, curso, fecha de consulta, criterio aplicado (`criteria`), enlace a Moodle y aviso de datos incompletos.
+- [x] Aclaración única cuando la pregunta es ambigua (herramienta `ask_clarification`, una vez por pregunta).
 
 **Criterio de aceptación:** las respuestas sobre entregas coinciden con Moodle en el conjunto de preguntas de referencia.
 **Avance de la parte del plugin (Sprint 9):** la pantalla del chat con streaming SSE está hecha y probada (contrato de eventos fijado en el OpenAPI, API simulada `pnpm mock:ai`). Sustituye los seudónimos `Estudiante#NNNNNNNN` por los nombres que da Moodle (`data.students` y `get_course_students`) y maneja el 429 con `Retry-After`, el 503, el 404 `CONVERSATION_NOT_FOUND` y el 400 con `details`.
@@ -451,9 +451,9 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** consultar el contenido de sílabos y documentos del curso, y endurecer la seguridad del chat.
 
-- [ ] `feature/rag-indexing`: fragmentación con solapamiento, metadatos (curso, documento, versión, página) y embeddings en `pgvector`.
-- [ ] `feature/tool-search-documents`: `search_course_documents` con filtro por curso antes de la búsqueda.
-- [ ] Respuestas con referencias a documento y página.
+- [x] `feature/rag-indexing`: fragmentación con solapamiento, metadatos (curso, documento, página) y embeddings en `pgvector` (vectores de 1024 dimensiones con índice HNSW; embeddings de demostración hasta D-07, [ADR-019](architecture/adr/0019-rag-embeddings-pgvector.md)).
+- [x] `feature/tool-search-documents`: `search_course_documents` con el filtro por curso dentro de la consulta, verificada con la base real y con un segundo curso.
+- [x] Respuestas con referencias a documento y página.
 - [x] `feature/plugin-chat-ui`: chat con streaming, fuentes y estados de error. Listo contra el contrato y la API simulada; falta la API real de la línea de IA ([interfaces del plugin](architecture/interfaces-plugin.md)).
 - [x] Degradación controlada si el proveedor LLM no responde: el sistema informa el fallo sin inventar respuesta (`503 AI_PROVIDER_UNAVAILABLE`, o evento `error` si el flujo ya empezó).
 - [x] Pruebas de ataque: documento con instrucciones maliciosas, petición de datos de otro curso, acceso a conversación ajena. Hechas a nivel de servicio con un modelo simulado que obedece al atacante; falta repetirlas con el proveedor real.
@@ -472,7 +472,7 @@ validados por el tutor y Moodle local de desarrollo.
 **Objetivo:** calcular indicadores transparentes y su evolución.
 
 - [x] `feature/analytics-indicators`: porcentaje de entregas, actividades pendientes, promedio, rendimiento por unidad y participación, con definiciones documentadas ([analítica](architecture/analitica.md)).
-- [ ] `feature/analytics-snapshots`: tarea programada que guarda snapshots periódicos para calcular la evolución. **Aplazada:** una tarea programada no tiene un docente con el que leer de Moodle ([ADR-018](architecture/adr/0018-analitica-sin-snapshots-lecturas-completas.md)); la caída sostenida se calcula sin historial.
+- [x] `feature/analytics-snapshots`: **hecha bajo demanda** ([ADR-021](architecture/adr/0021-snapshots-de-indicadores-bajo-demanda.md)), no como tarea programada: se guarda un snapshot al abrir el panel, uno por día y docente. Texto original: tarea programada que guarda snapshots periódicos para calcular la evolución. **Aplazada:** una tarea programada no tiene un docente con el que leer de Moodle ([ADR-018](architecture/adr/0018-analitica-sin-snapshots-lecturas-completas.md)); la caída sostenida se calcula sin historial.
 - [x] `feature/activity-unit-mapping`: mapeo manual de actividades no creadas por el sistema a unidades y resultados (o competencias de Moodle).
 - [x] `feature/difficulty-signals`: reglas configurables (umbral, ventana, actividades obligatorias) con explicación de por qué se activó cada señal. Falta la API para administrarlas (`/admin/difficulty-rules`), que espera el permiso de administrador.
 - [x] `feature/analytics-api`: `GET /analytics/courses/:courseId`.
@@ -488,7 +488,7 @@ validados por el tutor y Moodle local de desarrollo.
 - [ ] `feature/student-evidence`: `get_student_learning_evidence` y `GET /analytics/courses/:courseId/students/:studentId`. **Parcial:** hecha la ruta, con lo observado, lo calculado y lo desconocido por separado; falta la herramienta del chat.
 - [x] `feature/pedagogical-recommendations`: resumen de evidencias, fortalezas, dificultades, información faltante, estrategias, actividades de refuerzo e indicadores de seguimiento. `POST /analytics/courses/:courseId/students/:studentId/recommendations`, con `422` si faltan datos. Falta medir su pertinencia con un modelo real (Sprint 12).
 - [x] Reglas de lenguaje: describir comportamientos observables; sin diagnósticos ni atribuciones personales (validador de salida + pruebas). El validador rechaza y se reintenta una vez; si el segundo intento tampoco cumple, no se guarda nada.
-- [ ] Integración RAG con documentos pedagógicos autorizados.
+- [x] Integración RAG con documentos pedagógicos autorizados: las recomendaciones reciben pasajes del sílabo del curso sobre metodología y evaluación, como datos delimitados.
 - [x] `feature/recommendation-follow-up`: el docente registra la intervención y su resultado (plugin y `POST /recommendations/:id/followups`).
 - [x] `feature/plugin-student-analysis`: pantalla que separa datos observados, cálculos, interpretaciones de IA, información desconocida y acciones posibles.
 
@@ -507,7 +507,7 @@ validados por el tutor y Moodle local de desarrollo.
 > Las pruebas unitarias y de integración se escriben en cada sprint. Este sprint completa las pruebas
 > end-to-end y ejecuta la evaluación con docentes.
 
-- [ ] Pruebas end-to-end de CU-01 a CU-05.
+- [x] Pruebas end-to-end de CU-01 a CU-07 con el proveedor de demostración (`pnpm smoke:silabos`, `smoke:publicacion`, `smoke:asistente`); falta repetirlas con el proveedor real.
 - [ ] Suite completa de seguridad de la sección 13.2 y revisión OWASP Top 10.
 - [ ] Prueba de carga básica contra RNF-01 a RNF-03.
 - [ ] Evaluación de calidad de IA sobre el conjunto de referencia (sección 13.3).
@@ -531,9 +531,9 @@ validados por el tutor y Moodle local de desarrollo.
 - [ ] Monitoreo: métricas, trazas, alertas de errores y de costo de IA. **Parcial:** hecho `check-health.sh` (backend, contenedores, antigüedad de la copia y disco) y la rotación de logs; faltan métricas, trazas y el costo de IA (dependen del proveedor).
 - [x] Procedimiento de incidentes y brechas de datos ([`docs/operacion/procedimiento-incidentes.md`](operacion/procedimiento-incidentes.md)).
 - [x] Manual de instalación y operación ([`docs/operacion/instalacion-y-operacion.md`](operacion/instalacion-y-operacion.md)).
-- [ ] Manual del docente y capacitación. **Parcial:** hecho el [manual del docente](user-manual/manual-docente.md); falta la capacitación y sus capturas.
+- [ ] Manual del docente y capacitación. **Parcial:** hechos el [manual del docente](user-manual/manual-docente.md), el [manual del administrador](user-manual/manual-administrador.md) y el [guion de capacitación](user-manual/capacitacion.md); falta impartirla (piloto) y tomar sus capturas.
 - [ ] README final según `CLAUDE.md`.
-- [ ] Capítulos técnicos de la tesis (`docs/thesis/`).
+- [x] Capítulos técnicos de la tesis (`docs/thesis/`): arquitectura, privacidad y seguridad, IA y evaluación, pruebas y resultados. Borradores que se completan con el levantamiento y el piloto.
 - [ ] Merge `develop` → `main` con `--no-ff` y etiqueta `v1.0.0`.
 
 **Entregables (H7):** sistema desplegado, manuales y versión 1.0 en `main`.
@@ -585,19 +585,19 @@ de modelos propios y publicación masiva sin revisión.
 
 ## 📈 Seguimiento
 
-| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                                                                      |
-| ------ | --------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10                                                    |
-| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético                                                   |
-| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo                                                      |
-| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                                                                    |
-| S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03)                                      |
-| S5     | En curso  | 2026-11-09 |            | Editor y API de extracción hechos; falta el F1 con sílabos reales (D-03)                                                                   |
-| S6     | Terminado | 2026-11-09 | 2026-11-09 | Generador, validación, máquina de estados, API y vista previa; D-04 y D-05 provisionales                                                   |
-| S7     | Terminado | 2026-11-09 | 2026-11-09 | Funciones del plugin, publicación idempotente en cola, panel con confirmación y resumen; H3 alcanzado                                      |
-| S8     | En curso  | 2026-11-10 |            | Chat, orquestador, seudonimización y lecturas de Moodle hechos; falta probar `get_assignment_submissions` en el chat con el proveedor real |
-| S9     | En curso  | 2026-11-09 |            | Chat del plugin, límites de IA y pruebas de ataque hechos; falta el RAG (depende de D-07)                                                  |
-| S10    | En curso  | 2026-11-09 |            | Panel del plugin, indicadores, señales y API de analítica hechos; faltan snapshots y las reglas por API                                    |
-| S11    | En curso  | 2026-11-09 |            | Evidencias, recomendaciones, seguimiento y validador hechos; falta medir su pertinencia con un modelo real                                 |
-| S12    | En curso  | 2026-11-09 |            | Revisión OWASP, prueba de carga y verificación de punta a punta hechas; faltan IA, piloto y SUS                                            |
-| S13    | En curso  | 2026-11-09 |            | Producción, copias, monitoreo y manuales hechos; faltan despliegue real, tesis y v1.0.0                                                    |
+| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                                                                                                            |
+| ------ | --------- | ---------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10                                                                                          |
+| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético                                                                                         |
+| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo                                                                                            |
+| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                                                                                                          |
+| S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03)                                                                            |
+| S5     | En curso  | 2026-11-09 |            | Editor y API de extracción hechos; 12 sílabos sintéticos para ejercitar el flujo; falta el F1 con sílabos reales (D-03) y un proveedor de IA                                     |
+| S6     | Terminado | 2026-11-09 | 2026-11-09 | Generador, validación, máquina de estados, API y vista previa; D-04 y D-05 provisionales                                                                                         |
+| S7     | Terminado | 2026-11-09 | 2026-11-09 | Funciones del plugin, publicación idempotente en cola, panel con confirmación y resumen; H3 alcanzado                                                                            |
+| S8     | En curso  | 2026-11-10 |            | Chat, orquestador, seudonimización, lecturas de Moodle, criterio aplicado, aclaración única y evidencias hechos; falta probar `get_assignment_submissions` con el proveedor real |
+| S9     | En curso  | 2026-11-09 |            | Chat del plugin, RAG con pgvector, límites de IA y pruebas de ataque hechos; faltan el modelo de embeddings real (D-07) y repetir las pruebas con él                             |
+| S10    | En curso  | 2026-11-09 |            | Panel del plugin, indicadores, señales, snapshots, reglas por API y pantalla de administración hechos                                                                            |
+| S11    | En curso  | 2026-11-09 |            | Evidencias, recomendaciones con pasajes del sílabo, seguimiento y validador hechos; falta medir su pertinencia con un modelo real                                                |
+| S12    | En curso  | 2026-11-09 |            | Revisión OWASP, prueba de carga y verificaciones de punta a punta (CU-01 a CU-07) hechas; faltan los casos con IA real, RNF-01 a RNF-03, el piloto y SUS                         |
+| S13    | En curso  | 2026-11-09 |            | Producción, copias, monitoreo y alertas, manuales, capacitación (guion) y tesis (borradores) hechos; faltan despliegue real, capacitación impartida y v1.0.0                     |

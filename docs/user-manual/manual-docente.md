@@ -103,7 +103,15 @@ tarea 3?_, _¿qué hay pendiente de calificar?_, _¿cómo van las notas de la un
 - **Enter** envía; **Mayús + Enter** hace un salto de línea. Máximo 2000 caracteres.
 - La respuesta aparece mientras se escribe, y verás **qué está consultando**. Puedes **Detener** una respuesta en curso.
 - Cada respuesta indica la **fecha de la consulta** y sus **fuentes** (con enlace a la actividad o a las
-  calificaciones de Moodle). Si faltaron datos te lo dice: _«esta respuesta puede estar incompleta»_.
+  calificaciones de Moodle; los documentos del curso se citan con su **página**). Si faltaron datos te lo dice:
+  _«esta respuesta puede estar incompleta»_.
+- Bajo la respuesta puedes abrir **Criterio aplicado**: las reglas con las que se calculó el dato (por ejemplo, _«un
+  borrador no cuenta como entrega»_ o _«un estudiante sin nota no cuenta como cero»_), para que puedas verificarla.
+- Si tu pregunta es **ambigua** (por ejemplo, _«¿quién no entregó la tarea?»_ y hay varias), el asistente te hace **una sola
+  pregunta de aclaración**. Respóndela y te contesta con lo que tenga; no vuelve a preguntar sobre ese tema.
+- También puedes preguntar por **lo que dicen los documentos del curso**: _«¿qué dice el sílabo sobre la bibliografía?»_,
+  _«¿cómo se evalúa el aprendizaje autónomo?»_. Si no hay nada parecido en los documentos, te lo dice y no inventa.
+- Para pedir las **evidencias de un estudiante** necesitas el permiso de ver la analítica; sin él, el asistente no consulta ese dato.
 - **No inventa**: si no hay datos para responder, lo dice. Los cálculos de notas los hace el sistema con reglas fijas, no el modelo de IA.
 - **Nombres.** Cuando la respuesta habla de estudiantes, verás sus nombres: el asistente trabaja con identificadores y tu
   propia sesión de Moodle pone los nombres. Si un estudiante ya no está en el curso, aparece como «Estudiante 12».
@@ -126,6 +134,13 @@ Si tienes permiso para ver la analítica, **Analítica del curso** muestra:
   por debajo del umbral, descenso sostenido…), **cada una con su explicación**. Una señal no es un diagnóstico: es algo
   que vale la pena mirar.
 
+### Evolución de los indicadores
+
+Cada vez que abres el panel, el sistema guarda los valores de ese día (como mucho una vez por día y solo para ti: otro docente
+no ve los tuyos). Con dos o más visitas aparece la tabla **Evolución**, con una fila por día en que abriste el panel y la
+cantidad de señales de ese día. Los días en que no lo abriste **no se rellenan**: la tabla muestra solo lo que se midió. Se
+conservan un año.
+
 ### Ver las evidencias de un estudiante
 
 Pulsa **Ver evidencias** en una señal. Verás por separado:
@@ -146,7 +161,8 @@ Después puedes **Registrar tu seguimiento**: qué hiciste (obligatorio) y qué 
 
 - Los **nombres de los estudiantes no salen de Moodle**: el asistente trabaja con identificadores y los nombres los
   muestra tu propia sesión de Moodle.
-- Cada consulta queda registrada en una auditoría sin nombres ni contenido de mensajes.
+- Cada consulta queda registrada en una auditoría sin nombres ni contenido de mensajes. Solo el administrador institucional
+  puede consultarla.
 - El asistente solo ve los cursos en los que eres docente.
 
 ## 7. Preguntas frecuentes

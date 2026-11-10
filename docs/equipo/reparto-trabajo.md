@@ -27,7 +27,7 @@ ese contrato con datos de prueba.
 - [x] `feature/syllabus-structured-extraction`: del texto (`extracted_text`) al esquema v1 validado con Zod, con `uncertainFields` y `sourceReferences` con página; sin inventar fechas, ponderaciones ni actividades.
 - [x] Defensa contra prompt injection: el texto del documento va delimitado como datos.
 - [x] `feature/extraction-versioning`: `POST /syllabi/:id/extract`, `GET` y `PUT /syllabi/:id/extraction` y versiones en `syllabus_extractions`.
-- [ ] Conjunto de referencia y primera medición de precisión, exhaustividad y F1. El medidor está hecho (`pnpm eval:extraction`); faltan los sílabos reales (D-03).
+- [ ] Conjunto de referencia y primera medición de precisión, exhaustividad y F1. El medidor está hecho (`pnpm eval:extraction`) y hay 12 sílabos **sintéticos** con su extracción esperada (`tests/fixtures/synthetic-syllabi`), que sirven para ejercitar el flujo y medir el texto extraído (99,6 %) pero **no valen para la tesis**; faltan los sílabos reales (D-03) y un proveedor de IA.
 
 ### Sprint 8 · Asistente conversacional
 
@@ -38,20 +38,20 @@ ese contrato con datos de prueba.
 
 ### Sprint 9 · RAG
 
-- [ ] `feature/rag-indexing` con `pgvector` y `feature/tool-search-documents` filtrando por curso.
+- [x] `feature/rag-indexing` con `pgvector` y `feature/tool-search-documents` filtrando por curso ([ADR-019](../architecture/adr/0019-rag-embeddings-pgvector.md)), con embeddings de demostración; falta el modelo real (D-07) y medir la calidad de la recuperación.
 - [x] Degradación controlada si el proveedor LLM no responde y límites de uso y costo por docente (mensajes y tokens; el costo en dinero espera a D-07).
 - [x] Pruebas de ataque del chat: documento con instrucciones maliciosas, datos de otro curso y conversación ajena (con modelo simulado; repetir con el proveedor real).
 
 ### Sprints 10 y 11 · Analítica y asistente pedagógico
 
-- [x] `feature/analytics-indicators`, `feature/difficulty-signals` y `feature/analytics-api`. `feature/analytics-snapshots` queda aplazada (ADR-018). Probado con un Moodle simulado; con Moodle real esperan las funciones de lectura del plugin.
+- [x] `feature/analytics-indicators`, `feature/difficulty-signals` y `feature/analytics-api`, verificados con Moodle real. `feature/analytics-snapshots` hecha bajo demanda, uno por día y docente ([ADR-021](../architecture/adr/0021-snapshots-de-indicadores-bajo-demanda.md)). Reglas administrables por API (`/admin/difficulty-rules`, [ADR-020](../architecture/adr/0020-capacidad-administer-y-rutas-de-administracion.md)).
 - [x] Herramienta `get_unit_performance` para el chat.
-- [ ] `feature/student-evidence` y `feature/pedagogical-recommendations` con el validador de lenguaje (sin diagnósticos ni etiquetas). Hechos: la ruta de evidencias, la generación con el validador, `POST /analytics/courses/:courseId/students/:studentId/recommendations` y `POST /recommendations/:id/followups`. Falta la herramienta `get_student_learning_evidence` del chat y medir la pertinencia con un modelo real.
+- [x] `feature/student-evidence` y `feature/pedagogical-recommendations` con el validador de lenguaje (sin diagnósticos ni etiquetas): la ruta de evidencias, la herramienta `get_student_learning_evidence` del chat (exige `viewanalytics`), la generación con el validador y los pasajes del sílabo, `POST /analytics/courses/:courseId/students/:studentId/recommendations` y `POST /recommendations/:id/followups`. Falta medir la pertinencia con un modelo real.
 
 ### Sprint 12 · Evaluación
 
 - [ ] Evaluación de calidad de IA sobre el conjunto de referencia (sección 13.3 de los requisitos).
-- [ ] Evaluación de recomendaciones y casos de seguridad de IA (SEC-06, SEC-07).
+- [ ] Evaluación de recomendaciones y casos de seguridad de IA (SEC-06, SEC-07). **Parcial:** SEC-06 y SEC-07 están automatizados con un modelo simulado que obedece al atacante, también para la búsqueda en documentos; falta repetirlos con el proveedor real y evaluar las recomendaciones con docentes.
 
 ### Con la institución
 
@@ -88,7 +88,7 @@ ese contrato con datos de prueba.
 
 ### Sprint 12 · Pruebas
 
-- [ ] Pruebas end-to-end de CU-01 a CU-05. **Parcial:** CU-02 y CU-03 se verifican de punta a punta con `pnpm smoke:publicacion`; CU-01, CU-04 y CU-05 necesitan la API de la línea de IA.
+- [x] Pruebas end-to-end de CU-01 a CU-07 con el proveedor de demostración: `pnpm smoke:silabos` (CU-01), `smoke:publicacion` (CU-02, CU-03) y `smoke:asistente` (CU-04, CU-05, CU-06, CU-07). Falta repetirlas con el proveedor real.
 - [x] Prueba de carga básica y revisión OWASP Top 10 ([resultados](../security/revision-owasp.md)). Con el proveedor de IA real faltan RNF-01 a RNF-03.
 - [ ] Piloto con docentes: medición frente a la línea base, encuesta SUS y entrevistas.
 
@@ -96,7 +96,7 @@ ese contrato con datos de prueba.
 
 - [x] `chore/production-compose` con TLS, límites de recursos y secretos fuera del repositorio.
 - [x] Copias de seguridad cifradas con prueba de restauración, monitoreo básico y procedimiento de incidentes.
-- [x] Manual de instalación y operación, y manual del docente (`docs/operacion/`, `docs/user-manual/`).
+- [x] Manual de instalación y operación, manual del docente, manual del administrador y guion de capacitación (`docs/operacion/`, `docs/user-manual/`); capítulos técnicos de la tesis (`docs/thesis/`). Falta impartir la capacitación (depende del piloto).
 
 ### Con la institución
 
