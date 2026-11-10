@@ -7,14 +7,15 @@ de ese documento: autenticación plugin–backend, creación de actividades medi
 propia, almacenamiento vectorial, procesamiento asíncrono, historial para analítica y seudonimización
 antes de llamar al proveedor LLM.
 
-| Dato                 | Valor                                                     |
-| -------------------- | --------------------------------------------------------- |
-| Versión del plan     | 1.0                                                       |
-| Fecha                | 2026-11-09                                                |
-| Cadencia             | Sprints de 2 semanas                                      |
-| Duración estimada    | 14 sprints (~28 semanas)                                  |
-| Equipo de referencia | 1–2 desarrolladores + docente tutor + 2–5 docentes piloto |
-| Estado               | Planificación                                             |
+| Dato                 | Valor                                                                             |
+| -------------------- | --------------------------------------------------------------------------------- |
+| Versión del plan     | 1.0                                                                               |
+| Reparto del trabajo  | [`docs/equipo/reparto-trabajo.md`](equipo/reparto-trabajo.md) (desde el Sprint 5) |
+| Fecha                | 2026-11-09                                                                        |
+| Cadencia             | Sprints de 2 semanas                                                              |
+| Duración estimada    | 14 sprints (~28 semanas)                                                          |
+| Equipo de referencia | 1–2 desarrolladores + docente tutor + 2–5 docentes piloto                         |
+| Estado               | Planificación                                                                     |
 
 > [!IMPORTANT]
 > Las fechas y la duración son orientativas. El Sprint 0 cierra las decisiones de la sección 19 del
