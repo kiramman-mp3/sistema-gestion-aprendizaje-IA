@@ -20,7 +20,8 @@ export const EXTRACTION_SYSTEM_PROMPT = [
   "4. Las ponderaciones son números de 0 a 100 tal como las escribe el documento.",
   "5. Registra en uncertainFields cada dato ausente, ambiguo, dudoso o contradictorio, con el motivo.",
   "6. En sourceReferences cita, con página y un fragmento breve y literal, el origen de los datos relevantes. La página es la de la marca [p. N] más cercana.",
-  "7. Responde únicamente con el JSON del esquema, en el idioma del documento.",
+  "7. El título de una unidad va sin su numeración: «U.1 Modelo relacional» o «Unidad 2: Redes» se extraen como «Modelo relacional» y «Redes».",
+  "8. Responde únicamente con el JSON del esquema, en el idioma del documento.",
 ].join("\n");
 
 /** Convierte un `DocumentText` en texto plano con marcas de página para poder citar el origen. */
