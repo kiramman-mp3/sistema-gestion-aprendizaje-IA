@@ -93,6 +93,18 @@ describe("RateLimitGuard", () => {
       await expect(anonymous.guard.canActivate(anonymous.context(null))).resolves.toBe(true);
   });
 
+  it("si el contador no responde, no deja la petición colgada: espera poco y la deja pasar", async () => {
+    const hanging = {
+      hit: () => new Promise<number>(() => undefined),
+    } as unknown as RateLimitStore;
+    const { guard, context } = setup({ store: hanging });
+    const started = Date.now();
+
+    await expect(guard.canActivate(context())).resolves.toBe(true);
+
+    expect(Date.now() - started).toBeLessThan(3000);
+  });
+
   it("si el contador falla, deja pasar la petición en lugar de cortar el servicio", async () => {
     const broken = {
       hit: jest.fn().mockRejectedValue(new Error("Redis caído")),
