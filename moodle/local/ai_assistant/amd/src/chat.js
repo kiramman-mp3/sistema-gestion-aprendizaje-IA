@@ -203,15 +203,15 @@ class Chat {
 
   messageBlock(message) {
     const mine = message.role === "user";
+    const text = this.messageText(message) || (message.status === "streaming" ? str("thinking") : "");
     return el(
       "div",
       { class: `mb-3 ${mine ? "text-end" : ""}`, "data-role": message.role },
       el("div", { class: "small text-muted" }, str(mine ? "you" : "assistant")),
-      el(
-        "div",
-        { class: `d-inline-block rounded p-2 text-start ${mine ? "bg-primary text-white" : "bg-light"}`, style: "white-space: pre-wrap; max-width: 100%" },
-        this.messageText(message) || (message.status === "streaming" ? str("thinking") : ""),
-      ),
+      // An answer that failed before saying anything has no text: only the error is shown, not an empty bubble.
+      text === ""
+        ? null
+        : el("div", { class: `d-inline-block rounded p-2 text-start ${mine ? "bg-primary text-white" : "bg-light"}`, style: "white-space: pre-wrap; max-width: 100%" }, text),
       mine ? null : this.assistantExtras(message),
     );
   }
