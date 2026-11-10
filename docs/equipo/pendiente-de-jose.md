@@ -117,4 +117,4 @@ Con `--recrear` se borra y se vuelve a crear con plazos relativos a hoy.
 | Permiso de administrador (punto 4) | `/admin/difficulty-rules` y `/audit`                                         | Entregado |
 | Sílabos reales (punto 5)           | Conjunto de referencia y F1                                                  | Pendiente |
 
-Las medidas de RNF-01 a RNF-03 solo valen con el proveedor de IA real: con `AI_PROVIDER=mock` no se miden.
+Las medidas de RNF-01 a RNF-03 solo valen con el proveedor de IA real: con `AI_PROVIDER=mock` no se miden. Con el plan gratuito tampoco valen (cuota diaria y capacidad compartida): quedan pendientes de la licencia de pago.

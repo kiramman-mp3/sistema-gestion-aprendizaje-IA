@@ -89,7 +89,7 @@ ese contrato con datos de prueba.
 ### Sprint 12 · Pruebas
 
 - [x] Pruebas end-to-end de CU-01 a CU-07 con el proveedor de demostración: `pnpm smoke:silabos` (CU-01), `smoke:publicacion` (CU-02, CU-03) y `smoke:asistente` (CU-04, CU-05, CU-06, CU-07). Falta repetirlas con el proveedor real.
-- [x] Prueba de carga básica y revisión OWASP Top 10 ([resultados](../security/revision-owasp.md)). Con el proveedor de IA real faltan RNF-01 a RNF-03.
+- [x] Prueba de carga básica y revisión OWASP Top 10 ([resultados](../security/revision-owasp.md)). Con el proveedor de IA real faltan RNF-01 a RNF-03, bloqueados hasta tener licencia de pago.
 - [ ] Piloto con docentes: medición frente a la línea base, encuesta SUS y entrevistas.
 
 ### Sprint 13 · Despliegue

@@ -50,7 +50,7 @@ Con los sílabos sintéticos, los pasajes relevantes obtuvieron una similitud co
 0,60. El umbral por defecto es **0,62** (`AI_EMBEDDING_MIN_SCORE`). La separación es estrecha: con documentos reales y
 más variados hay que recalibrar.
 
-## Latencia del chat con streaming (orientativa)
+## Latencia del chat con streaming (orientativa, sin valor de evidencia)
 
 Seis preguntas con herramienta por ejecución, plan gratuito, modelo `gemini-3.5-flash-lite`:
 
@@ -64,6 +64,36 @@ Seis preguntas con herramienta por ejecución, plan gratuito, modelo `gemini-3.5
   gratuito comparte capacidad y el «primer evento» es la llamada a la herramienta (el modelo decide la herramienta antes de
   escribir), no el primer token de la respuesta. **No se declara cumplido ni incumplido**: se repetirá con
   `pnpm loadtest -- --scenario chat`, más muestras y el plan definitivo.
+
+## Latencia (RNF-01 a RNF-03): aún no se puede medir
+
+> [!IMPORTANT]
+> **Las metas de latencia siguen sin medir.** Con el plan gratuito de Gemini no se puede obtener una medición válida y se
+> deja para cuando el equipo consiga la licencia de pago. Las cifras de arriba son orientativas y **no sirven como
+> evidencia** de que se cumplan o se incumplan RNF-01, RNF-02 ni RNF-03.
+
+Por qué no vale medir ahora:
+
+- **Cuota diaria baja.** El plan gratuito permite unas 20 solicitudes diarias por modelo; una prueba con decenas de
+  muestras no cabe en un día y el modelo por defecto ya agotó su cuota. Se usó `gemini-3.5-flash-lite` solo por eso.
+- **Capacidad compartida.** Los límites por minuto y los `503` por saturación dependen de la carga de otros usuarios, así
+  que la latencia varía por razones ajenas al sistema y el p95 no es reproducible.
+- **Pocas muestras.** Con 6 el p95 es el valor máximo. Hacen falta 50 a 100 muestras por escenario.
+- **Modelo distinto al del piloto.** La meta se debe medir con el modelo y el plan que se usarán de verdad.
+- **«Primer evento» no es «primer token».** `infra/loadtest/load.mjs` y `pnpm smoke:ia` cuentan el primer evento del
+  flujo, que es la llamada a la herramienta; RNF-01 habla del primer token del texto de la respuesta. Antes de medir
+  hay que decidir con cuál de las dos lecturas se evalúa y, si es el primer token, añadir ese evento al script.
+- **RNF-03** (extracción de un sílabo de 20 páginas en menos de 2 minutos) tampoco: los sílabos sintéticos tienen 3 páginas
+  y los tiempos de extracción observados (de 5 a 13 segundos por sílabo) no representan uno de 20.
+
+Qué se hará cuando haya licencia de pago:
+
+1. Poner la clave de pago en el `.env` (nunca en el repositorio) y elegir el modelo definitivo con `AI_MODEL`.
+2. Medir el chat con `pnpm loadtest -- --scenario chat` (50 a 100 muestras, con un token distinto por petición) y
+   registrar p50, p95 y p99 del primer evento y de la respuesta completa.
+3. Preparar un sílabo sintético de 20 páginas y medir la extracción (RNF-03).
+4. Repetir en dos días distintos para ver la variación y anotar fecha, modelo, plan y número de muestras.
+5. Actualizar esta sección, el [ROADMAP](../ROADMAP.md) y la lista de [integración con IA](../equipo/integracion-con-ia.md).
 
 ## Límites del proveedor observados
 
@@ -85,5 +115,5 @@ pnpm smoke:ia                 # chat, RAG, ataques, recomendación y latencia
 ## Pendiente
 
 - Publicar la propuesta en el navegador y las pruebas de accesibilidad (las demás pantallas ya se verificaron: [pruebas de pantalla](pruebas-de-pantalla.md)).
-- Medición de RNF-01 a RNF-03 con más muestras y el plan definitivo.
+- Medición de RNF-01 a RNF-03: bloqueada hasta tener licencia de pago (ver la sección de latencia).
 - Todo lo que depende de la institución: sílabos reales (D-03), proveedor y presupuesto (D-07), política de datos (D-08).
