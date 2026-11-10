@@ -85,4 +85,11 @@ describe("validateEnv", () => {
       ).toThrow(/AI_PROVIDER/);
     });
   });
+
+  it("exige PSEUDONYM_SECRET en producción cuando hay proveedor de IA", () => {
+    const base = { NODE_ENV: "production", CLAMAV_URL: "tcp://clamav:3310", AI_PROVIDER: "mock" };
+    expect(() => validateEnv(base)).toThrow(/PSEUDONYM_SECRET|AI_PROVIDER/);
+    expect(() => validateEnv({ ...base, PSEUDONYM_SECRET: "corto" })).toThrow(/PSEUDONYM_SECRET/);
+    expect(validateEnv({ NODE_ENV: "production", CLAMAV_URL: "tcp://clamav:3310" })).toBeDefined();
+  });
 });
