@@ -8,6 +8,7 @@ import {
   MoodleResponseError,
   MoodleUnavailableError,
 } from "../integrations/moodle/moodle.errors";
+import { IntegrationAccountService } from "../integrations/integration-account.service";
 import { MoodleService } from "../integrations/moodle/moodle.service";
 import type { PublishableModule } from "../integrations/moodle/moodle.types";
 
@@ -51,6 +52,7 @@ export class ProposalPublisher {
     private readonly prisma: PrismaService,
     private readonly moodle: MoodleService,
     private readonly audit: AuditService,
+    private readonly accounts: IntegrationAccountService,
   ) {}
 
   async run(operationId: string): Promise<void> {
@@ -89,6 +91,7 @@ export class ProposalPublisher {
           data: { publishStatus: "CREATED", moodleItemId: moodleId, publishError: null },
         });
         created += 1;
+        await this.mapActivity(proposal.moodleCourseId, item, moodleId);
         await this.prisma.publishOperation.update({
           where: { id: operation.id },
           data: { createdCount: created },
@@ -118,6 +121,39 @@ export class ProposalPublisher {
       resourceId: proposal.id,
       metadata: { created, failed: failure ? 1 : 0, ...(failure ? { reason: failure.error } : {}) },
     });
+  }
+
+  /**
+   * Relaciona la actividad creada con la unidad de la que salió, para los indicadores por unidad. Lo que el
+   * docente ya relacionó a mano no se sobrescribe (`skipDuplicates`), y un fallo aquí no detiene la
+   * publicación: la relación se puede completar después en la pantalla de actividades.
+   */
+  private async mapActivity(
+    courseId: number,
+    item: { itemType: ProposalItemType; unitRef: string; learningOutcomeIds: string[] },
+    cmId: number,
+  ): Promise<void> {
+    // Las secciones no son actividades; una unidad creada por el docente (`custom:`) no existe en el sílabo.
+    if (item.itemType === "SECTION" || item.unitRef.startsWith("custom:")) return;
+    try {
+      await this.prisma.activityUnitMapping.createMany({
+        data: [
+          {
+            integrationAccountId: await this.accounts.currentId(),
+            moodleCourseId: courseId,
+            moodleCmId: cmId,
+            unitRef: item.unitRef,
+            learningOutcomeIds: item.learningOutcomeIds,
+            source: "PROPOSAL",
+          },
+        ],
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo relacionar la actividad ${cmId} con su unidad: ${String(error)}`,
+      );
+    }
   }
 
   private async publishItem(
