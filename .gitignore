@@ -9,6 +9,8 @@ build/
 !moodle/**/amd/build/
 coverage/
 *.tsbuildinfo
+.eslintcache
+.pnpm-store/
 
 # Entorno y secretos
 .env
@@ -26,13 +28,24 @@ pnpm-debug.log*
 # Archivos subidos y temporales
 uploads/
 tmp/
+*.tmp
+*.part
 
 # Editores y sistema operativo
 .vscode/*
 !.vscode/extensions.json
 .idea/
+*.swp
+*~
 .DS_Store
 Thumbs.db
+desktop.ini
+# Temporales de Office al abrir documentos de docs/
+~$*
+
+# Configuración local de herramientas (CLAUDE.md sí se versiona)
+.claude/settings.local.json
+CLAUDE.local.md
 
 # Moodle y moodle-docker descargados por infra/scripts/moodle.sh
 infra/.cache/
@@ -41,4 +54,4 @@ infra/.cache/
 apps/api/src/generated/
 
 # Archivos subidos en desarrollo (STORAGE_DIR)
-apps/api/var/
+apps/*/var/
