@@ -2,7 +2,8 @@
 
 Implementación del Sprint 4: carga segura (RF-03) y extracción de texto (RF-04). Decisiones en
 [ADR-003](adr/0003-worker-documental-typescript.md), [ADR-004](adr/0004-cola-bullmq-redis.md) y
-[ADR-013](adr/0013-worker-sin-base-de-datos.md).
+[ADR-013](adr/0013-worker-sin-base-de-datos.md). El paso siguiente, del texto extraído a la extracción
+estructurada con IA, está en [extracción con IA](extraccion-ia.md).
 
 ## Flujo
 

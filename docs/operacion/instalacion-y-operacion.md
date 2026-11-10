@@ -55,13 +55,14 @@ openssl rand -hex 24 | sudo tee db_password redis_password >/dev/null   # o una 
 Crea `api.env` y `worker.env` a partir de `infra/docker/prod/api.env.example` y `worker.env.example`. Los valores
 importantes:
 
-| Variable (`api.env`)        | Valor                                                                                        |
-| --------------------------- | -------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`              | `postgresql://app:<contenido de db_password>@app-db:5432/ai_assistant`                       |
-| `REDIS_URL`                 | `redis://:<contenido de redis_password>@redis:6379` (igual en `worker.env`)                  |
-| `PLUGIN_JWT_SECRET`         | 32 caracteres aleatorios como mínimo: `openssl rand -hex 32`. El mismo valor va en el plugin |
-| `MOODLE_TOKEN`              | El token del usuario de integración (paso 5)                                                 |
-| `AI_PROVIDER`, `AI_API_KEY` | Cuando la institución defina el proveedor (D-07)                                             |
+| Variable (`api.env`)        | Valor                                                                                                                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | `postgresql://app:<contenido de db_password>@app-db:5432/ai_assistant`                                                                                                                   |
+| `REDIS_URL`                 | `redis://:<contenido de redis_password>@redis:6379` (igual en `worker.env`)                                                                                                              |
+| `PLUGIN_JWT_SECRET`         | 32 caracteres aleatorios como mínimo: `openssl rand -hex 32`. El mismo valor va en el plugin                                                                                             |
+| `MOODLE_TOKEN`              | El token del usuario de integración (paso 5)                                                                                                                                             |
+| `AI_PROVIDER`, `AI_API_KEY` | Cuando la institución defina el proveedor (D-07)                                                                                                                                         |
+| `PSEUDONYM_SECRET`          | 32 caracteres aleatorios como mínimo: `openssl rand -hex 32`. Obligatoria si `AI_PROVIDER` está definido; no se cambia después sin perder la continuidad de los seudónimos del historial |
 
 ```bash
 sudo chmod 600 /etc/smart-lms/secrets/*

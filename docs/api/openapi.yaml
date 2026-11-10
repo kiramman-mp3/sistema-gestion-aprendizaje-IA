@@ -1289,7 +1289,12 @@ components:
           type: string
         data:
           type: [object, "null"]
-          description: Datos estructurados devueltos por la herramienta usada
+          description: |
+            Datos estructurados devueltos por las herramientas usadas, con el nombre de la herramienta como clave
+            (una segunda llamada a la misma herramienta usa `nombre#2`). Si `answer` menciona estudiantes, trae además
+            `students`: una lista de `{alias, studentId}` con los seudónimos (`Estudiante#NNNNNNNN`) y el id de Moodle
+            correspondiente. Los nombres no pasan por el backend: el plugin sustituye cada alias por el nombre que
+            obtiene de Moodle con ese id (ADR-010).
         generatedAt:
           type: string
           format: date-time
