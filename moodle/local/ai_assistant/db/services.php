@@ -48,6 +48,16 @@ $functions = [
         'capabilities' => 'local/ai_assistant:viewanalytics',
     ],
 
+    // Called from the browser (AJAX): the activities the teacher can relate to syllabus units.
+    'local_ai_assistant_get_course_activities' => [
+        'classname' => \local_ai_assistant\external\get_course_activities::class,
+        'description' => 'Lists the activities of a course, to relate each one to a unit of the syllabus.',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => 'local/ai_assistant:use',
+    ],
+
     // Called by the backend with the integration token (ADR-007).
     'local_ai_assistant_check_access' => [
         'classname' => \local_ai_assistant\external\check_access::class,

@@ -101,6 +101,7 @@ describeWithDb("Propuestas contra PostgreSQL real", () => {
 
   afterAll(async () => {
     // Las propuestas y sus elementos se borran en cascada con la extracción y el documento.
+    await prisma.activityUnitMapping.deleteMany({ where: { moodleCourseId: COURSE_ID } });
     await prisma.publishOperation.deleteMany({
       where: { proposal: { moodleCourseId: COURSE_ID } },
     });
@@ -211,6 +212,14 @@ describeWithDb("Propuestas contra PostgreSQL real", () => {
       expect(
         stored.items.every((item) => item.publishStatus === "CREATED" && item.moodleItemId),
       ).toBe(true);
+      // Las actividades creadas quedan relacionadas con su unidad (y repetir no las duplica).
+      const mappings = await prisma.activityUnitMapping.findMany({
+        where: { moodleCourseId: COURSE_ID },
+      });
+      expect(mappings.map((m) => [m.unitRef, m.source]).sort()).toEqual([
+        ["gradingPeriods[0].units[0]", "PROPOSAL"],
+        ["gradingPeriods[1].units[0]", "PROPOSAL"],
+      ]);
       expect(stored.publishOperations).toMatchObject([
         { id: started.body.id, status: "SUCCEEDED", createdCount: 4, failedCount: 0 },
       ]);

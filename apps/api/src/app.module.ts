@@ -12,6 +12,7 @@ import { HealthModule } from "./health/health.module";
 import { IntegrationAccountModule } from "./integrations/integration-account.module";
 import { MoodleModule } from "./integrations/moodle/moodle.module";
 import { MaintenanceModule } from "./maintenance/maintenance.module";
+import { MappingsModule } from "./mappings/mappings.module";
 import { ProposalsModule } from "./proposals/proposals.module";
 import { RedisModule } from "./redis/redis.module";
 import { StorageModule } from "./storage/storage.module";
@@ -47,6 +48,7 @@ import { SyllabiModule } from "./syllabi/syllabi.module";
     StorageModule,
     SyllabiModule,
     ProposalsModule,
+    MappingsModule,
     MaintenanceModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],

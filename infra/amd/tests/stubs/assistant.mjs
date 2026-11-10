@@ -28,3 +28,11 @@ export const getCourseStudents = async () => {
   if (students.fails) throw new Error("ajax");
   return students.list;
 };
+
+/** Actividades que Moodle entrega por AJAX; `fails` simula un fallo. */
+export const activities = { list: [], fails: false };
+
+export const getCourseActivities = async () => {
+  if (activities.fails) throw Object.assign(new Error("ajax"), { code: "ajax_error" });
+  return activities.list;
+};
