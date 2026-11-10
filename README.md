@@ -466,10 +466,12 @@ están en [`CLAUDE.md`](CLAUDE.md).
 
 ## 👥 Contribuidores
 
-| Nombre       | Commits |
-| ------------ | ------- |
-| kiramman-mp3 | 197     |
-| JoseM151     | 116     |
+| Nombre            | Commits |
+| ----------------- | ------- |
+| kiramman-mp3      | 196     |
+| JoseM151          | 118     |
+| JuanCarlos        | 46      |
+| JuanCarlos Pashma | 2       |
 
 ---
 
