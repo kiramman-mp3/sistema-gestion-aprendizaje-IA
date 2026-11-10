@@ -152,6 +152,21 @@ describe("ChatService", () => {
       ).rejects.toMatchObject({ response: { code: "CONVERSATION_NOT_FOUND" } });
     });
 
+    it("responde 404 si la conversación es del mismo docente pero de otro curso (SEC-10)", async () => {
+      const { service } = setup();
+      const mine = await service.chat(AUTH, body());
+      const otherCourse = { moodleUserId: 42, courseId: 8 };
+
+      await expect(
+        service.chat(otherCourse, body({ courseId: 8, conversationId: mine.conversationId })),
+      ).rejects.toMatchObject({ response: { code: "CONVERSATION_NOT_FOUND" } });
+      await expect(service.getConversation(otherCourse, mine.conversationId)).rejects.toMatchObject(
+        {
+          response: { code: "CONVERSATION_NOT_FOUND" },
+        },
+      );
+    });
+
     it("responde 403 si el curso del cuerpo no es el del token", async () => {
       const { service, provider } = setup();
 
