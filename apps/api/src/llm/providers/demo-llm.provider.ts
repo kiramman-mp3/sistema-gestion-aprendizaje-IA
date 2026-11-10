@@ -85,13 +85,15 @@ function lastUserText(messages: LlmChatMessage[]): string {
 
 /** Elige la herramienta por palabras clave; solo entre las que la petición ofrece. */
 function chooseTool(question: string, available: string[]): string | null {
-  const wanted = /pendiente|calificar|corregir/.test(question)
-    ? "get_pending_grading"
-    : /nota|promedio|calificaci/.test(question)
-      ? "get_grade_summary"
-      : /actividad|tarea|foro|cuestionario/.test(question)
-        ? "get_course_activities"
-        : null;
+  const wanted = /unidad|rendimiento/.test(question)
+    ? "get_unit_performance"
+    : /pendiente|calificar|corregir/.test(question)
+      ? "get_pending_grading"
+      : /nota|promedio|calificaci/.test(question)
+        ? "get_grade_summary"
+        : /actividad|tarea|foro|cuestionario/.test(question)
+          ? "get_course_activities"
+          : null;
   return wanted !== null && available.includes(wanted) ? wanted : null;
 }
 

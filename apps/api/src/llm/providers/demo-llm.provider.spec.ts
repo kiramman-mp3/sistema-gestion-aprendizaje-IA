@@ -74,11 +74,13 @@ describe("DemoLlmProvider · chat", () => {
     ["¿Qué entregas están pendientes de calificar?", "get_pending_grading"],
     ["Dame el promedio de notas", "get_grade_summary"],
     ["¿Qué actividades tiene el curso?", "get_course_activities"],
+    ["¿Cómo va el rendimiento por unidad?", "get_unit_performance"],
   ])("«%s» consulta %s y resume lo que devolvió", async (question, expectedTool) => {
     const run = assistant([
       tool("get_pending_grading", { totalPending: 3 }),
       tool("get_grade_summary", { average: 7.5 }),
       tool("get_course_activities", { count: 4 }),
+      tool("get_unit_performance", { units: [] }),
     ]);
 
     const result = await run(question);
