@@ -45,6 +45,8 @@ export const envSchema = z.object({
   /** Tokens estimados de entrada a partir de los cuales no se llama al proveedor. */
   AI_MAX_INPUT_TOKENS: z.coerce.number().int().positive().default(32_000),
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(8_192),
+  /** Clave con la que se derivan los seudónimos de estudiantes (ADR-010). Obligatoria en producción con IA. */
+  PSEUDONYM_SECRET: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -56,6 +58,13 @@ const envRules = envSchema.superRefine((env, ctx) => {
       code: "custom",
       path: ["CLAMAV_URL"],
       message: "es obligatoria en producción: los archivos subidos deben pasar por el antivirus",
+    });
+  }
+  if (env.NODE_ENV === "production" && env.AI_PROVIDER && !env.PSEUDONYM_SECRET) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["PSEUDONYM_SECRET"],
+      message: "es obligatoria en producción con IA: sin ella los seudónimos serían predecibles",
     });
   }
   if (env.NODE_ENV === "production" && env.AI_PROVIDER === "mock") {
