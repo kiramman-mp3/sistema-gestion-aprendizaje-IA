@@ -23,6 +23,9 @@ export default defineConfig({
       "local_ai_assistant/analytics_model": path(
         "../../moodle/local/ai_assistant/amd/src/analytics_model.js",
       ),
+      "local_ai_assistant/admin_model": path(
+        "../../moodle/local/ai_assistant/amd/src/admin_model.js",
+      ),
       "local_ai_assistant/mapping_model": path(
         "../../moodle/local/ai_assistant/amd/src/mapping_model.js",
       ),
