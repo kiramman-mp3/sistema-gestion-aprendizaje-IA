@@ -77,6 +77,24 @@ export class DemoLlmProvider extends LlmProvider {
     const alreadyAnswered = lastTool !== undefined;
 
     if (!alreadyAnswered) {
+      // Una pregunta sobre «la tarea» sin decir cuál es ambigua: la demostración pide una aclaración (si se le ofrece).
+      if (
+        request.tools.some((t) => t.name === "ask_clarification") &&
+        isAmbiguous(lastUserText(request.messages))
+      ) {
+        return {
+          kind: "tool_calls",
+          calls: [
+            {
+              id: `demo-${request.messages.length}`,
+              name: "ask_clarification",
+              arguments: { question: "¿De qué tarea hablas? Dime su número o su nombre." },
+            },
+          ],
+          model: "demo-1",
+          usage: { inputTokens, outputTokens: 20 },
+        };
+      }
       const tool = chooseTool(
         lastUserText(request.messages),
         request.tools.map((t) => t.name),
@@ -115,6 +133,13 @@ export class DemoLlmProvider extends LlmProvider {
 function lastUserText(messages: LlmChatMessage[]): string {
   const last = [...messages].reverse().find((m) => m.role === "user");
   return last?.content.toLowerCase() ?? "";
+}
+
+/** «¿Quién no entregó la tarea?»: habla de entregas de una tarea sin decir cuál (ni número ni nombre). */
+function isAmbiguous(question: string): boolean {
+  return (
+    /\b(la|esa|esta) tarea\b/.test(question) && /entreg/.test(question) && !/\d/.test(question)
+  );
 }
 
 /** Elige la herramienta por palabras clave; solo entre las que la petición ofrece. */

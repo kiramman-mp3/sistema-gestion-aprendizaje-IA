@@ -38,6 +38,10 @@ export class GetCourseActivitiesTool implements AssistantTool<Record<string, nev
     return {
       intent: "course_activities",
       incomplete: result.truncated,
+      criteria: [
+        "Se listan las actividades que el docente ve en Moodle, en el orden del curso.",
+        "La fecha de entrega es la que tiene configurada cada actividad en Moodle.",
+      ],
       data: {
         count: result.activities.length,
         activities: result.activities.map((a: MoodleActivity) => ({
@@ -74,6 +78,11 @@ export class GetAssignmentSubmissionsTool implements AssistantTool<{ cmid: numbe
     return {
       intent: "assignment_submissions",
       incomplete: result.truncated,
+      criteria: [
+        "Entregó quien envió la tarea (enviada o calificada); un borrador no cuenta como entrega.",
+        "Sin entrega es quien no envió nada, haya vencido el plazo o no.",
+        "Tarde es una entrega enviada después de la fecha límite de la tarea.",
+      ],
       data: {
         cmid,
         total: rows.length,
@@ -124,6 +133,9 @@ export class GetPendingGradingTool implements AssistantTool<{ cmid?: number }> {
     return {
       intent: "pending_grading",
       incomplete: result.truncated,
+      criteria: [
+        "Pendiente de calificar es una entrega enviada que todavía no tiene nota; un borrador no cuenta.",
+      ],
       data: { totalPending: result.pending.length, activities },
       sources:
         activities.length > 0
@@ -195,6 +207,15 @@ export class GetGradeSummaryTool implements AssistantTool<z.infer<typeof gradeSu
     return {
       intent: "grade_summary",
       incomplete: result.truncated,
+      criteria: [
+        "Se usan las notas visibles en el libro de calificaciones; una nota oculta no se cuenta.",
+        "Un estudiante sin nota no entra al promedio ni cuenta como cero.",
+        ...(input.belowPercent !== undefined
+          ? [
+              `Por debajo del umbral es una nota menor al ${input.belowPercent}% de la nota máxima de la actividad.`,
+            ]
+          : []),
+      ],
       data: { activities },
       sources: [gradebook(auth.courseId), ...activities.map((a) => activity(a.cmid))],
     };
@@ -226,6 +247,10 @@ export class GetUnitPerformanceTool implements AssistantTool<Record<string, neve
 
     return {
       intent: "unit_performance",
+      criteria: [
+        "El rendimiento de una unidad es el promedio, en porcentaje de la nota máxima, de las actividades relacionadas con ella.",
+        "Una unidad sin actividades relacionadas o sin notas no tiene valor.",
+      ],
       // Sin sílabo revisado o sin notas legibles, la respuesta no puede ser completa.
       incomplete: dataset.grades === null || dataset.units.length === 0,
       data: {

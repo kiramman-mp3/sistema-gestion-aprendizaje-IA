@@ -1462,13 +1462,17 @@ components:
 
     ChatResponse:
       type: object
-      required: [conversationId, answer, generatedAt, sources]
+      required: [conversationId, answer, generatedAt, sources, criteria]
       properties:
         conversationId:
           type: string
           format: uuid
         intent:
           type: [string, "null"]
+          description: |
+            Qué consultó el asistente (`pending_grading`, `grade_summary`, `document_search`, `student_evidence`…).
+            `clarification` indica que `answer` es una pregunta de aclaración: el asistente la hace una sola vez por
+            pregunta y, cuando el docente responde, contesta con lo que tenga.
         answer:
           type: string
         data:
@@ -1498,6 +1502,13 @@ components:
               url:
                 type: [string, "null"]
                 format: uri
+        criteria:
+          type: array
+          description: |
+            Reglas con las que se calcularon los datos de la respuesta (el «criterio aplicado» que muestra el plugin),
+            en una frase cada una y sin repetir. Vacío si no se consultó nada, por ejemplo en una aclaración.
+          items:
+            type: string
         incompleteData:
           type: boolean
           description: Verdadero si faltaron datos para responder por completo

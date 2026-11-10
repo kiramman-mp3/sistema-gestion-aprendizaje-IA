@@ -4,6 +4,7 @@ import { MockLlmProvider } from "../llm/providers/mock-llm.provider";
 import { Pseudonymizer } from "../privacy/pseudonymizer";
 import {
   AiOrchestratorService,
+  CLARIFICATION_TOOL,
   MAX_CALLS_PER_TURN,
   MAX_TOOL_ITERATIONS,
   UNFINISHED_ANSWER,
@@ -136,7 +137,8 @@ describe("AiOrchestratorService", () => {
 
     const result = await run();
 
-    expect(provider.chatCalls[0]!.tools).toEqual([]);
+    // Solo se ofrece la herramienta de aclaración del propio orquestador; ninguna de escritura.
+    expect(provider.chatCalls[0]!.tools.map((t) => t.name)).toEqual([CLARIFICATION_TOOL]);
     expect(execute).not.toHaveBeenCalled();
     expect(result.incompleteData).toBe(true);
   });

@@ -30,6 +30,11 @@ export interface ToolOutput {
   incomplete?: boolean;
   /** Intención que se informa al plugin, por ejemplo `pending_submissions`. */
   intent?: string;
+  /**
+   * Reglas con las que se calculó el dato, en una frase cada una («una entrega en borrador no cuenta como
+   * entregada»). El plugin las muestra como «criterio aplicado» para que el docente pueda verificar la respuesta.
+   */
+  criteria?: string[];
 }
 
 /**
@@ -43,6 +48,11 @@ export interface AssistantTool<I = unknown> {
   readonly kind: "read" | "write";
   /** Esquema de los argumentos; se valida siempre antes de ejecutar. */
   readonly input: z.ZodType<I>;
+  /**
+   * Capacidad del asistente que el docente debe tener, además de `use`, para que la herramienta se le ofrezca al
+   * modelo. Sin ella la herramienta no existe para esa petición (RF-02, SEC-02).
+   */
+  readonly requires?: "viewanalytics";
   execute(context: ToolContext, input: I): Promise<ToolOutput>;
 }
 
@@ -62,19 +72,25 @@ export class ToolRegistry {
     }
   }
 
-  /** Solo las de lectura: es lo único que el modelo puede pedir por sí mismo. */
-  readTool(name: string): AssistantTool | undefined {
+  /** Solo las de lectura que el docente puede usar: es lo único que el modelo puede pedir por sí mismo. */
+  readTool(name: string, auth?: AuthContext): AssistantTool | undefined {
     const tool = this.byName.get(name);
-    return tool?.kind === "read" ? tool : undefined;
+    return tool?.kind === "read" && this.allowed(tool, auth) ? tool : undefined;
   }
 
-  readSpecs(): LlmToolSpec[] {
+  readSpecs(auth?: AuthContext): LlmToolSpec[] {
     return [...this.byName.values()]
-      .filter((tool) => tool.kind === "read")
+      .filter((tool) => tool.kind === "read" && this.allowed(tool, auth))
       .map((tool) => ({
         name: tool.name,
         description: tool.description,
         parameters: z.toJSONSchema(tool.input) as Record<string, unknown>,
       }));
+  }
+
+  /** Sin `auth` (pruebas de unidad del registro) no se filtra; con `auth`, se exige la capacidad de la herramienta. */
+  private allowed(tool: AssistantTool, auth?: AuthContext): boolean {
+    if (!tool.requires || !auth) return true;
+    return auth.capabilities?.[tool.requires] === true;
   }
 }
