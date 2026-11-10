@@ -267,6 +267,23 @@ export const codeFromError = (error) => {
 const MAX_DETAILS = 5;
 
 /**
+ * The wait after a 429 in the largest unit that reads well: seconds up to two minutes, minutes up to two hours and
+ * hours after that (the daily limit can ask for many hours, and "64541 seconds" tells the teacher nothing).
+ *
+ * @param {number} seconds Seconds from the `Retry-After` header.
+ * @returns {{unit: "seconds"|"minutes"|"hours", value: number}}
+ */
+export const waitInUnits = (seconds) => {
+  if (seconds <= 120) {
+    return { unit: "seconds", value: seconds };
+  }
+  if (seconds <= 7200) {
+    return { unit: "minutes", value: Math.ceil(seconds / 60) };
+  }
+  return { unit: "hours", value: Math.ceil(seconds / 3600) };
+};
+
+/**
  * What the interface needs besides the code: how long to wait after a 429 and which fields a 400 rejected.
  *
  * @param {{retryAfter?: number, details?: Array<{path?: string, message?: string}>}} error
