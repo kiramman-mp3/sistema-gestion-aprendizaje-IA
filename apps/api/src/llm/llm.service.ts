@@ -1,7 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { LlmError } from "./llm.errors";
-import { estimateTokens, LlmProvider, type LlmUsage } from "./llm-provider";
+import {
+  estimateTokens,
+  LlmProvider,
+  type LlmChatMessage,
+  type LlmChatResponse,
+  type LlmToolSpec,
+  type LlmUsage,
+} from "./llm-provider";
 import { LlmUsageRecorder, type LlmUsageEntry } from "./llm-usage.recorder";
 
 /** Topes que `LlmService` aplica a toda llamada; vienen del entorno. */
@@ -24,6 +31,17 @@ export interface StructuredRequest<T> {
   /** Pueden bajar los topes globales, nunca superarlos. */
   maxOutputTokens?: number;
   timeoutMs?: number;
+}
+
+export interface ChatRequest {
+  purpose: string;
+  system: string;
+  messages: LlmChatMessage[];
+  tools: LlmToolSpec[];
+  maxOutputTokens?: number;
+  timeoutMs?: number;
+  /** Trozos de la respuesta final, si el proveedor hace streaming. */
+  onToken?: (text: string) => void;
 }
 
 export interface StructuredResult<T> {
@@ -92,12 +110,80 @@ export class LlmService {
     }
   }
 
-  private async callWithTimeout<T>(request: StructuredRequest<T>) {
-    const maxOutputTokens = Math.min(
-      request.maxOutputTokens ?? this.limits.maxOutputTokens,
-      this.limits.maxOutputTokens,
+  /**
+   * Un turno de conversación con herramientas. Aplica los mismos topes que `generateStructured`:
+   * tokens estimados de entrada, tokens de salida y tiempo límite, y deja el consumo registrado.
+   */
+  async chat(request: ChatRequest): Promise<LlmChatResponse> {
+    const startedAt = Date.now();
+    const estimatedInput =
+      estimateTokens(request.system) +
+      estimateTokens(JSON.stringify(request.messages)) +
+      estimateTokens(JSON.stringify(request.tools));
+    let model: string | null = null;
+    let usage: LlmUsage = { inputTokens: estimatedInput, outputTokens: 0 };
+
+    const record = (outcome: LlmUsageEntry["outcome"]): void =>
+      this.usageRecorder.record({
+        purpose: request.purpose,
+        provider: this.provider.name,
+        model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        durationMs: Date.now() - startedAt,
+        outcome,
+      });
+
+    try {
+      if (estimatedInput > this.limits.maxInputTokens) {
+        throw new LlmError(
+          "AI_LIMIT_EXCEEDED",
+          `La entrada (~${estimatedInput} tokens) supera el límite de ${this.limits.maxInputTokens}.`,
+        );
+      }
+      const response = await this.withTimeout(request.timeoutMs, (signal) =>
+        this.provider.generateChat({
+          system: request.system,
+          messages: request.messages,
+          tools: request.tools,
+          maxOutputTokens: this.cappedOutput(request.maxOutputTokens),
+          signal,
+          onToken: request.onToken,
+        }),
+      );
+      model = response.model;
+      usage = response.usage;
+      record("ok");
+      return response;
+    } catch (error) {
+      const llmError = this.toLlmError(error);
+      record(llmError.code);
+      throw llmError;
+    }
+  }
+
+  private callWithTimeout<T>(request: StructuredRequest<T>) {
+    return this.withTimeout(request.timeoutMs, (signal) =>
+      this.provider.generateStructured({
+        system: request.system,
+        prompt: request.prompt,
+        schemaName: request.schemaName,
+        jsonSchema: z.toJSONSchema(request.schema) as Record<string, unknown>,
+        maxOutputTokens: this.cappedOutput(request.maxOutputTokens),
+        signal,
+      }),
     );
-    const timeoutMs = Math.min(request.timeoutMs ?? this.limits.timeoutMs, this.limits.timeoutMs);
+  }
+
+  private cappedOutput(requested?: number): number {
+    return Math.min(requested ?? this.limits.maxOutputTokens, this.limits.maxOutputTokens);
+  }
+
+  private async withTimeout<R>(
+    requestedTimeoutMs: number | undefined,
+    run: (signal: AbortSignal) => Promise<R>,
+  ): Promise<R> {
+    const timeoutMs = Math.min(requestedTimeoutMs ?? this.limits.timeoutMs, this.limits.timeoutMs);
 
     const controller = new AbortController();
     let timer: NodeJS.Timeout | undefined;
@@ -110,17 +196,7 @@ export class LlmService {
 
     try {
       // La carrera garantiza el límite aunque el adaptador ignore la señal de cancelación.
-      return await Promise.race([
-        this.provider.generateStructured({
-          system: request.system,
-          prompt: request.prompt,
-          schemaName: request.schemaName,
-          jsonSchema: z.toJSONSchema(request.schema) as Record<string, unknown>,
-          maxOutputTokens,
-          signal: controller.signal,
-        }),
-        timeout,
-      ]);
+      return await Promise.race([run(controller.signal), timeout]);
     } finally {
       clearTimeout(timer);
     }
