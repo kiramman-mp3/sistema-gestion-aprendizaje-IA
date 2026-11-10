@@ -92,14 +92,14 @@ sin entrega y pendientes de calificar, notas con perfiles distintos (una oculta)
 (con inactivos y un estudiante que nunca entró). Detalle en la [guía del entorno local](../desarrollo/entorno-local.md).
 Con `--recrear` se borra y se vuelve a crear con plazos relativos a hoy.
 
-## 4. Decisiones (pendientes: las toma José)
+## 4. Decisiones
 
-- **Permiso de administrador.** Para `/admin/difficulty-rules` y `/audit` el token solo tiene `use`,
-  `publish` y `viewanalytics`. Propuesta: añadir la capacidad `local/ai_assistant:administer` y que
-  `check_access` la devuelva como `admin`.
-- **Auditoría.** Quién hace la pantalla y la consulta de `/audit` (CU-07); no está asignada.
-- **Tipos de actividad (D-05).** Confirmar que siguen siendo `assign`, `forum`, `quiz`, `label` y `page`; se
-  usan en `get_unit_performance`.
+- **Permiso de administrador: hecho** (2026-11-10). La capacidad `local/ai_assistant:administer` existe, `check_access` la
+  devuelve como `admin` y protege `/audit` y `/admin/difficulty-rules` ([ADR-020](../architecture/adr/0020-capacidad-administer-y-rutas-de-administracion.md)).
+- **Auditoría (CU-07): hecha.** La consulta `GET /audit` y las pantallas «Auditoría» y «Reglas de dificultad» están hechas, de
+  punta a punta con un administrador de prueba (`prueba_admin`).
+- **Tipos de actividad (D-05): sigue provisional.** `assign`, `forum`, `quiz`, `label` y `page`; se confirma con la institución
+  junto con las ponderaciones (D-04). El curso de prueba incluye los cinco.
 
 ## 5. Pendiente con la institución
 
@@ -109,14 +109,12 @@ Con `--recrear` se borra y se vuelve a crear con plazos relativos a hoy.
 
 ## Qué desbloquea cada cosa
 
-| Si José entrega                    | La línea de IA puede hacer                                                   |
-| ---------------------------------- | ---------------------------------------------------------------------------- |
 | Si José entrega                    | La línea de IA puede hacer                                                   | Estado    |
 | ---------------------------------- | ---------------------------------------------------------------------------- | --------- |
 | Funciones de lectura (punto 1)     | Herramientas del chat sobre Moodle real; indicadores y señales de dificultad | Entregado |
 | Cambio de contrato (punto 2)       | Que el docente vea nombres y no seudónimos en el chat                        | Entregado |
 | Curso de prueba (punto 3)          | Probar de punta a punta y medir RNF-01 a RNF-03                              | Entregado |
-| Permiso de administrador (punto 4) | `/admin/difficulty-rules`                                                    | Pendiente |
+| Permiso de administrador (punto 4) | `/admin/difficulty-rules` y `/audit`                                         | Entregado |
 | Sílabos reales (punto 5)           | Conjunto de referencia y F1                                                  | Pendiente |
 
 Las medidas de RNF-01 a RNF-03 solo valen con el proveedor de IA real: con `AI_PROVIDER=mock` no se miden.

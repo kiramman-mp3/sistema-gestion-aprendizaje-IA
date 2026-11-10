@@ -1,6 +1,6 @@
 # ADR-018: Analítica calculada al pedirla, sin snapshots, y solo con lecturas completas
 
-- **Estado:** Aceptada
+- **Estado:** Aceptada. El punto 1 (sin snapshots) fue reemplazado por el [ADR-021](0021-snapshots-de-indicadores-bajo-demanda.md); los demás siguen vigentes.
 - **Fecha:** 2026-11-10
 - **Sprint:** S10
 
