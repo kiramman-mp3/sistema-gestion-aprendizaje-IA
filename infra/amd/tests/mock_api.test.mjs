@@ -358,3 +358,53 @@ describe("administración (CU-06 y CU-07)", () => {
     expect((await bad.json()).details).toEqual(expect.any(Array));
   });
 });
+
+describe("criterio aplicado y aclaración única", () => {
+  const chat = async (body) =>
+    (
+      await call(
+        "POST",
+        "/assistant/chat",
+        { courseId: 7, ...body },
+        { Accept: "application/json" },
+      )
+    ).json();
+
+  it("la respuesta trae los criterios de lo que calculó", async () => {
+    const answer = await chat({ message: "¿Quién no entregó la tarea 3?" });
+
+    expect(answer.criteria.length).toBeGreaterThan(0);
+    expect(answer.criteria.every((rule) => typeof rule === "string")).toBe(true);
+  });
+
+  it("un mensaje ambiguo recibe una aclaración, sin datos ni fuentes ni criterios", async () => {
+    const answer = await chat({ message: "¿Quién no entregó la tarea? (ambigua)" });
+
+    expect(answer).toMatchObject({
+      intent: "clarification",
+      data: null,
+      sources: [],
+      criteria: [],
+    });
+    expect(answer.answer).toContain("¿De qué tarea hablas?");
+  });
+
+  it("después de una aclaración responde con lo que tiene, aunque siga ambiguo", async () => {
+    const first = await chat({ message: "pregunta ambigua" });
+
+    const second = await chat({ conversationId: first.conversationId, message: "sigue ambigua" });
+
+    expect(second.intent).toBe("submissions");
+    expect(second.criteria.length).toBeGreaterThan(0);
+  });
+
+  it("el historial no expone la intención interna", async () => {
+    const first = await chat({ message: "pregunta ambigua" });
+
+    const history = await (
+      await call("GET", `/assistant/conversations/${first.conversationId}`)
+    ).json();
+
+    expect(history.messages.every((m) => !("intent" in m))).toBe(true);
+  });
+});

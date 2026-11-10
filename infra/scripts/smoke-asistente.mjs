@@ -165,6 +165,45 @@ check(
   summary.map((a) => a.graded).join(",") || "sin datos",
 );
 
+check(
+  "la respuesta trae el criterio aplicado",
+  Array.isArray(final?.criteria) &&
+    final.criteria.some((rule) => /pendiente de calificar/i.test(rule)),
+  `${final?.criteria?.length ?? 0} criterios`,
+);
+const vague = await call("POST", "/assistant/chat", {
+  courseId,
+  message: "¿Quién no entregó la tarea?",
+});
+check(
+  "una pregunta ambigua recibe una aclaración (intent clarification, sin datos ni fuentes)",
+  json(vague).intent === "clarification" &&
+    json(vague).data === null &&
+    json(vague).sources?.length === 0 &&
+    /tarea/i.test(json(vague).answer ?? ""),
+  json(vague).answer?.slice(0, 60),
+);
+const clarified = await call("POST", "/assistant/chat", {
+  courseId,
+  conversationId: json(vague).conversationId,
+  message: "¿Quién no entregó la tarea 3? Pendientes de calificar",
+});
+check(
+  "al aclarar, responde con datos y no vuelve a preguntar",
+  json(clarified).intent !== "clarification" && json(clarified).criteria?.length > 0,
+  json(clarified).intent,
+);
+const again = await call("POST", "/assistant/chat", {
+  courseId,
+  conversationId: json(vague).conversationId,
+  message: "¿Y quién no entregó la tarea?",
+});
+check(
+  "tras una respuesta normal, una pregunta ambigua nueva puede volver a pedir aclaración",
+  json(again).intent === "clarification",
+  json(again).intent,
+);
+
 console.log("\n3. Conversación y errores del chat");
 const history = await call("GET", `/assistant/conversations/${final?.conversationId}`);
 check("el historial devuelve la conversación (200)", history.status === 200);
@@ -308,7 +347,11 @@ if (!teacher2Id) {
   const other = await history(teacher2Id);
   check(
     "cada docente tiene los suyos",
-    other.snapshots.length === before + 1 && again.snapshots.length === first.snapshots.length,
+    // Si ya había uno de hoy (segunda ejecución del día) no crece; lo que importa es que tenga el suyo y que el
+    // docente 1 no gane ninguno por lo que hizo el docente 2.
+    other.snapshots.length >= Math.max(before, 1) &&
+      other.snapshots.length <= before + 1 &&
+      (await history(teacherId)).snapshots.length === again.snapshots.length,
     `docente 2: ${before} → ${other.snapshots.length}`,
   );
   check(

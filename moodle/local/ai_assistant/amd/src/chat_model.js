@@ -20,7 +20,8 @@
  *
  * - `token`: `{"text": "..."}`, a piece of the answer.
  * - `tool`: `{"name": "get_assignment_submissions"}`, the assistant is consulting data.
- * - `final`: the complete `ChatResponse`. Its `answer` replaces what was streamed, and its `data.students` lists
+ * - `final`: the complete `ChatResponse`. Its `answer` replaces what was streamed, its `criteria` are the rules applied
+ *   to the data (shown as "criterio aplicado"), and its `data.students` lists
  *   the pseudonyms (`Estudiante#NNNNNNNN`) that appear in the answer with the Moodle id of each student; the
  *   page swaps them for the names Moodle gives to the teacher's session (ADR-010).
  * - `error`: `{"code": "...", "message": "..."}`. No answer is invented.
@@ -91,7 +92,7 @@ export const startTurn = (conversation, text) => ({
   messages: [
     ...conversation.messages,
     { role: "user", text: cleanMessage(text), status: "done" },
-    { role: "assistant", text: "", status: "streaming", tools: [], sources: [], students: [], incompleteData: false, generatedAt: null, errorCode: null },
+    { role: "assistant", text: "", status: "streaming", tools: [], sources: [], criteria: [], students: [], incompleteData: false, generatedAt: null, errorCode: null },
   ],
 });
 
@@ -173,6 +174,7 @@ export const applyEvent = (conversation, event) => {
           text: String(data.answer ?? ""),
           status: "done",
           sources: Array.isArray(data.sources) ? data.sources : [],
+          criteria: Array.isArray(data.criteria) ? data.criteria.filter((rule) => typeof rule === "string" && rule.trim() !== "") : [],
           students: parseStudents(data.data),
           incompleteData: data.incompleteData === true,
           generatedAt: data.generatedAt ?? null,
@@ -320,6 +322,7 @@ export const fromHistory = (history) => ({
     status: "done",
     tools: [],
     sources: [],
+    criteria: [],
     students: [],
     incompleteData: false,
     generatedAt: message.createdAt ?? null,
