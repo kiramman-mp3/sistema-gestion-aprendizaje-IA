@@ -105,7 +105,7 @@ Asistente y analítica (hechos):
 - **Worker documental:** Node con TypeScript, pdf.js 6 para PDF, fflate y fast-xml-parser para DOCX, Poppler y Tesseract para OCR.
 - **Cola de trabajos:** BullMQ 6 sobre Redis, con flujos padre/hijo y planificadores.
 - **Base de datos:** PostgreSQL 17 con `pgvector` 0.8.6 mediante Prisma 7 y el adaptador `pg`; Redis 8.8 con `ioredis`.
-- **IA:** proveedor LLM y de embeddings por definir (D-07) detrás de las interfaces `LlmProvider` y `EmbeddingProvider`; con `AI_PROVIDER=mock` hay un proveedor de demostración. Búsqueda en documentos (RAG) con `pgvector` (vectores de 1024 dimensiones, índice HNSW por coseno).
+- **IA:** proveedor LLM y de embeddings por definir (D-07) detrás de las interfaces `LlmProvider` y `EmbeddingProvider`; con `AI_PROVIDER=mock` hay un proveedor de demostración y con `AI_PROVIDER=gemini` uno real para pruebas con datos sintéticos ([ADR-023](docs/architecture/adr/0023-proveedor-gemini-y-modelos.md)). Búsqueda en documentos (RAG) con `pgvector` (vectores de 1024 dimensiones, índice HNSW por coseno).
 - **Contratos:** Zod 4 en `packages/contracts`, con exportación a JSON Schema.
 - **Pruebas:** Vitest en `packages/*`, en el worker y en el JavaScript del plugin (con jsdom); Jest y Supertest en el backend; PHPUnit en el plugin.
 - **Calidad:** ESLint, Prettier, Redocly CLI (contrato OpenAPI), `phpcs` con `moodle-cs` y GitHub Actions.
@@ -276,36 +276,39 @@ conocidos. En resumen:
    WORKER_STORAGE_SOURCE=./apps/api/var/storage docker compose --profile worker up -d --build document-worker
    ```
 
-| Variable                               | Uso                                                                                             |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `PORT`                                 | Puerto del backend en el host                                                                   |
-| `APP_DB_PORT`                          | Puerto de la base auxiliar en el host (por defecto 5433)                                        |
-| `APP_DB_PASSWORD`                      | Contraseña de la base auxiliar                                                                  |
-| `DATABASE_URL`                         | Conexión a PostgreSQL                                                                           |
-| `REDIS_PORT`                           | Puerto de Redis en el host                                                                      |
-| `REDIS_URL`                            | Conexión a Redis                                                                                |
-| `MOODLE_BASE_URL`                      | URL de Moodle                                                                                   |
-| `MOODLE_TOKEN`                         | Token del usuario de integración de Moodle                                                      |
-| `MOODLE_ADMIN_PASSWORD`                | Contraseña del administrador de la instancia local                                              |
-| `PLUGIN_JWT_SECRET`                    | Secreto compartido para firmar JWT plugin–backend (≥ 32 caracteres)                             |
-| `CORS_ORIGINS`                         | Orígenes del navegador permitidos (el `wwwroot` de Moodle)                                      |
-| `STORAGE_DIR`                          | Carpeta de los archivos subidos (relativa a `apps/api`)                                         |
-| `SYLLABUS_RETENTION_DAYS`              | Días que se conserva el archivo original (por defecto 30)                                       |
-| `RATE_LIMIT_PER_MINUTE`                | Peticiones por usuario y minuto antes de responder 429 (120; 0 lo desactiva)                    |
-| `CLAMAV_PORT`                          | Puerto de ClamAV en el host (por defecto 3310)                                                  |
-| `CLAMAV_URL`                           | clamd por TCP; obligatoria en producción                                                        |
-| `WORKER_STORAGE_SOURCE`                | Carpeta del host que el worker monta en solo lectura                                            |
-| `AI_PROVIDER`                          | Proveedor de IA (pendiente, decisión D-07); `mock` es el de demostración, no vale en producción |
-| `AI_API_KEY`                           | Clave del proveedor de IA                                                                       |
-| `AI_TIMEOUT_MS`                        | Tiempo máximo de una llamada al proveedor (60000)                                               |
-| `AI_MAX_INPUT_TOKENS`                  | Tokens estimados de entrada a partir de los cuales no se llama (32000)                          |
-| `AI_MAX_OUTPUT_TOKENS`                 | Tope de tokens de salida (8192)                                                                 |
-| `PSEUDONYM_SECRET`                     | Clave de los seudónimos de estudiantes (≥ 32 caracteres); obligatoria en producción con IA      |
-| `AI_CONVERSATION_RETENTION_DAYS`       | Días que se conserva una conversación con el asistente (90, provisional)                        |
-| `ANALYTICS_SNAPSHOT_RETENTION_DAYS`    | Días que se conservan los snapshots de indicadores del panel (365, provisional)                 |
-| `AI_DAILY_MESSAGES_PER_TEACHER`        | Mensajes por docente en 24 horas antes de responder 429 (200)                                   |
-| `AI_DAILY_TOKENS_PER_TEACHER`          | Tokens por docente en 24 horas antes de responder 429 (500000)                                  |
-| `AI_DAILY_RECOMMENDATIONS_PER_TEACHER` | Recomendaciones pedagógicas por docente en 24 horas antes de responder 429 (50)                 |
+| Variable                               | Uso                                                                                                                            |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `PORT`                                 | Puerto del backend en el host                                                                                                  |
+| `APP_DB_PORT`                          | Puerto de la base auxiliar en el host (por defecto 5433)                                                                       |
+| `APP_DB_PASSWORD`                      | Contraseña de la base auxiliar                                                                                                 |
+| `DATABASE_URL`                         | Conexión a PostgreSQL                                                                                                          |
+| `REDIS_PORT`                           | Puerto de Redis en el host                                                                                                     |
+| `REDIS_URL`                            | Conexión a Redis                                                                                                               |
+| `MOODLE_BASE_URL`                      | URL de Moodle                                                                                                                  |
+| `MOODLE_TOKEN`                         | Token del usuario de integración de Moodle                                                                                     |
+| `MOODLE_ADMIN_PASSWORD`                | Contraseña del administrador de la instancia local                                                                             |
+| `PLUGIN_JWT_SECRET`                    | Secreto compartido para firmar JWT plugin–backend (≥ 32 caracteres)                                                            |
+| `CORS_ORIGINS`                         | Orígenes del navegador permitidos (el `wwwroot` de Moodle)                                                                     |
+| `STORAGE_DIR`                          | Carpeta de los archivos subidos (relativa a `apps/api`)                                                                        |
+| `SYLLABUS_RETENTION_DAYS`              | Días que se conserva el archivo original (por defecto 30)                                                                      |
+| `RATE_LIMIT_PER_MINUTE`                | Peticiones por usuario y minuto antes de responder 429 (120; 0 lo desactiva)                                                   |
+| `CLAMAV_PORT`                          | Puerto de ClamAV en el host (por defecto 3310)                                                                                 |
+| `CLAMAV_URL`                           | clamd por TCP; obligatoria en producción                                                                                       |
+| `WORKER_STORAGE_SOURCE`                | Carpeta del host que el worker monta en solo lectura                                                                           |
+| `AI_PROVIDER`                          | Proveedor de IA (pendiente, decisión D-07); `mock` es el de demostración (no vale en producción) y `gemini` el real de pruebas |
+| `AI_MODEL`                             | Modelo de chat y extracción con `gemini` (`gemini-3.5-flash`)                                                                  |
+| `AI_EMBEDDING_MODEL`                   | Modelo de embeddings con `gemini` (`gemini-embedding-001`, 1024 dimensiones)                                                   |
+| `AI_EMBEDDING_MIN_SCORE`               | Similitud mínima para citar un pasaje de los documentos del curso (0.62, calibrada con datos sintéticos)                       |
+| `AI_API_KEY`                           | Clave del proveedor de IA                                                                                                      |
+| `AI_TIMEOUT_MS`                        | Tiempo máximo de una llamada al proveedor (60000)                                                                              |
+| `AI_MAX_INPUT_TOKENS`                  | Tokens estimados de entrada a partir de los cuales no se llama (32000)                                                         |
+| `AI_MAX_OUTPUT_TOKENS`                 | Tope de tokens de salida (8192)                                                                                                |
+| `PSEUDONYM_SECRET`                     | Clave de los seudónimos de estudiantes (≥ 32 caracteres); obligatoria en producción con IA                                     |
+| `AI_CONVERSATION_RETENTION_DAYS`       | Días que se conserva una conversación con el asistente (90, provisional)                                                       |
+| `ANALYTICS_SNAPSHOT_RETENTION_DAYS`    | Días que se conservan los snapshots de indicadores del panel (365, provisional)                                                |
+| `AI_DAILY_MESSAGES_PER_TEACHER`        | Mensajes por docente en 24 horas antes de responder 429 (200)                                                                  |
+| `AI_DAILY_TOKENS_PER_TEACHER`          | Tokens por docente en 24 horas antes de responder 429 (500000)                                                                 |
+| `AI_DAILY_RECOMMENDATIONS_PER_TEACHER` | Recomendaciones pedagógicas por docente en 24 horas antes de responder 429 (50)                                                |
 
 > [!WARNING]
 > Los secretos nunca se guardan en el repositorio. `.env` está en `.gitignore`.
@@ -316,35 +319,37 @@ conocidos. En resumen:
 
 ### Desarrollo
 
-| Comando                                          | Qué hace                                                                                                    |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `pnpm lint`                                      | ESLint en todo el repositorio                                                                               |
-| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                                                                  |
-| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                                                                 |
-| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                                                                          |
-| `pnpm test`                                      | Pruebas de todos los paquetes                                                                               |
-| `pnpm build`                                     | Compila todos los paquetes                                                                                  |
-| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                                                                      |
-| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                                                   |
-| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                                                           |
-| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                                                          |
-| `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                                                               |
-| `pnpm --filter @smart-lms/plugin-js test`        | Pruebas del JavaScript del plugin (modelo y editor de la extracción)                                        |
-| `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                                                              |
-| `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                                                        |
-| `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                                                          |
-| `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                                                             |
-| `pnpm mock:ai`                                   | API de IA simulada (puerto 3100) para probar la interfaz sin el LLM                                         |
-| `pnpm loadtest -- --scenario session`            | Prueba de carga básica del backend (también `--scenario chat`)                                              |
-| `pnpm smoke:publicacion`                         | Verificación de punta a punta de CU-02 y CU-03 con Moodle real                                              |
-| `pnpm smoke:asistente`                           | Verificación del chat, la analítica, la administración y los snapshots con la API real y el curso de prueba |
-| `pnpm smoke:silabos`                             | Carga, antivirus, worker, OCR, extracción y búsqueda en documentos con los sílabos sintéticos               |
-| `pnpm synthetic:syllabi`                         | Regenera los 12 sílabos sintéticos (los escaneados usan Docker)                                             |
-| `pnpm eval:text` / `pnpm eval:text:docker`       | Qué parte del contenido de un sílabo llega al texto que extrae el worker (con OCR en Docker)                |
-| `bash infra/monitoring/check-ai-usage.sh`        | Alertas de errores y consumo de IA (para cron)                                                              |
-| `pnpm eval:extraction [dir] [--check]`           | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia                              |
-| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`                                    |
-| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle                                                         |
+| Comando                                          | Qué hace                                                                                                                      |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                      | ESLint en todo el repositorio                                                                                                 |
+| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                                                                                    |
+| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                                                                                   |
+| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                                                                                            |
+| `pnpm test`                                      | Pruebas de todos los paquetes                                                                                                 |
+| `pnpm build`                                     | Compila todos los paquetes                                                                                                    |
+| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                                                                                        |
+| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                                                                     |
+| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                                                                             |
+| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                                                                            |
+| `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                                                                                 |
+| `pnpm --filter @smart-lms/plugin-js test`        | Pruebas del JavaScript del plugin (modelo y editor de la extracción)                                                          |
+| `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                                                                                |
+| `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                                                                          |
+| `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                                                                            |
+| `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                                                                               |
+| `pnpm mock:ai`                                   | API de IA simulada (puerto 3100) para probar la interfaz sin el LLM                                                           |
+| `pnpm loadtest -- --scenario session`            | Prueba de carga básica del backend (también `--scenario chat`)                                                                |
+| `pnpm smoke:publicacion`                         | Verificación de punta a punta de CU-02 y CU-03 con Moodle real                                                                |
+| `pnpm smoke:asistente`                           | Verificación del chat, la analítica, la administración y los snapshots con la API real y el curso de prueba                   |
+| `pnpm smoke:ia`                                  | Chat, búsqueda en documentos, ataques, recomendación y latencia con el proveedor de IA real (consume cuota; datos sintéticos) |
+| `pnpm extract:synthetic`                         | Pasa los 12 sílabos sintéticos por la extracción real y guarda lo obtenido en `var/` para medir el F1                         |
+| `pnpm smoke:silabos`                             | Carga, antivirus, worker, OCR, extracción y búsqueda en documentos con los sílabos sintéticos                                 |
+| `pnpm synthetic:syllabi`                         | Regenera los 12 sílabos sintéticos (los escaneados usan Docker)                                                               |
+| `pnpm eval:text` / `pnpm eval:text:docker`       | Qué parte del contenido de un sílabo llega al texto que extrae el worker (con OCR en Docker)                                  |
+| `bash infra/monitoring/check-ai-usage.sh`        | Alertas de errores y consumo de IA (para cron)                                                                                |
+| `pnpm eval:extraction [dir] [--check]`           | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia                                                |
+| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`                                                      |
+| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle                                                                           |
 
 ### Producción local
 

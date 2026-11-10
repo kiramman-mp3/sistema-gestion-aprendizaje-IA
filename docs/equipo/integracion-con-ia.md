@@ -83,12 +83,16 @@ Además:
 - [x] Chat con la API real (`pnpm smoke:asistente`): pregunta con herramienta (pendientes y notas coinciden con
       Moodle, sin la nota oculta), `data.students` con seudónimos, historial sin nombres, 404 y 400.
 - [ ] Chat: una pregunta con datos incompletos, el 429, el 503 y la interrupción con la API real (están probados en la
-      pantalla con el simulador).
+      pantalla con el simulador). Hecho con la API y Gemini reales (`pnpm smoke:ia`): el chat con herramientas, la
+      aclaración, las evidencias y los ataques ([resultados](../resultados/ia-real-sintetica.md)); faltan los errores en
+      la pantalla.
 - [ ] Panel: indicadores con un valor nulo, señales con explicación, evidencias y recomendación con 422. Hecho con la
       API real: indicadores con definición, señales con explicación y evidencias separadas (`pnpm smoke:asistente`);
       faltan el valor nulo y la recomendación con 422.
-- [ ] Medir RNF-01 y RNF-02 con `pnpm loadtest -- --scenario chat` y registrar los resultados.
-- [ ] Revisar con José los casos de seguridad SEC-06 y SEC-07 sobre la interfaz.
+- [ ] Medir RNF-01 y RNF-02 con `pnpm loadtest -- --scenario chat` y registrar los resultados. Hay una medición
+      orientativa con 6 muestras y el plan gratuito (RNF-02 dentro del objetivo, RNF-01 fuera); falta con más muestras.
+- [ ] Revisar con José los casos de seguridad SEC-06 y SEC-07 sobre la interfaz. Los dos casos se probaron con el modelo
+      real a nivel de API (`pnpm smoke:ia`); falta la revisión sobre la interfaz.
 
 ## Entre los dos
 
