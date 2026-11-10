@@ -7,6 +7,7 @@
 [![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-12-F69220?style=flat-square&logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![CI](https://github.com/kiramman-mp3/sistema-gestion-aprendizaje-IA/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/kiramman-mp3/sistema-gestion-aprendizaje-IA/actions/workflows/ci.yml)
 
 **LMS Inteligente con Asistente de IA** es una plataforma de gestión del aprendizaje basada en Moodle,
 ampliada con una capa propia de inteligencia artificial que ayuda al docente a planificar cursos a
@@ -24,6 +25,8 @@ sintéticos. La extracción estructurada con IA llega en el Sprint 5.
 > Para revisar solo el código:
 >
 > ```bash
+> git clone https://github.com/kiramman-mp3/sistema-gestion-aprendizaje-IA.git
+> cd sistema-gestion-aprendizaje-IA
 > pnpm install
 > pnpm lint && pnpm typecheck && pnpm test
 > ```
@@ -142,7 +145,7 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 
 ```bash
 .
-├── .github/workflows/ci.yml        # CI: lint, formato, contrato API, tipos, pruebas, build y phpcs
+├── .github/                        # CI (workflows/ci.yml) y plantillas de issues y pull requests
 ├── apps/
 │   ├── document-worker/            # Worker documental: PDF, DOCX y OCR (sin acceso a la base)
 │   │   ├── src/extract/            # Extractores de PDF, DOCX y OCR
@@ -183,6 +186,7 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │   └── scripts/                    # moodle.sh y phpcs.sh
 ├── docs/
 │   ├── ROADMAP.md                  # Plan por fases y sprints
+│   ├── equipo/                     # Reparto del trabajo entre el equipo
 │   ├── desarrollo/                 # Guía del entorno local
 │   ├── resultados/                 # Resultados por fase
 │   ├── capturas/                   # Capturas de pantalla
@@ -193,6 +197,8 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │   ├── testing/                    # Plan de pruebas
 │   ├── levantamiento/              # Guía de entrevista, catálogo de sílabos, consentimiento
 │   └── prototipos/                 # Prototipos de baja fidelidad
+├── CONTRIBUTING.md                 # Cómo contribuir: ramas, commits, pruebas y PR
+├── CLAUDE.md                       # Reglas de Git y documentación del proyecto
 ├── docker-compose.yml              # Base auxiliar y Redis; perfiles antivirus, worker y api
 ├── .env.example                    # Variables de entorno de referencia
 ├── package.json                    # Scripts del workspace
@@ -218,9 +224,11 @@ secretos y un proveedor de IA; se definen en el Sprint 13.
 La [guía del entorno local](docs/desarrollo/entorno-local.md) explica cada paso y los problemas
 conocidos. En resumen:
 
-1. Instalar dependencias y crear el `.env`.
+1. Clonar el repositorio, instalar dependencias y crear el `.env`.
 
    ```bash
+   git clone https://github.com/kiramman-mp3/sistema-gestion-aprendizaje-IA.git
+   cd sistema-gestion-aprendizaje-IA
    pnpm install
    cp .env.example .env
    ```
@@ -376,11 +384,26 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 
 ---
 
+## 🤝 Cómo contribuir
+
+El trabajo se organiza por sprints en el [roadmap](docs/ROADMAP.md) y el
+[reparto del trabajo](docs/equipo/reparto-trabajo.md) dice qué tiene cada persona. Antes de abrir un
+pull request lee [`CONTRIBUTING.md`](CONTRIBUTING.md): ramas desde `develop`, Conventional
+Commits, verificaciones locales y documentación al cerrar cada sprint. Las reglas de Git completas
+están en [`CLAUDE.md`](CLAUDE.md).
+
+| Persona | Línea de trabajo                                                    |
+| ------- | ------------------------------------------------------------------- |
+| Pashma  | IA, datos y analítica: LLM, extracción, chat, RAG y recomendaciones |
+| José    | Moodle, publicación e interfaz: plugin, propuestas, despliegue      |
+
+---
+
 ## 👥 Contribuidores
 
 | Nombre       | Commits |
 | ------------ | ------- |
-| kiramman-mp3 | 185     |
+| kiramman-mp3 | 193     |
 
 ---
 
