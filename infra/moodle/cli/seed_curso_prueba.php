@@ -56,6 +56,7 @@ if ($options['help']) {
     exit(0);
 }
 
+/** Nombre corto del curso de prueba. */
 const PRUEBA_SHORTNAME = 'AN-401-PRUEBA';
 
 \core\session\manager::set_user(get_admin());
@@ -110,21 +111,22 @@ foreach ($students as $student) {
     $generator->enrol_user($student->id, $course->id, 'student');
 }
 
-/**
- * Estados de entrega por estudiante (1 a 12) para cada tarea:
- * O = a tiempo y calificada, o = a tiempo sin calificar, L = tarde y calificada, l = tarde sin calificar,
- * D = borrador (no se envió), N = sin entrega.
- *
- * Perfiles: 01-03 altos; 04-06 medios; 07-08 entregan tarde; 09-10 bajan de nota y faltan entregas;
- * 11 no participa; 12 irregular.
- */
+// Estados de entrega por estudiante (1 a 12) para cada tarea:
+// O = a tiempo y calificada, o = a tiempo sin calificar, L = tarde y calificada, l = tarde sin calificar,
+// D = borrador (no se envió), N = sin entrega.
+//
+// Perfiles: 01-03 altos; 04-06 medios; 07-08 entregan tarde; 09-10 bajan de nota y faltan entregas;
+// 11 no participa; 12 irregular.
 $assignments = [
     [
         'name' => 'Tarea 1: Limpieza de datos',
         'due' => -21,
         'section' => 1,
         'states' => 'OOOOOOLLOONO',
-        'grades' => [1 => 9.5, 2 => 9.0, 3 => 9.8, 4 => 7.5, 5 => 7.0, 6 => 6.8, 7 => 6.0, 8 => 5.5, 9 => 6.5, 10 => 6.0, 12 => 7.2],
+        'grades' => [
+            1 => 9.5, 2 => 9.0, 3 => 9.8, 4 => 7.5, 5 => 7.0, 6 => 6.8,
+            7 => 6.0, 8 => 5.5, 9 => 6.5, 10 => 6.0, 12 => 7.2,
+        ],
     ],
     [
         'name' => 'Tarea 2: Análisis exploratorio',
@@ -178,7 +180,12 @@ foreach ($assignments as $spec) {
         ]);
         if ($code === 'D') {
             $count['draft']++;
-            $DB->set_field('assign_submission', 'timemodified', $now - $day, ['assignment' => $instance->id, 'userid' => $student->id]);
+            $DB->set_field(
+                'assign_submission',
+                'timemodified',
+                $now - $day,
+                ['assignment' => $instance->id, 'userid' => $student->id]
+            );
             continue;
         }
         $assign->submit_for_grading((object) ['userid' => $student->id], []);
@@ -236,11 +243,22 @@ foreach ($quizgrades as $number => $grade) {
         'quiz',
         $quiz->id,
         0,
-        ['userid' => $students[$number]->id, 'rawgrade' => $grade, 'dategraded' => $now - 4 * $day, 'datesubmitted' => $now - 5 * $day]
+        [
+            'userid' => $students[$number]->id,
+            'rawgrade' => $grade,
+            'dategraded' => $now - 4 * $day,
+            'datesubmitted' => $now - 5 * $day,
+        ]
     );
     $completed[$quiz->cmid][] = $students[$number]->id;
 }
-$item = grade_item::fetch(['courseid' => $course->id, 'itemtype' => 'mod', 'itemmodule' => 'quiz', 'iteminstance' => $quiz->id, 'itemnumber' => 0]);
+$item = grade_item::fetch([
+    'courseid' => $course->id,
+    'itemtype' => 'mod',
+    'itemmodule' => 'quiz',
+    'iteminstance' => $quiz->id,
+    'itemnumber' => 0,
+]);
 $hidden = grade_grade::fetch(['itemid' => $item->id, 'userid' => $students[4]->id]);
 $hidden->set_hidden(1);
 $summary[] = 'Cuestionario 1 · 10 calificaciones; la del estudiante 04 está oculta y no debe salir en las lecturas';
@@ -282,7 +300,8 @@ foreach ($completed as $cmid => $userids) {
 }
 $summary[] = sprintf('Finalización · %d actividades completadas en total (seguimiento manual)', $totalcompleted);
 
-// Último acceso al curso, en días atrás. Los estudiantes 08 a 10 llevan más de dos semanas sin entrar y el 11 nunca entró.
+// Último acceso al curso, en días atrás. Los estudiantes 08 a 10 llevan más de dos semanas sin entrar.
+// El estudiante 11 nunca entró.
 $daysago = [1 => 0, 2 => 1, 3 => 2, 4 => 3, 5 => 5, 6 => 6, 7 => 9, 8 => 16, 9 => 20, 10 => 25, 12 => 2];
 foreach ($daysago as $number => $days) {
     $DB->insert_record('user_lastaccess', (object) [
@@ -294,7 +313,8 @@ foreach ($daysago as $number => $days) {
 $summary[] = 'Último acceso · 11 estudiantes con acceso (3 con más de 14 días) y el 11 sin ingresar nunca';
 
 cli_writeln('Curso de prueba creado: ' . PRUEBA_SHORTNAME . ' (id ' . $course->id . ').');
-cli_writeln('Docente con permisos: prueba_docente. Docente sin acceso al curso: prueba_ajeno. Estudiantes: prueba_est01 a prueba_est12.');
+cli_writeln('Docente con permisos: prueba_docente. Docente sin acceso al curso: prueba_ajeno.');
+cli_writeln('Estudiantes: prueba_est01 a prueba_est12.');
 cli_writeln('Contraseña: ' . $options['password']);
 foreach ($summary as $line) {
     cli_writeln(' - ' . $line);
