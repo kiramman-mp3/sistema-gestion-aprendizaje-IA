@@ -1,7 +1,7 @@
 import { SetMetadata } from "@nestjs/common";
 
 /** Capacidades del asistente. `use` se exige siempre; las demás se piden por ruta. */
-export type AssistantCapability = "use" | "publish" | "viewanalytics";
+export type AssistantCapability = "use" | "publish" | "viewanalytics" | "admin";
 
 export const REQUIRED_CAPABILITIES = "auth:requiredCapabilities";
 

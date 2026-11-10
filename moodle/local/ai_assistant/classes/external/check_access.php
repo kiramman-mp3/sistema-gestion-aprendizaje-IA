@@ -38,6 +38,7 @@ class check_access extends external_api {
         'use' => 'local/ai_assistant:use',
         'publish' => 'local/ai_assistant:publish',
         'viewanalytics' => 'local/ai_assistant:viewanalytics',
+        'admin' => 'local/ai_assistant:administer',
     ];
 
     /**
@@ -123,6 +124,7 @@ class check_access extends external_api {
                 'use' => new external_value(PARAM_BOOL, 'local/ai_assistant:use'),
                 'publish' => new external_value(PARAM_BOOL, 'local/ai_assistant:publish'),
                 'viewanalytics' => new external_value(PARAM_BOOL, 'local/ai_assistant:viewanalytics'),
+                'admin' => new external_value(PARAM_BOOL, 'local/ai_assistant:administer'),
             ]),
         ]);
     }

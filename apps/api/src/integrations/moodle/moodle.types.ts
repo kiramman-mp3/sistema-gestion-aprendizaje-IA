@@ -22,6 +22,8 @@ export const courseAccessSchema = z.object({
     use: z.boolean(),
     publish: z.boolean(),
     viewanalytics: z.boolean(),
+    // Un Moodle con una versión anterior del plugin no lo informa: se toma como que no administra.
+    admin: z.boolean().default(false),
   }),
 });
 

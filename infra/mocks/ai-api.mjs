@@ -4,6 +4,7 @@
 //   - POST /syllabi/:id/extract, GET y PUT /syllabi/:id/extraction  (Sprint 5)
 //   - POST /assistant/chat (SSE o JSON) y GET /assistant/conversations/:id  (Sprints 8 y 9)
 //   - GET /analytics/..., POST .../recommendations y .../followups  (Sprints 10 y 11)
+//   - GET /audit y GET, PUT y DELETE /admin/difficulty-rules  (CU-06 y CU-07; el simulador da `admin` a todos)
 // y responde /session y /health. No verifica el token (acepta cualquiera) y no guarda nada en disco.
 //
 // Uso:   pnpm mock:ai            (puerto 3100)   y apuntar el plugin a él:
@@ -26,6 +27,14 @@ import {
 /** Sílabo que existe desde el arranque; se abre con `index.php?courseid=…&syllabusid=<este id>`. */
 export const MOCK_SYLLABUS_ID = "00000000-0000-4000-8000-0000000000a1";
 const API = "/api/v1";
+
+/** Parámetros por defecto de las reglas de dificultad, como los de `difficulty-rules.ts`. */
+const RULES = {
+  MISSING_REQUIRED: { minMissing: 2 },
+  GRADE_BELOW_THRESHOLD: { thresholdPercent: 60, minActivities: 2 },
+  SUSTAINED_DECLINE: { consecutive: 3 },
+  REPEATED_OUTCOME_DIFFICULTY: { thresholdPercent: 60, minActivities: 2 },
+};
 
 /** Lee la identidad del token sin verificarlo: es un simulador. */
 function identity(request) {
@@ -76,6 +85,19 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
     createdAt: new Date().toISOString(),
   };
   const conversations = new Map();
+  // Reglas guardadas por alcance: "institution" o el id del curso.
+  const savedRules = new Map();
+  const auditEvents = Array.from({ length: 120 }, (_, i) => ({
+    id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
+    createdAt: new Date(Date.UTC(2026, 10, 10, 12, 0, 0) - i * 60_000).toISOString(),
+    action: ["proposal.publish", "access.denied", "chat.query", "analytics.student"][i % 4],
+    outcome: i % 4 === 1 ? "DENIED" : "SUCCESS",
+    actorMoodleId: 4 + (i % 3),
+    courseId: 7,
+    resourceType: i % 4 === 0 ? "proposal" : null,
+    resourceId: i % 4 === 0 ? `p${i}` : null,
+    metadata: i % 4 === 2 ? { tools: 1 } : null,
+  }));
 
   const syllabusDto = (courseId) => ({
     id: syllabus.id,
@@ -244,6 +266,94 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
     response.end();
   }
 
+  function auditPage(response, query) {
+    const limit = Number(query.get("limit") ?? 50);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 200)
+      return error(
+        response,
+        400,
+        "VALIDATION_ERROR",
+        "La petición no cumple el formato esperado.",
+        {
+          details: [{ path: "limit", message: "Debe estar entre 1 y 200." }],
+        },
+      );
+    const action = query.get("action");
+    const matching = auditEvents.filter(
+      (e) =>
+        (!query.get("courseId") || e.courseId === Number(query.get("courseId"))) &&
+        (!query.get("actorId") || e.actorMoodleId === Number(query.get("actorId"))) &&
+        (!query.get("outcome") || e.outcome === query.get("outcome")) &&
+        (!action || (action.endsWith(".") ? e.action.startsWith(action) : e.action === action)) &&
+        (!query.get("from") || e.createdAt >= query.get("from")) &&
+        (!query.get("to") || e.createdAt <= query.get("to")),
+    );
+    const start = Number(query.get("cursor") ?? 0);
+    if (!Number.isInteger(start) || start < 0)
+      return error(
+        response,
+        400,
+        "VALIDATION_ERROR",
+        "La petición no cumple el formato esperado.",
+        {
+          details: [{ path: "cursor", message: "El cursor no es válido." }],
+        },
+      );
+    const items = matching.slice(start, start + limit);
+    const next = start + limit < matching.length ? String(start + limit) : null;
+    return json(response, 200, { items, nextCursor: next });
+  }
+
+  function rulesFor(courseId) {
+    return {
+      courseId: courseId ? Number(courseId) : null,
+      rules: Object.keys(RULES).map((rule) => {
+        const own = courseId ? savedRules.get(`${courseId}:${rule}`) : undefined;
+        const institution = savedRules.get(`institution:${rule}`);
+        const found = own ?? institution;
+        return {
+          rule,
+          scope: own ? "course" : institution ? "institution" : "default",
+          enabled: found?.enabled ?? true,
+          params: found?.params ?? { ...RULES[rule] },
+        };
+      }),
+    };
+  }
+
+  function putRule(response, rule, body) {
+    const valid =
+      Object.hasOwn(body, "courseId") &&
+      typeof body.enabled === "boolean" &&
+      (body.courseId === null || Number.isInteger(body.courseId)) &&
+      Object.keys(body.params ?? {}).every((key) => key in RULES[rule]);
+    if (!valid)
+      return error(
+        response,
+        400,
+        "VALIDATION_ERROR",
+        "La petición no cumple el formato esperado.",
+        {
+          details: [{ path: "body", message: "Cuerpo inválido para esta regla." }],
+        },
+      );
+    const scope = body.courseId === null ? "institution" : String(body.courseId);
+    const saved = { enabled: body.enabled, params: { ...RULES[rule], ...body.params } };
+    savedRules.set(`${scope}:${rule}`, saved);
+    return json(response, 200, {
+      rule,
+      scope: body.courseId === null ? "institution" : "course",
+      ...saved,
+    });
+  }
+
+  function deleteRule(response, rule, courseId) {
+    const key = `${courseId ?? "institution"}:${rule}`;
+    if (!savedRules.delete(key)) return error(response, 404, "RULE_NOT_FOUND");
+    response.writeHead(204);
+    return response.end();
+  }
+
   async function route(request, response) {
     const url = new URL(request.url, "http://mock");
     const path = url.pathname.startsWith(API) ? url.pathname.slice(API.length) : url.pathname;
@@ -259,7 +369,7 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
         moodleUserId: userId,
         courseId,
         roles: ["editingteacher"],
-        capabilities: { use: true, publish: true, viewanalytics: true },
+        capabilities: { use: true, publish: true, viewanalytics: true, admin: true },
       });
     }
 
@@ -326,6 +436,16 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
             messages: conversation.messages,
           })
         : error(response, 404, "CONVERSATION_NOT_FOUND");
+    }
+
+    if (path === "/audit" && method === "GET") return auditPage(response, url.searchParams);
+    if (path === "/admin/difficulty-rules" && method === "GET")
+      return json(response, 200, rulesFor(url.searchParams.get("courseId")));
+    if ((match = /^\/admin\/difficulty-rules\/([A-Z_]+)$/.exec(path))) {
+      if (!RULES[match[1]]) return error(response, 404, "RULE_NOT_FOUND");
+      if (method === "PUT") return putRule(response, match[1], (await readBody(request)) ?? {});
+      if (method === "DELETE")
+        return deleteRule(response, match[1], url.searchParams.get("courseId"));
     }
 
     if ((match = /^\/analytics\/courses\/(\d+)$/.exec(path)) && method === "GET")

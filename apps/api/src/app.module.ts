@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { APP_FILTER } from "@nestjs/core";
 import { LoggerModule } from "nestjs-pino";
+import { AdminModule } from "./admin/admin.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { AssistantModule } from "./assistant/assistant.module";
 import { AuditModule } from "./audit/audit.module";
@@ -58,6 +59,7 @@ import { SyllabiModule } from "./syllabi/syllabi.module";
     ProposalsModule,
     MappingsModule,
     MaintenanceModule,
+    AdminModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
 })

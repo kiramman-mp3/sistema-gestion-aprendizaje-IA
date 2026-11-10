@@ -15,7 +15,7 @@ const teacher: CourseAccess = {
   courseexists: true,
   active: true,
   roles: ["teacher"],
-  capabilities: { use: true, publish: false, viewanalytics: true },
+  capabilities: { use: true, publish: false, viewanalytics: true, admin: false },
 };
 
 function setup(access: CourseAccess | Error, metadata: Record<string, unknown> = {}) {
@@ -67,7 +67,7 @@ describe("CourseAccessGuard", () => {
     const student = {
       ...teacher,
       roles: ["student"],
-      capabilities: { use: false, publish: false, viewanalytics: false },
+      capabilities: { use: false, publish: false, viewanalytics: false, admin: false },
     };
     const { guard, context, record } = setup(student);
 

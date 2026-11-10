@@ -303,3 +303,58 @@ describe("analítica (Sprints 10 y 11)", () => {
     ).toBe(400);
   });
 });
+
+describe("administración (CU-06 y CU-07)", () => {
+  it("la sesión del simulador incluye admin", async () => {
+    expect((await (await call("GET", "/session")).json()).capabilities.admin).toBe(true);
+  });
+
+  it("pagina la auditoría sin repetir eventos y filtra", async () => {
+    const first = await (await call("GET", "/audit?limit=50")).json();
+    const second = await (await call("GET", `/audit?limit=50&cursor=${first.nextCursor}`)).json();
+    const denied = await (await call("GET", "/audit?outcome=DENIED&limit=200")).json();
+    const domain = await (await call("GET", "/audit?action=proposal.&limit=200")).json();
+
+    expect(first.items).toHaveLength(50);
+    expect(second.items[0].id).not.toBe(first.items.at(-1).id);
+    expect(denied.items.every((e) => e.outcome === "DENIED")).toBe(true);
+    expect(domain.items.every((e) => e.action.startsWith("proposal."))).toBe(true);
+    expect((await call("GET", "/audit?limit=0")).status).toBe(400);
+  });
+
+  it("guarda, lee y quita una regla con el alcance correcto", async () => {
+    const put = await call("PUT", "/admin/difficulty-rules/SUSTAINED_DECLINE", {
+      courseId: 7,
+      enabled: false,
+      params: { consecutive: 4 },
+    });
+    const forCourse = await (await call("GET", "/admin/difficulty-rules?courseId=7")).json();
+    const institution = await (await call("GET", "/admin/difficulty-rules")).json();
+    const rule = (body) => body.rules.find((r) => r.rule === "SUSTAINED_DECLINE");
+
+    expect(put.status).toBe(200);
+    expect(rule(forCourse)).toMatchObject({
+      scope: "course",
+      enabled: false,
+      params: { consecutive: 4 },
+    });
+    expect(rule(institution)).toMatchObject({ scope: "default", enabled: true });
+    expect(
+      (await call("DELETE", "/admin/difficulty-rules/SUSTAINED_DECLINE?courseId=7")).status,
+    ).toBe(204);
+    expect(
+      (await call("DELETE", "/admin/difficulty-rules/SUSTAINED_DECLINE?courseId=7")).status,
+    ).toBe(404);
+  });
+
+  it("rechaza una regla inexistente y un cuerpo inválido", async () => {
+    expect((await call("PUT", "/admin/difficulty-rules/INVENTADA", {})).status).toBe(404);
+    const bad = await call("PUT", "/admin/difficulty-rules/MISSING_REQUIRED", {
+      courseId: null,
+      enabled: true,
+      params: { otra: 1 },
+    });
+    expect(bad.status).toBe(400);
+    expect((await bad.json()).details).toEqual(expect.any(Array));
+  });
+});

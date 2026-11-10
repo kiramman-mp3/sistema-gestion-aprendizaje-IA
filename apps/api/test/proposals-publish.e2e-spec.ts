@@ -13,7 +13,7 @@ import { FakeMoodle } from "./support/fake-moodle";
 import { signPluginToken, TEST_ISSUER, TEST_SECRET } from "./support/plugin-token";
 import { DOC_ID, ProposalsStore } from "./support/proposals-store";
 
-const capabilities = { use: true, publish: true, viewanalytics: true };
+const capabilities = { use: true, publish: true, viewanalytics: true, admin: false };
 const fakeAccess = {
   getAccess: async (userId: number, courseId: number): Promise<CourseAccess> => ({
     userid: userId,
@@ -75,7 +75,7 @@ describe("Publicación de propuestas (e2e)", () => {
     moodle.reset();
     audit.length = 0;
     dispatchFails = false;
-    Object.assign(capabilities, { use: true, publish: true, viewanalytics: true });
+    Object.assign(capabilities, { use: true, publish: true, viewanalytics: true, admin: false });
   });
 
   afterAll(async () => {

@@ -9,7 +9,7 @@ import { PrismaService } from "../src/database/prisma.service";
 import type { CourseAccess } from "../src/integrations/moodle/moodle.types";
 import { signPluginToken, TEST_ISSUER, TEST_SECRET } from "./support/plugin-token";
 
-const capabilities = { use: true, publish: true, viewanalytics: true };
+const capabilities = { use: true, publish: true, viewanalytics: true, admin: false };
 const fakeAccess = {
   getAccess: async (userId: number, courseId: number): Promise<CourseAccess> => ({
     userid: userId,
@@ -125,7 +125,7 @@ describe("Relación de actividades con unidades (e2e)", () => {
     });
     rows.splice(0, rows.length);
     audit.length = 0;
-    Object.assign(capabilities, { use: true, publish: true, viewanalytics: true });
+    Object.assign(capabilities, { use: true, publish: true, viewanalytics: true, admin: false });
   });
 
   afterAll(async () => {

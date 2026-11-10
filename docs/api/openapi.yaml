@@ -863,34 +863,31 @@ paths:
       tags: [admin]
       operationId: listDifficultyRules
       summary: Reglas de señales de dificultad (CU-06)
+      description: |
+        Requiere `admin`. Devuelve las cuatro reglas con la configuración que se aplicaría: con `courseId`, la del
+        curso (la propia del curso, si la tiene; si no, la institucional; si no, la de por defecto); sin él, la
+        institucional. `scope` indica de dónde sale cada una.
+      parameters:
+        - name: courseId
+          in: query
+          schema:
+            type: integer
+            minimum: 1
       responses:
         "200":
           description: Reglas
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DifficultyRule"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-    put:
-      tags: [admin]
-      operationId: replaceDifficultyRules
-      summary: Reemplazar las reglas institucionales
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/DifficultyRule"
-      responses:
-        "200":
-          description: Reglas guardadas
+                type: object
+                required: [courseId, rules]
+                properties:
+                  courseId:
+                    type: [integer, "null"]
+                  rules:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DifficultyRule"
         "400":
           $ref: "#/components/responses/ValidationError"
         "401":
@@ -898,16 +895,119 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /audit:
-    get:
+  /admin/difficulty-rules/{rule}:
+    parameters:
+      - name: rule
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/DifficultyRuleType"
+    put:
       tags: [admin]
-      operationId: listAuditEvents
-      summary: Consultar auditoría (RF-19, CU-07)
+      operationId: saveDifficultyRule
+      summary: Guardar una regla institucional o de un curso
+      description: |
+        Requiere `admin`. `courseId: null` configura la regla de toda la institución; un número, la de ese curso, que
+        reemplaza a la institucional. Los parámetros se validan con el esquema de la regla (estricto, con valores por
+        defecto). Cada cambio queda en la auditoría como `rules.update`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [courseId, enabled]
+              properties:
+                courseId:
+                  type: [integer, "null"]
+                  minimum: 1
+                enabled:
+                  type: boolean
+                params:
+                  type: object
+                  description: |
+                    `MISSING_REQUIRED`: `minMissing`, `requiredCmids`, `windowDays`. `GRADE_BELOW_THRESHOLD` y
+                    `REPEATED_OUTCOME_DIFFICULTY`: `thresholdPercent` (0 a 100), `minActivities`, `windowDays`.
+                    `SUSTAINED_DECLINE`: `consecutive` (3 a 10), `windowDays`.
+      responses:
+        "200":
+          description: Regla guardada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DifficultyRule"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "`RULE_NOT_FOUND`: la regla no existe"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [admin]
+      operationId: resetDifficultyRule
+      summary: Quitar la configuración propia de una regla
+      description: |
+        Requiere `admin`. Con `courseId`, el curso vuelve a la regla institucional; sin él, la institución vuelve al
+        valor por defecto. Se audita como `rules.reset`.
       parameters:
         - name: courseId
           in: query
           schema:
             type: integer
+            minimum: 1
+      responses:
+        "204":
+          description: Configuración quitada
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "`RULE_NOT_FOUND`: la regla no existe o no tenía configuración propia"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /audit:
+    get:
+      tags: [admin]
+      operationId: listAuditEvents
+      summary: Consultar auditoría (RF-19, CU-07)
+      description: |
+        Requiere `admin`. Eventos del más reciente al más antiguo, paginados con `cursor`. Los eventos no guardan
+        nombres, notas ni texto de mensajes. Consultar la auditoría deja el evento `audit.query`.
+      parameters:
+        - name: courseId
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: actorId
+          in: query
+          description: Id de Moodle de quien hizo la acción
+          schema:
+            type: integer
+            minimum: 1
+        - name: action
+          in: query
+          description: Acción exacta (`proposal.publish`) o un dominio completo terminado en punto (`proposal.`)
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9_.]{0,59}$"
+        - name: outcome
+          in: query
+          schema:
+            type: string
+            enum: [SUCCESS, DENIED, ERROR]
         - name: from
           in: query
           schema:
@@ -935,6 +1035,8 @@ paths:
                       $ref: "#/components/schemas/AuditEvent"
                   nextCursor:
                     type: [string, "null"]
+        "400":
+          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -994,8 +1096,8 @@ components:
       schema:
         type: integer
         minimum: 1
-        maximum: 100
-        default: 25
+        maximum: 200
+        default: 50
 
   responses:
     ValidationError:
@@ -1118,7 +1220,7 @@ components:
             type: string
         capabilities:
           type: object
-          required: [use, publish, viewanalytics]
+          required: [use, publish, viewanalytics, admin]
           properties:
             use:
               type: boolean
@@ -1126,6 +1228,9 @@ components:
               type: boolean
             viewanalytics:
               type: boolean
+            admin:
+              type: boolean
+              description: Administra el asistente (auditoría y reglas de dificultad); lo da `local/ai_assistant:administer`
 
     SyllabusExtraction:
       description: |
@@ -1528,19 +1633,24 @@ components:
           items:
             $ref: "#/components/schemas/ActivityMapping"
 
+    DifficultyRuleType:
+      type: string
+      enum:
+        - MISSING_REQUIRED
+        - GRADE_BELOW_THRESHOLD
+        - SUSTAINED_DECLINE
+        - REPEATED_OUTCOME_DIFFICULTY
+
     DifficultyRule:
       type: object
-      required: [rule, enabled, params]
+      required: [rule, scope, enabled, params]
       properties:
-        courseId:
-          type: [integer, "null"]
         rule:
+          $ref: "#/components/schemas/DifficultyRuleType"
+        scope:
           type: string
-          enum:
-            - MISSING_REQUIRED
-            - GRADE_BELOW_THRESHOLD
-            - SUSTAINED_DECLINE
-            - REPEATED_OUTCOME_DIFFICULTY
+          enum: [default, institution, course]
+          description: De dónde sale la configuración
         enabled:
           type: boolean
         params:
@@ -1566,6 +1676,9 @@ components:
         outcome:
           type: string
           enum: [SUCCESS, DENIED, ERROR]
+        metadata:
+          type: [object, "null"]
+          description: Solo valores escalares; nunca nombres, notas ni texto de mensajes
         createdAt:
           type: string
           format: date-time

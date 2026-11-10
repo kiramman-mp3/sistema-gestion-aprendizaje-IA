@@ -29,6 +29,7 @@ const CAPABILITY_STRINGS = {
   use: "capuse",
   publish: "cappublish",
   viewanalytics: "capviewanalytics",
+  admin: "capadmin",
 };
 
 /**
