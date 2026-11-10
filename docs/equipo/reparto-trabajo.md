@@ -32,7 +32,7 @@ ese contrato con datos de prueba.
 ### Sprint 8 · Asistente conversacional
 
 - [x] `feature/ai-orchestrator`: bucle de tool calling con límite de iteraciones y herramientas de lectura y escritura separadas.
-- [ ] `feature/tool-teacher-courses`, `feature/tool-submissions`, `feature/tool-pending-grading` y `feature/tool-grade-summary` en el backend. Código hecho y probado con un Moodle simulado; faltan las funciones de lectura del plugin ([pendiente de José](pendiente-de-jose.md)).
+- [ ] `feature/tool-teacher-courses`, `feature/tool-submissions`, `feature/tool-pending-grading` y `feature/tool-grade-summary` en el backend. Código hecho y probado con un Moodle simulado, y las funciones de lectura del plugin ya existen ([lecturas de Moodle](../architecture/lecturas-moodle.md)). Verificadas con Moodle real y el proveedor de demostración: `get_course_activities`, `get_pending_grading` y `get_grade_summary`; falta `get_assignment_submissions` en el chat (el proveedor de demostración no la elige) y `get_teacher_courses` (el token fija un solo curso).
 - [x] `feature/pseudonymization` (ADR-010).
 - [x] `feature/chat-api`: `POST /assistant/chat` con streaming e historial.
 

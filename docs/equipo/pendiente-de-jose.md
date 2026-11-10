@@ -4,7 +4,13 @@ Pendientes de **José** (Moodle, interfaz e institución) para que Pashma cierre
 por urgencia. El estado general está en el [reparto del trabajo](reparto-trabajo.md) y lo que ya espera cada
 pantalla, en [integración con la línea de IA](integracion-con-ia.md).
 
-## 1. Urgente: funciones de lectura en el plugin
+## 1. Hecho: funciones de lectura en el plugin
+
+> [!NOTE]
+> Hechas y verificadas el 2026-11-10: las siete funciones, la capacidad `local/ai_assistant:readdata` para el
+> usuario de integración, 18 pruebas de PHPUnit (incluido un docente sin permiso) y una verificación por REST con el
+> token real. Lo que sigue describe lo que se pidió; el detalle de lo construido está en
+> [lecturas de Moodle](../architecture/lecturas-moodle.md).
 
 Hoy el usuario de integración solo llama a `check_access` y a las funciones de publicar. Las herramientas del
 chat y la analítica necesitan leer entregas y notas. Las funciones siguen el patrón de `publish_module.php`:
@@ -37,7 +43,13 @@ Reglas para todas:
   ejecutar `upgrade.php`.
 - **Pruebas.** PHPUnit con un curso de ejemplo, incluido un docente sin permiso.
 
-## 2. Urgente: cambio de contrato en el chat
+## 2. Hecho: cambio de contrato en el chat
+
+> [!NOTE]
+> Hecho el 2026-11-10: la pantalla sustituye cada alias por el nombre que da `get_course_students`, muestra los
+> segundos de `Retry-After` en el 429, devuelve la pregunta al cuadro y empieza una conversación nueva con el 404, y
+> lista los campos del 400. `pnpm mock:ai` devuelve `data.students`. Para que el navegador pueda leer `Retry-After`,
+> el backend ahora lo expone en CORS (`exposedHeaders`).
 
 La respuesta del chat puede traer `data.students`: una lista de `{alias, studentId}`. El texto de `answer`
 usa seudónimos `Estudiante#NNNNNNNN`. La pantalla del chat debe:
@@ -56,7 +68,10 @@ usa seudónimos `Estudiante#NNNNNNNN`. La pantalla del chat debe:
 También hay que actualizar `pnpm mock:ai` para que devuelva `data.students`, así el simulador y la API real
 coinciden. El detalle del chat está en [asistente conversacional](../architecture/asistente-chat.md).
 
-## 2.1 Ya se puede integrar con la API real
+## 2.1 Integración con la API real
+
+Con `AI_PROVIDER=mock` y las funciones de lectura ya hechas, el chat, la analítica y la publicación funcionan de
+punta a punta con Moodle real: `pnpm smoke:publicacion` y `pnpm smoke:asistente` pasan.
 
 Con `AI_PROVIDER=mock` en el `.env`, el backend responde con datos de demostración: la extracción devuelve el
 sílabo de ejemplo (las fechas y ponderaciones que el documento subido no trae quedan anuladas y marcadas para
@@ -64,19 +79,20 @@ revisión), el chat consulta una herramienta según palabras clave y las recomen
 ejemplo. Cada respuesta de chat y de recomendación lleva el aviso «Respuesta de demostración». No vale para
 medir calidad ni tiempos, y no se permite en producción.
 
-Las herramientas del chat, la analítica y las recomendaciones leen de Moodle con las funciones del punto 1:
-hasta que existan, esas rutas responden `503 MOODLE_UNAVAILABLE` o el chat dice que no pudo consultar. También
-están listas `GET /analytics/courses/:courseId`, `GET …/students/:studentId` y
+Las herramientas del chat, la analítica y las recomendaciones leen de Moodle con las funciones del punto 1.
+También están listas `GET /analytics/courses/:courseId`, `GET …/students/:studentId` y
 `POST …/students/:studentId/recommendations`
 ([analítica](../architecture/analitica.md)).
 
-## 3. Importante: curso de prueba con datos sintéticos
+## 3. Hecho: curso de prueba con datos sintéticos
 
-Un Moodle local con un curso que tenga estudiantes ficticios, actividades de varios tipos, entregas completas
-e incompletas, notas, completado y accesos. Sin eso no se puede probar de punta a punta ni medir RNF-01 a
-RNF-03.
+`infra/moodle/cli/seed_curso_prueba.php` crea el curso `AN-401-PRUEBA`: 12 estudiantes ficticios con nombres
+reconocibles, 3 tareas, un foro, un cuestionario, una página y una etiqueta, entregas completas, en borrador, tardías,
+sin entrega y pendientes de calificar, notas con perfiles distintos (una oculta), finalización y último acceso
+(con inactivos y un estudiante que nunca entró). Detalle en la [guía del entorno local](../desarrollo/entorno-local.md).
+Con `--recrear` se borra y se vuelve a crear con plazos relativos a hoy.
 
-## 4. Decisiones
+## 4. Decisiones (pendientes: las toma José)
 
 - **Permiso de administrador.** Para `/admin/difficulty-rules` y `/audit` el token solo tiene `use`,
   `publish` y `viewanalytics`. Propuesta: añadir la capacidad `local/ai_assistant:administer` y que
@@ -95,11 +111,12 @@ RNF-03.
 
 | Si José entrega                    | La línea de IA puede hacer                                                   |
 | ---------------------------------- | ---------------------------------------------------------------------------- |
-| Funciones de lectura (punto 1)     | Herramientas del chat sobre Moodle real; indicadores y señales de dificultad |
-| Cambio de contrato (punto 2)       | Que el docente vea nombres y no seudónimos en el chat                        |
-| Curso de prueba (punto 3)          | Probar de punta a punta y medir RNF-01 a RNF-03                              |
-| Permiso de administrador (punto 4) | `/admin/difficulty-rules`                                                    |
-| Sílabos reales (punto 5)           | Conjunto de referencia y F1                                                  |
+| Si José entrega                    | La línea de IA puede hacer                                                   | Estado    |
+| ---------------------------------- | ---------------------------------------------------------------------------- | --------- |
+| Funciones de lectura (punto 1)     | Herramientas del chat sobre Moodle real; indicadores y señales de dificultad | Entregado |
+| Cambio de contrato (punto 2)       | Que el docente vea nombres y no seudónimos en el chat                        | Entregado |
+| Curso de prueba (punto 3)          | Probar de punta a punta y medir RNF-01 a RNF-03                              | Entregado |
+| Permiso de administrador (punto 4) | `/admin/difficulty-rules`                                                    | Pendiente |
+| Sílabos reales (punto 5)           | Conjunto de referencia y F1                                                  | Pendiente |
 
-Lo mínimo que destraba el trabajo es el punto 1 (al menos `list_activities`, `get_submissions`,
-`get_pending_grading` y `get_grades`) y el punto 2.
+Las medidas de RNF-01 a RNF-03 solo valen con el proveedor de IA real: con `AI_PROVIDER=mock` no se miden.
