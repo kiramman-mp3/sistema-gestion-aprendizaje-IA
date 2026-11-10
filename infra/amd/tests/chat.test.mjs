@@ -236,9 +236,10 @@ describe("cuando algo falla", () => {
     await vi.waitFor(() => expect(log().querySelector('[role="alert"]')).not.toBeNull());
 
     expect(log().querySelector('[role="alert"]').textContent).toContain("No answer was generated");
-    expect(
-      log().querySelector('[data-role="assistant"]').querySelector("div:nth-child(2)").textContent,
-    ).toBe("");
+    // Sin texto no hay burbuja vacía: solo el aviso.
+    expect(log().querySelector('[data-role="assistant"] .bg-light')).toBeNull();
+    // La pregunta vuelve al cuadro para reenviarla sin escribirla otra vez.
+    expect(input().value).toBe("pregunta");
   });
 
   it("límite de uso alcanzado", async () => {
@@ -476,6 +477,19 @@ describe("errores con datos: 429, 404 y 400", () => {
     submit();
 
     await vi.waitFor(() => expect(text()).toContain("Try again in 42 seconds."));
+  });
+
+  it("429 con una espera larga la dice en minutos o en horas, y devuelve la pregunta al cuadro", async () => {
+    fails({ status: 429, code: "RATE_LIMITED", retryAfter: 1800 });
+    await init(7);
+    type("pregunta");
+    submit();
+    await vi.waitFor(() => expect(text()).toContain("Try again in about 30 minutes."));
+    expect(input().value).toBe("pregunta");
+
+    fails({ status: 429, code: "RATE_LIMITED", retryAfter: 64541 });
+    submit();
+    await vi.waitFor(() => expect(text()).toContain("Try again in about 18 hours."));
   });
 
   it("404 CONVERSATION_NOT_FOUND olvida la conversación y devuelve la pregunta al cuadro", async () => {
