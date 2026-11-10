@@ -53,7 +53,7 @@ graph LR
 
 Los pasos deben seguir este orden.
 
-1. Crear el `.env` y completar las contraseñas (`APP_DB_PASSWORD`, `MOODLE_ADMIN_PASSWORD`, `PLUGIN_JWT_SECRET` de al menos 32 caracteres).
+1. Clonar el repositorio (`git clone https://github.com/kiramman-mp3/sistema-gestion-aprendizaje-IA.git`), crear el `.env` y completar las contraseñas (`APP_DB_PASSWORD`, `MOODLE_ADMIN_PASSWORD`, `PLUGIN_JWT_SECRET` de al menos 32 caracteres).
 
    ```bash
    cp .env.example .env
