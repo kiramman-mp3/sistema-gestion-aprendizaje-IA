@@ -25,14 +25,16 @@
  */
 
 import Config from "core/config";
-import { callBackend, streamBackend } from "local_ai_assistant/assistant";
+import { nameLookup } from "local_ai_assistant/analytics_model";
+import { callBackend, getCourseStudents, streamBackend } from "local_ai_assistant/assistant";
 import * as Model from "local_ai_assistant/chat_model";
 import { createStrings, el, uniqueId } from "local_ai_assistant/ui";
 
 const PLAIN_STRINGS = [
   "title", "intro", "messagelabel", "placeholder", "send", "stop", "new", "empty", "you", "assistant", "thinking",
   "incomplete", "sources", "source_gradebook", "source_document",
-  "error_ratelimited", "error_unavailable", "error_forbidden", "error_interrupted", "historyerror",
+  "error_ratelimited", "error_unavailable", "error_forbidden", "error_interrupted", "error_notfound", "error_validation",
+  "historyerror",
 ];
 
 const PARAM_STRINGS = {
@@ -40,7 +42,9 @@ const PARAM_STRINGS = {
   consulted: null,
   source_activity: null,
   source_document_page: null,
+  student: null,
   error_other: null,
+  error_ratelimited_wait: null,
 };
 
 const { load: loadStrings, str } = createStrings("chat", PLAIN_STRINGS, PARAM_STRINGS);
@@ -82,6 +86,35 @@ class Chat {
     this.conversation = Model.emptyConversation();
     this.busy = false;
     this.controller = null;
+    this.names = null;
+    this.namesRequest = null;
+  }
+
+  /**
+   * The names of the students, taken from Moodle with the teacher's session (they never go through the backend).
+   * They are asked once; if Moodle cannot answer, the next answer asks again.
+   *
+   * @returns {Promise<Map<number, string>|null>}
+   */
+  loadNames() {
+    this.namesRequest ??= getCourseStudents(this.courseId)
+      .then((students) => {
+        this.names = nameLookup(students);
+        return this.names;
+      })
+      .catch(() => {
+        this.namesRequest = null;
+        return null;
+      });
+    return this.namesRequest;
+  }
+
+  /** Loads the names when an answer mentions students, then draws again with them. */
+  async showNamesFor(message) {
+    if (message?.role === "assistant" && message.students?.length > 0 && !this.names) {
+      await this.loadNames();
+      this.drawMessages();
+    }
   }
 
   /** Draws the chat and restores the conversation of this tab, if there is one. */
@@ -175,10 +208,15 @@ class Chat {
       el(
         "div",
         { class: `d-inline-block rounded p-2 text-start ${mine ? "bg-primary text-white" : "bg-light"}`, style: "white-space: pre-wrap; max-width: 100%" },
-        message.text || (message.status === "streaming" ? str("thinking") : ""),
+        this.messageText(message) || (message.status === "streaming" ? str("thinking") : ""),
       ),
       mine ? null : this.assistantExtras(message),
     );
+  }
+
+  /** The text of a message with the pseudonyms of the students replaced by their names. */
+  messageText(message) {
+    return Model.displayText(message, this.names, (id) => str("student", id));
   }
 
   /** Tools in use, warnings, errors, sources and the date of the consultation. */
@@ -188,7 +226,7 @@ class Chat {
       extras.push(el("div", { class: "small text-muted", role: "status" }, str("consulting", message.tools.map(Model.toolLabel).join(", "))));
     }
     if (message.status === "error") {
-      extras.push(this.errorAlert(message.errorCode));
+      extras.push(this.errorAlert(message));
     }
     if (message.incompleteData) {
       extras.push(el("div", { class: "small text-warning-emphasis", role: "note" }, str("incomplete")));
@@ -209,9 +247,18 @@ class Chat {
     return el("div", {}, ...extras);
   }
 
-  errorAlert(code) {
-    const kind = Model.errorKind(code);
-    return el("div", { class: "alert alert-danger py-1 px-2 mt-1 mb-0 small", role: "alert" }, kind === "other" ? str("error_other", code) : str(`error_${kind}`));
+  errorAlert(message) {
+    const kind = Model.errorKind(message.errorCode);
+    let text;
+    if (kind === "other") {
+      text = str("error_other", message.errorCode);
+    } else if (kind === "ratelimited" && message.retryAfter) {
+      text = str("error_ratelimited_wait", message.retryAfter);
+    } else {
+      text = str(`error_${kind}`);
+    }
+    const details = message.details?.length > 0 ? el("ul", { class: "mb-0" }, ...message.details.map((detail) => el("li", {}, detail))) : null;
+    return el("div", { class: "alert alert-danger py-1 px-2 mt-1 mb-0 small", role: "alert" }, text, details);
   }
 
   sourceItem(source, index) {
@@ -257,12 +304,22 @@ class Chat {
         onEvent: (event) => {
           this.conversation = Model.applyEvent(this.conversation, event);
           this.drawMessages();
+          if (event.event === "final") {
+            this.showNamesFor(this.conversation.messages.at(-1));
+          }
         },
       });
       this.conversation = Model.closeTurn(this.conversation);
     } catch (error) {
       // A stopped answer is not an error of the service: it is shown as interrupted.
-      this.conversation = Model.failTurn(this.conversation, Model.codeFromError(error));
+      const code = Model.codeFromError(error);
+      this.conversation = Model.failTurn(this.conversation, code, Model.errorExtras(error));
+      if (Model.errorKind(code, error.status) === "notfound") {
+        // The backend no longer has the conversation: the next message starts a new one, and the question
+        // that was lost goes back to the box so it can be sent again.
+        this.conversation = Model.forgetConversation(this.conversation);
+        this.input.value = text;
+      }
     } finally {
       this.busy = false;
       this.controller = null;
