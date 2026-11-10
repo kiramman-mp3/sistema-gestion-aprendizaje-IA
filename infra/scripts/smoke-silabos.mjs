@@ -86,28 +86,28 @@ if (!courseId || !teacherId) {
   process.exit(2);
 }
 
-function token() {
+function token(forUser = teacherId, forCourse = courseId) {
   const now = Math.floor(Date.now() / 1000);
   const enc = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
-  const unsigned = `${enc({ typ: "JWT", alg: "HS256" })}.${enc({ iss: MOODLE_URL, aud: "smart-lms-api", sub: String(teacherId), courseid: courseId, iat: now, exp: now + 300, jti: randomBytes(16).toString("hex") })}`;
+  const unsigned = `${enc({ typ: "JWT", alg: "HS256" })}.${enc({ iss: MOODLE_URL, aud: "smart-lms-api", sub: String(forUser), courseid: forCourse, iat: now, exp: now + 300, jti: randomBytes(16).toString("hex") })}`;
   return `${unsigned}.${createHmac("sha256", env.PLUGIN_JWT_SECRET).update(unsigned).digest("base64url")}`;
 }
-async function call(method, path, body) {
+async function call(method, path, body, as = {}) {
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${token()}`,
+      Authorization: `Bearer ${token(as.user, as.course)}`,
       ...(body && !(body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
     },
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
   });
   return { status: res.status, body: await res.json().catch(() => ({})) };
 }
-async function upload(filename, bytes, type) {
+async function upload(filename, bytes, type, as = {}) {
   const form = new FormData();
-  form.set("courseId", String(courseId));
+  form.set("courseId", String(as.course ?? courseId));
   form.set("file", new Blob([bytes], { type }), filename);
-  return call("POST", "/syllabi", form);
+  return call("POST", "/syllabi", form, as);
 }
 async function waitFor(id, done, timeoutMs = 120_000) {
   const started = Date.now();
@@ -246,8 +246,107 @@ try {
     lockedState.status === "FAILED" && lockedState.errorCode === "ENCRYPTED_DOCUMENT",
     `${lockedState.status} ${lockedState.errorCode ?? ""}`,
   );
+  console.log("\n3. Búsqueda en los documentos del curso (RAG)");
+  const indexed = created[0];
+  let chunkCount = 0;
+  for (let i = 0; i < 20 && chunkCount === 0; i += 1) {
+    chunkCount = Number(
+      sql(`SELECT count(*) FROM document_chunks WHERE document_id = '${indexed}';`).trim(),
+    );
+    if (chunkCount === 0) await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  check(
+    "al quedar el texto listo, el documento se indexa solo",
+    chunkCount > 0,
+    `${chunkCount} fragmentos`,
+  );
+  const wrongCourse = Number(
+    sql(
+      `SELECT count(*) FROM document_chunks WHERE document_id = '${indexed}' AND moodle_course_id <> ${courseId};`,
+    ).trim(),
+  );
+  check("todos los fragmentos llevan el curso del documento", wrongCourse === 0);
+  const withPage = Number(
+    sql(
+      `SELECT count(*) FROM document_chunks WHERE document_id = '${indexed}' AND page IS NOT NULL;`,
+    ).trim(),
+  );
+  check(
+    "los fragmentos de un PDF llevan su página",
+    withPage === chunkCount,
+    `${withPage}/${chunkCount}`,
+  );
+
+  const ask = (message, as = {}) =>
+    call("POST", "/assistant/chat", { courseId: as.course ?? courseId, message }, as);
+  const biblio = await ask("¿Qué dice el sílabo sobre la bibliografía y los libros?");
+  const found = biblio.body.data?.search_course_documents;
+  check(
+    "el chat busca en los documentos del curso",
+    found?.found > 0,
+    `${found?.found ?? 0} pasajes`,
+  );
+  check(
+    "la respuesta cita el documento con su página",
+    biblio.body.sources?.some(
+      (source) => source.type === "document" && created.includes(source.id) && source.page > 0,
+    ) && /página \d+/.test(biblio.body.answer ?? ""),
+    JSON.stringify(biblio.body.sources?.slice(0, 2)),
+  );
+  const unit = await ask("¿Qué dice el documento sobre normalización y claves primarias?");
+  check(
+    "encuentra el pasaje que habla del tema (normalización)",
+    JSON.stringify(unit.body.data?.search_course_documents?.passages ?? [])
+      .toLowerCase()
+      .includes("normaliz"),
+  );
+  const nothing = await ask("¿Qué dice el documento sobre helicópteros y paracaídas?");
+  check(
+    "si no hay nada parecido, lo dice y no cita fuentes",
+    nothing.body.data?.search_course_documents?.found === 0 &&
+      (nothing.body.sources ?? []).every((source) => source.type !== "document") &&
+      /No encontr/.test(nothing.body.answer ?? ""),
+    nothing.body.answer?.slice(0, 90),
+  );
+
+  // Aislamiento entre cursos: un sílabo de otro curso no aparece en las búsquedas de este.
+  const otherCourse = Number(
+    php("echo $DB->get_field('course', 'id', ['shortname' => 'IS-501-DEMO']);"),
+  );
+  const otherTeacher = Number(
+    php("echo $DB->get_field('user', 'id', ['username' => 'docente1']);"),
+  );
+  const redes = manifest.syllabi.find((spec) => spec.slug.includes("redes"));
+  const sent = await upload(redes.file, readFileSync(join(FIXTURES, redes.file)), mime.pdf, {
+    user: otherTeacher,
+    course: otherCourse,
+  });
+  if (sent.status === 202) {
+    created.push(sent.body.id);
+    await waitFor(sent.body.id, ["TEXT_READY", "FAILED"]);
+    const own = await ask("¿Qué dice el documento sobre enrutamiento, VLAN y direcciones IPv4?", {
+      user: otherTeacher,
+      course: otherCourse,
+    });
+    check(
+      "el otro curso encuentra su propio documento",
+      own.body.data?.search_course_documents?.found > 0 &&
+        own.body.sources?.some((source) => source.id === sent.body.id),
+      `${own.body.data?.search_course_documents?.found ?? 0} pasajes de su propio documento`,
+    );
+    const leak = await ask("¿Qué dice el documento sobre enrutamiento, VLAN y direcciones IPv4?");
+    check(
+      "este curso NO ve los pasajes del documento del otro curso (SEC-01)",
+      // Este curso también tiene su copia del mismo sílabo: lo que no puede aparecer es el documento del otro curso.
+      (leak.body.sources ?? []).length > 0 &&
+        !(leak.body.sources ?? []).some((source) => source.id === sent.body.id),
+      `${(leak.body.sources ?? []).length} fuentes, todas de este curso`,
+    );
+  } else {
+    check("se pudo cargar el sílabo del otro curso", false, `HTTP ${sent.status}`);
+  }
 } finally {
-  console.log("\n3. Limpieza");
+  console.log("\n4. Limpieza");
   if (created.length > 0) {
     const ids = created.map((id) => `'${id}'`).join(",");
     const keys = sql(
@@ -268,6 +367,14 @@ try {
         // Si el archivo ya no está, no hay nada que borrar.
       }
     }
+    const left = Number(
+      sql(`SELECT count(*) FROM document_chunks WHERE document_id IN (${ids});`).trim(),
+    );
+    check(
+      "al borrar los sílabos se borran sus fragmentos",
+      left === 0,
+      `${left} fragmentos quedan`,
+    );
     console.log(`  ${created.length} sílabos borrados de la base y del almacén`);
   }
 }
