@@ -29,6 +29,8 @@ export const envSchema = z.object({
   STORAGE_DIR: z.string().min(1).default("var/storage"),
   /** Días que se conserva el archivo original de un sílabo (RNF-08, propuesta de 30 días). */
   SYLLABUS_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+  /** Peticiones por usuario y minuto antes de responder 429 (OWASP API4). 0 desactiva el límite. */
+  RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(0).default(120),
   /** clamd para el análisis antivirus, por ejemplo `tcp://localhost:3310`. Obligatorio en producción. */
   CLAMAV_URL: z.url({ protocol: /^tcp$/ }).optional(),
   CLAMAV_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
