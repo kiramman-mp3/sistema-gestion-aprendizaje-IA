@@ -18,7 +18,7 @@ const NEW_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const MISSING_ID = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 
 /** Moodle simulado: el usuario 42 es docente del curso 7; `capabilities` se cambia por prueba. */
-const capabilities = { use: true, publish: true, viewanalytics: true };
+const capabilities = { use: true, publish: true, viewanalytics: true, admin: false };
 const fakeAccess = {
   getAccess: async (userId: number, courseId: number): Promise<CourseAccess> => ({
     userid: userId,
@@ -60,7 +60,7 @@ describe("Propuestas (e2e)", () => {
   beforeEach(() => {
     store.reset();
     audit.length = 0;
-    Object.assign(capabilities, { use: true, publish: true, viewanalytics: true });
+    Object.assign(capabilities, { use: true, publish: true, viewanalytics: true, admin: false });
   });
 
   afterAll(async () => {

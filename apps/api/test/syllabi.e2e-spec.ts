@@ -24,7 +24,7 @@ const fakeAccess = {
     courseexists: true,
     active: true,
     roles: ["editingteacher"],
-    capabilities: { use: true, publish: true, viewanalytics: true },
+    capabilities: { use: true, publish: true, viewanalytics: true, admin: false },
   }),
 };
 
