@@ -11,22 +11,22 @@ corresponde, el hallazgo y su estado.
 
 | Resultado                          | Cantidad      |
 | ---------------------------------- | ------------- |
-| Hallazgos corregidos               | 6 (H-1 a H-6) |
-| En curso                           | 1 (H-7)       |
+| Hallazgos corregidos               | 7 (H-1 a H-7) |
+| En curso                           | 0             |
 | Aceptados (no llegan a producción) | 1 (H-8)       |
 
 ## Hallazgos
 
-| #   | Hallazgo                                                                                                   | Gravedad | Estado                                                                                                                                                                                        | Categoría |
-| --- | ---------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| H-1 | `multer` < 2.5.0 (dependencia de `@nestjs/platform-express`): denegación de servicio (GHSA-q7qp-rjg7-q26m) | Alta     | Corregido                                                                                                                                                                                     | A06       |
-| H-2 | El backend no limitaba las peticiones por usuario                                                          | Media    | Corregido                                                                                                                                                                                     | A04, API4 |
-| H-3 | Las respuestas no llevaban cabeceras de seguridad y se anunciaba `X-Powered-By`                            | Baja     | Corregido                                                                                                                                                                                     | A05       |
-| H-4 | No hay prueba de que `pnpm audit` se ejecute a menudo: una vulnerabilidad nueva pasaría desapercibida      | Media    | Corregido (CI falla con alta o crítica en producción)                                                                                                                                         | A06       |
-| H-5 | Las imágenes de Docker se fijan por versión, no por digest                                                 | Baja     | Corregido: las imágenes de `docker-compose*.yml` y los `FROM` de los Dockerfile llevan `@sha256:` (2026-11-10)                                                                                | A08       |
-| H-6 | El secreto JWT es compartido (HS256) y no hay procedimiento automatizado de rotación                       | Media    | Corregido con una política: rotación manual cada 90 días ([ADR-022](../architecture/adr/0022-rotacion-secreto-jwt-cada-90-dias.md)); la rotación automática con doble clave queda como mejora | A02       |
-| H-7 | Las pruebas PHPUnit del plugin no corren en CI                                                             | Baja     | En curso: hay un trabajo `phpunit` en el CI con moodle-plugin-ci, no bloqueante hasta que pase una vez en verde (no se pudo probar fuera de GitHub)                                           | A08       |
-| H-8 | `pnpm audit` informa 3 avisos (1 baja, 2 moderadas) en herramientas de desarrollo (jest, eslint)           | Baja     | Aceptado: no llegan a producción                                                                                                                                                              | A06       |
+| #   | Hallazgo                                                                                                   | Gravedad | Estado                                                                                                                                                                                                                                    | Categoría |
+| --- | ---------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| H-1 | `multer` < 2.5.0 (dependencia de `@nestjs/platform-express`): denegación de servicio (GHSA-q7qp-rjg7-q26m) | Alta     | Corregido                                                                                                                                                                                                                                 | A06       |
+| H-2 | El backend no limitaba las peticiones por usuario                                                          | Media    | Corregido                                                                                                                                                                                                                                 | A04, API4 |
+| H-3 | Las respuestas no llevaban cabeceras de seguridad y se anunciaba `X-Powered-By`                            | Baja     | Corregido                                                                                                                                                                                                                                 | A05       |
+| H-4 | No hay prueba de que `pnpm audit` se ejecute a menudo: una vulnerabilidad nueva pasaría desapercibida      | Media    | Corregido (CI falla con alta o crítica en producción)                                                                                                                                                                                     | A06       |
+| H-5 | Las imágenes de Docker se fijan por versión, no por digest                                                 | Baja     | Corregido: las imágenes de `docker-compose*.yml` y los `FROM` de los Dockerfile llevan `@sha256:` (2026-11-10)                                                                                                                            | A08       |
+| H-6 | El secreto JWT es compartido (HS256) y no hay procedimiento automatizado de rotación                       | Media    | Corregido con una política: rotación manual cada 90 días ([ADR-022](../architecture/adr/0022-rotacion-secreto-jwt-cada-90-dias.md)); la rotación automática con doble clave queda como mejora                                             | A02       |
+| H-7 | Las pruebas PHPUnit del plugin no corren en CI                                                             | Baja     | Corregido (2026-11-10): el trabajo `phpunit` del CI usa moodle-plugin-ci y pasa en verde; ahora es bloqueante. La primera ejecución falló por la contraseña de PostgreSQL y por la configuración regional `en_AU.UTF-8`, que Moodle exige | A08       |
+| H-8 | `pnpm audit` informa 3 avisos (1 baja, 2 moderadas) en herramientas de desarrollo (jest, eslint)           | Baja     | Aceptado: no llegan a producción                                                                                                                                                                                                          | A06       |
 
 ## Por categoría
 
@@ -100,7 +100,7 @@ Pendiente (línea de IA): acceso a conversaciones ajenas (SEC-10) y herramientas
 - `pnpm check:amd` exige que el JavaScript compilado corresponda al código fuente.
 - Archivo del sílabo con comprobación de tipo real (magic bytes), macros, bomba ZIP y antivirus (SEC-05).
 - Copias con sumas SHA-256 verificadas antes de restaurar.
-- H-5: imágenes fijadas por digest. H-7: trabajo PHPUnit en el CI, pendiente de su primera ejecución en verde.
+- H-5: imágenes fijadas por digest. H-7: trabajo PHPUnit en el CI, en verde y bloqueante.
 
 ### A09 · Fallos de registro y monitoreo
 
@@ -149,4 +149,3 @@ del Sprint 12 con la integración hecha.
 - Repetir SEC-06 y SEC-07 con el proveedor de IA real, y medir RNF-01 a RNF-03 con él: los casos están automatizados con un
   modelo simulado que obedece al atacante, también para la búsqueda en documentos.
 - Repetir esta revisión sobre la versión integrada y con el piloto (encuesta SUS).
-- Ver pasar el trabajo PHPUnit del CI (H-7).
