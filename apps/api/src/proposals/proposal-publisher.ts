@@ -5,6 +5,7 @@ import type { ProposalItemType } from "../generated/prisma/enums";
 import {
   MoodleApiError,
   MoodlePermissionError,
+  MoodleResponseError,
   MoodleUnavailableError,
 } from "../integrations/moodle/moodle.errors";
 import { MoodleService } from "../integrations/moodle/moodle.service";
@@ -27,6 +28,7 @@ export function describeFailure(error: unknown): string {
   if (error instanceof MoodlePermissionError) return "MOODLE_PERMISSION";
   if (error instanceof MoodleUnavailableError) return "MOODLE_UNAVAILABLE";
   if (error instanceof MoodleApiError) return `MOODLE_ERROR:${error.errorcode}`.slice(0, 100);
+  if (error instanceof MoodleResponseError) return "MOODLE_BAD_RESPONSE";
   return "PUBLISH_ERROR";
 }
 
@@ -93,7 +95,10 @@ export class ProposalPublisher {
         });
       } catch (error) {
         const reason = describeFailure(error);
-        this.logger.warn(`Publicación ${operation.id}: falló el elemento ${item.id} (${reason}).`);
+        // El mensaje de un error de Moodle no incluye el token ni la URL (ver moodle.errors.ts).
+        this.logger.warn(
+          `Publicación ${operation.id}: falló el elemento ${item.id} (${reason}): ${String(error)}`,
+        );
         await this.prisma.proposalItem.update({
           where: { id: item.id },
           data: { publishStatus: "FAILED", publishError: reason },
