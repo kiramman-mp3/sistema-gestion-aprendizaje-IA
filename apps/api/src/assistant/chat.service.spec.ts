@@ -203,6 +203,25 @@ describe("ChatService", () => {
       expect(provider.chatCalls).toHaveLength(0);
     });
 
+    it("audita el rechazo por cuota, sin contenido, para la alerta de consumo", async () => {
+      const { service, audit } = setup({
+        quota: async () => {
+          throw new UsageLimitExceededError(3600);
+        },
+      });
+
+      await service.chat(AUTH, body()).catch(() => undefined);
+
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "assistant.quota_exceeded",
+          outcome: "DENIED",
+          actorMoodleId: 42,
+          metadata: {},
+        }),
+      );
+    });
+
     it("responde 503 AI_PROVIDER_UNAVAILABLE y no guarda nada si el proveedor falla", async () => {
       const { service, provider, conversations, messages } = setup();
       provider.respondToChatWith(() => {
