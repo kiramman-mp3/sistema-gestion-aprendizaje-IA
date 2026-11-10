@@ -1,5 +1,9 @@
 import { syllabusExtractionSchema, type DocumentText } from "@smart-lms/contracts";
 import { z } from "zod";
+import {
+  recommendationContentSchema,
+  validateRecommendationLanguage,
+} from "../../recommendations/pedagogical-language";
 import { AiOrchestratorService } from "../../assistant/ai-orchestrator.service";
 import { ToolRegistry, type AssistantTool } from "../../assistant/tools/assistant-tool";
 import { Pseudonymizer } from "../../privacy/pseudonymizer";
@@ -66,6 +70,21 @@ describe("DemoLlmProvider · extracción", () => {
         schemaName: "otro",
       }),
     ).rejects.toMatchObject({ code: "AI_PROVIDER_UNAVAILABLE" });
+  });
+});
+
+describe("DemoLlmProvider · recomendación", () => {
+  it("devuelve una recomendación válida y en lenguaje aceptable, marcada como demostración", async () => {
+    const result = await llm().generateStructured({
+      purpose: "pedagogical_recommendation",
+      system: "s",
+      prompt: "p",
+      schema: recommendationContentSchema,
+      schemaName: "pedagogical_recommendation_v1",
+    });
+
+    expect(validateRecommendationLanguage(result.data)).toEqual([]);
+    expect(result.data.evidenceSummary[0]).toContain(DEMO_NOTICE);
   });
 });
 
