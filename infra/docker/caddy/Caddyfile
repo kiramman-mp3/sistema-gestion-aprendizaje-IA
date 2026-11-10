@@ -1,0 +1,35 @@
+# Proxy del backend: TLS automático, cabeceras de seguridad y solo las rutas del API.
+{
+	email {$ACME_EMAIL}
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# 10 MB del sílabo (RNF-04) más el encabezado multipart.
+	request_body {
+		max_size 11MB
+	}
+
+	# El estado de las dependencias no se publica: se consulta desde el servidor (infra/monitoring).
+	@health path /api/v1/health /api/v1/health/*
+	respond @health 404
+
+	@api path /api/v1/*
+	reverse_proxy @api api:3000 {
+		# Las respuestas del chat son flujos de eventos: no se acumulan en el proxy.
+		flush_interval -1
+		transport http {
+			response_header_timeout 120s
+		}
+	}
+
+	respond 404
+}
