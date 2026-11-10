@@ -1,0 +1,30 @@
+name: Tarea del roadmap
+description: Una historia o tarea de un sprint de docs/ROADMAP.md
+labels: ["tarea"]
+body:
+  - type: input
+    id: sprint
+    attributes:
+      label: Sprint y rama
+      placeholder: "Sprint 6 · feature/proposal-generator"
+    validations:
+      required: true
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: Qué hay que hacer
+      description: Resultado esperado y requisitos relacionados (RF, RNF, CU).
+    validations:
+      required: true
+  - type: textarea
+    id: aceptacion
+    attributes:
+      label: Criterio de aceptación
+      description: Cómo se comprueba que está terminada.
+    validations:
+      required: true
+  - type: input
+    id: dependencias
+    attributes:
+      label: Depende de
+      placeholder: "#12, decisión D-05"
