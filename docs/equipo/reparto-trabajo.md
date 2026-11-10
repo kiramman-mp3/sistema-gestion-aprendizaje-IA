@@ -23,30 +23,30 @@ ese contrato con datos de prueba.
 
 ### Sprint 5 · Extracción estructurada con IA (hito H2)
 
-- [ ] `feature/llm-provider-abstraction`: interfaz `LlmProvider` con salida estructurada, límites de tokens, timeouts y registro de consumo; un proveedor simulado para pruebas mientras se decide D-07.
-- [ ] `feature/syllabus-structured-extraction`: del texto (`extracted_text`) al esquema v1 validado con Zod, con `uncertainFields` y `sourceReferences` con página; sin inventar fechas, ponderaciones ni actividades.
-- [ ] Defensa contra prompt injection: el texto del documento va delimitado como datos.
-- [ ] `feature/extraction-versioning`: `POST /syllabi/:id/extract`, `GET /syllabi/:id/extraction` y versiones en `syllabus_extractions`.
-- [ ] Conjunto de referencia y primera medición de precisión, exhaustividad y F1.
+- [x] `feature/llm-provider-abstraction`: interfaz `LlmProvider` con salida estructurada, límites de tokens, timeouts y registro de consumo; un proveedor simulado para pruebas mientras se decide D-07.
+- [x] `feature/syllabus-structured-extraction`: del texto (`extracted_text`) al esquema v1 validado con Zod, con `uncertainFields` y `sourceReferences` con página; sin inventar fechas, ponderaciones ni actividades.
+- [x] Defensa contra prompt injection: el texto del documento va delimitado como datos.
+- [x] `feature/extraction-versioning`: `POST /syllabi/:id/extract`, `GET` y `PUT /syllabi/:id/extraction` y versiones en `syllabus_extractions`.
+- [ ] Conjunto de referencia y primera medición de precisión, exhaustividad y F1. El medidor está hecho (`pnpm eval:extraction`); faltan los sílabos reales (D-03).
 
 ### Sprint 8 · Asistente conversacional
 
-- [ ] `feature/ai-orchestrator`: bucle de tool calling con límite de iteraciones y herramientas de lectura y escritura separadas.
-- [ ] `feature/tool-teacher-courses`, `feature/tool-submissions`, `feature/tool-pending-grading` y `feature/tool-grade-summary` en el backend.
-- [ ] `feature/pseudonymization` (ADR-010).
-- [ ] `feature/chat-api`: `POST /assistant/chat` con streaming e historial.
+- [x] `feature/ai-orchestrator`: bucle de tool calling con límite de iteraciones y herramientas de lectura y escritura separadas.
+- [ ] `feature/tool-teacher-courses`, `feature/tool-submissions`, `feature/tool-pending-grading` y `feature/tool-grade-summary` en el backend. Código hecho y probado con un Moodle simulado; faltan las funciones de lectura del plugin ([pendiente de José](pendiente-de-jose.md)).
+- [x] `feature/pseudonymization` (ADR-010).
+- [x] `feature/chat-api`: `POST /assistant/chat` con streaming e historial.
 
 ### Sprint 9 · RAG
 
 - [ ] `feature/rag-indexing` con `pgvector` y `feature/tool-search-documents` filtrando por curso.
-- [ ] Degradación controlada si el proveedor LLM no responde y límites de uso y costo por docente.
-- [ ] Pruebas de ataque del chat: documento con instrucciones maliciosas, datos de otro curso y conversación ajena.
+- [x] Degradación controlada si el proveedor LLM no responde y límites de uso y costo por docente (mensajes y tokens; el costo en dinero espera a D-07).
+- [x] Pruebas de ataque del chat: documento con instrucciones maliciosas, datos de otro curso y conversación ajena (con modelo simulado; repetir con el proveedor real).
 
 ### Sprints 10 y 11 · Analítica y asistente pedagógico
 
 - [ ] `feature/analytics-indicators`, `feature/analytics-snapshots`, `feature/difficulty-signals` y `feature/analytics-api`.
 - [ ] Herramienta `get_unit_performance` para el chat.
-- [ ] `feature/student-evidence` y `feature/pedagogical-recommendations` con el validador de lenguaje (sin diagnósticos ni etiquetas).
+- [ ] `feature/student-evidence` y `feature/pedagogical-recommendations` con el validador de lenguaje (sin diagnósticos ni etiquetas). El validador y `POST /recommendations/:id/followups` están hechos; falta la generación.
 
 ### Sprint 12 · Evaluación
 

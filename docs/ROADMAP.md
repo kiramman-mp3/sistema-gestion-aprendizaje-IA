@@ -341,17 +341,24 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** convertir el texto en un JSON validado que el docente pueda corregir.
 
-- [ ] `feature/llm-provider-abstraction`: interfaz `LlmProvider` con salida estructurada, límites de tokens, timeouts y registro de consumo.
-- [ ] `feature/syllabus-structured-extraction`: extracción al esquema v1 validado con Zod; `uncertainFields` y `sourceReferences` con página.
-- [ ] Reglas: no inventar fechas, ponderaciones ni actividades; los campos ausentes quedan `null` y pendientes.
-- [ ] Defensa contra prompt injection: el texto del documento va delimitado como datos.
-- [ ] `feature/extraction-versioning`: `POST /syllabi/:id/extract`, `GET /syllabi/:id/extraction` y versiones en `syllabus_extractions`.
+- [x] `feature/llm-provider-abstraction`: interfaz `LlmProvider` con salida estructurada, límites de tokens, timeouts y registro de consumo; proveedor simulado para pruebas ([ADR-009](architecture/adr/0009-abstraccion-proveedor-llm.md)).
+- [x] `feature/syllabus-structured-extraction`: extracción al esquema v1 validado con Zod; `uncertainFields` y `sourceReferences` con página.
+- [x] Reglas: no inventar fechas, ponderaciones ni actividades; los campos ausentes quedan `null` y pendientes. Cada fecha y ponderación que devuelve el modelo se busca en el texto del documento; si no está escrita, se anula y se marca en `uncertainFields`.
+- [x] Defensa contra prompt injection: el texto del documento va delimitado como datos.
+- [x] `feature/extraction-versioning`: `POST /syllabi/:id/extract`, `GET` y `PUT /syllabi/:id/extraction` y versiones en `syllabus_extractions`.
 - [x] `feature/plugin-extraction-editor`: editor de unidades, temas, resultados, fechas y ponderaciones con indicador de confianza. Contrato esperado del backend y pruebas en [`docs/architecture/editor-extraccion.md`](architecture/editor-extraccion.md).
-- [ ] Primera medición de precisión, exhaustividad y F1 sobre el conjunto de referencia.
+- [ ] Primera medición de precisión, exhaustividad y F1 sobre el conjunto de referencia. **Parcial:** hecho el medidor (`pnpm eval:extraction`); falta el conjunto de referencia con sílabos reales (D-03).
 
 **Entregables (H2):** sílabo convertido en extracción editable y versionada.
 
-**Avance:** el editor del plugin está terminado y probado en un DOM simulado con la extracción de ejemplo de `packages/contracts`; falta integrarlo con la API real de la línea de IA (`POST /syllabi/:id/extract`, `GET` y `PUT /syllabi/:id/extraction`).
+**Avance:** el editor del plugin está terminado y probado en un DOM simulado con la extracción de ejemplo de `packages/contracts`. La API de la línea de IA está hecha y probada con el proveedor simulado: `POST /syllabi/:id/extract` (202), `GET` y `PUT /syllabi/:id/extraction`. Falta integrarla con el editor en un Moodle real y medir el F1 con sílabos reales.
+
+**Desvíos:**
+
+- La extracción corre dentro del proceso de la API, sin cola de BullMQ. Una extracción en `PROCESSING` de más de 10 minutos se considera perdida y se puede reintentar. Ver [extracción con IA](architecture/extraccion-ia.md).
+- `PUT /syllabi/:id/extraction` también acepta sílabos en `TEXT_READY` o `FAILED`, para que el docente complete la extracción a mano mientras no haya proveedor de IA (D-07).
+- Las tres rutas exigen la capacidad `use`, igual que la carga del sílabo; el OpenAPI no pide `publish`.
+- Desde `REVIEWED` no se puede volver a extraer (`409 INVALID_TRANSITION`): se protege la revisión del docente.
 
 **Criterio de aceptación:** un sílabo sin fechas no recibe fechas inventadas; F1 de unidades medido y registrado.
 
@@ -417,18 +424,26 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** responder preguntas sobre entregas, pendientes y notas con datos reales de Moodle.
 
-- [ ] `feature/ai-orchestrator`: bucle de tool calling con límite de iteraciones y herramientas separadas de lectura y escritura.
-- [ ] `feature/tool-teacher-courses`: `get_teacher_courses`, `get_course_activities`.
-- [ ] `feature/tool-submissions`: `get_assignment_submissions` respetando los estados reales de Moodle (sin entrega, borrador, enviada, tardía).
-- [ ] `feature/tool-pending-grading`: `get_pending_grading`.
-- [ ] `feature/tool-grade-summary`: `get_course_grade_summary` con cálculos deterministas y normalización de escalas.
-- [ ] `feature/pseudonymization`: el LLM recibe seudónimos; el backend restaura nombres en la respuesta final.
-- [ ] `feature/chat-api`: `POST /assistant/chat` con streaming, conversación persistida e historial con límite de contexto.
+- [x] `feature/ai-orchestrator`: bucle de tool calling con límite de iteraciones (5) y herramientas separadas de lectura y escritura: el modelo solo recibe las de lectura.
+- [ ] `feature/tool-teacher-courses`: `get_teacher_courses`, `get_course_activities`. **Parcial:** hecha `get_course_activities` contra el contrato de lectura; `get_teacher_courses` no, porque el token fija un solo curso.
+- [ ] `feature/tool-submissions`: `get_assignment_submissions` respetando los estados reales de Moodle (sin entrega, borrador, enviada, tardía). Código hecho; falta la función `local_ai_assistant_get_submissions` del plugin.
+- [ ] `feature/tool-pending-grading`: `get_pending_grading`. Código hecho; falta la función `local_ai_assistant_get_pending_grading` del plugin.
+- [ ] `feature/tool-grade-summary`: `get_course_grade_summary` con cálculos deterministas y normalización de escalas. Hecha como `get_grade_summary` (una nota ausente no cuenta como cero); falta la función `local_ai_assistant_get_grades` del plugin.
+- [x] `feature/pseudonymization`: el LLM recibe seudónimos; la respuesta lleva los seudónimos y `data.students` con su id de Moodle, y el plugin los sustituye por el nombre ([ADR-010](architecture/adr/0010-seudonimizacion.md)).
+- [x] `feature/chat-api`: `POST /assistant/chat` con streaming SSE o JSON, conversación persistida e historial con límite de contexto (20 mensajes).
 - [ ] Respuestas con actividad, curso, fecha de consulta, criterio aplicado, enlace a Moodle y aviso de datos incompletos.
 - [ ] Aclaración única cuando la pregunta es ambigua.
 
 **Criterio de aceptación:** las respuestas sobre entregas coinciden con Moodle en el conjunto de preguntas de referencia.
-**Avance de la parte del plugin (Sprint 9):** la pantalla del chat con streaming SSE está hecha y probada (contrato de eventos fijado en el OpenAPI, API simulada `pnpm mock:ai`). Falta la API del chat y el RAG, de la línea de IA.
+**Avance de la parte del plugin (Sprint 9):** la pantalla del chat con streaming SSE está hecha y probada (contrato de eventos fijado en el OpenAPI, API simulada `pnpm mock:ai`).
+
+**Avance de la línea de IA:** la API del chat, el orquestador y la seudonimización están hechos y probados con el proveedor simulado. Las cuatro herramientas se probaron con un Moodle simulado que cumple el contrato de [`packages/contracts`](../packages/contracts/src/moodle/read.ts); no corren contra Moodle real hasta que el plugin tenga las funciones de lectura de [`docs/equipo/pendiente-de-jose.md`](equipo/pendiente-de-jose.md).
+
+**Desvíos:**
+
+- Los nombres nunca llegan al backend (los resuelve el plugin con `get_course_students`), así que el backend no «restaura nombres»: devuelve los seudónimos y su id en `data.students`.
+- El seudónimo se deriva con HMAC (`PSEUDONYM_SECRET`), no por orden de aparición: es el mismo en todos los turnos de la conversación sin guardar una tabla de correspondencia.
+- Nada se guarda si la IA falla: ni la conversación ni los mensajes.
 
 ### Sprint 9 · Semanas 19–20 — RAG y chat completo
 
@@ -438,9 +453,9 @@ validados por el tutor y Moodle local de desarrollo.
 - [ ] `feature/tool-search-documents`: `search_course_documents` con filtro por curso antes de la búsqueda.
 - [ ] Respuestas con referencias a documento y página.
 - [x] `feature/plugin-chat-ui`: chat con streaming, fuentes y estados de error. Listo contra el contrato y la API simulada; falta la API real de la línea de IA ([interfaces del plugin](architecture/interfaces-plugin.md)).
-- [ ] Degradación controlada si el proveedor LLM no responde: el sistema informa el fallo sin inventar respuesta.
-- [ ] Pruebas de ataque: documento con instrucciones maliciosas, petición de datos de otro curso, acceso a conversación ajena.
-- [ ] Límites de uso y costo por docente.
+- [x] Degradación controlada si el proveedor LLM no responde: el sistema informa el fallo sin inventar respuesta (`503 AI_PROVIDER_UNAVAILABLE`, o evento `error` si el flujo ya empezó).
+- [x] Pruebas de ataque: documento con instrucciones maliciosas, petición de datos de otro curso, acceso a conversación ajena. Hechas a nivel de servicio con un modelo simulado que obedece al atacante; falta repetirlas con el proveedor real.
+- [x] Límites de uso y costo por docente: tope diario de mensajes y de tokens (`429 RATE_LIMITED` con `Retry-After`). El costo en dinero queda pendiente del proveedor (D-07).
 
 **Entregables (H4):** chat capaz de consultar información real del curso y de sus documentos.
 
@@ -470,9 +485,9 @@ validados por el tutor y Moodle local de desarrollo.
 
 - [ ] `feature/student-evidence`: `get_student_learning_evidence` y `GET /analytics/courses/:courseId/students/:studentId`.
 - [ ] `feature/pedagogical-recommendations`: resumen de evidencias, fortalezas, dificultades, información faltante, estrategias, actividades de refuerzo e indicadores de seguimiento.
-- [ ] Reglas de lenguaje: describir comportamientos observables; sin diagnósticos ni atribuciones personales (validador de salida + pruebas).
+- [ ] Reglas de lenguaje: describir comportamientos observables; sin diagnósticos ni atribuciones personales (validador de salida + pruebas). **Parcial:** hecho el validador y sus pruebas (`apps/api/src/recommendations/pedagogical-language.ts`); falta conectarlo a la generación de recomendaciones.
 - [ ] Integración RAG con documentos pedagógicos autorizados.
-- [x] `feature/recommendation-follow-up`: el docente registra la intervención y su resultado.
+- [x] `feature/recommendation-follow-up`: el docente registra la intervención y su resultado (plugin y `POST /recommendations/:id/followups`).
 - [x] `feature/plugin-student-analysis`: pantalla que separa datos observados, cálculos, interpretaciones de IA, información desconocida y acciones posibles.
 
 **Entregables (H5):** panel analítico y asistente pedagógico.
@@ -568,19 +583,19 @@ de modelos propios y publicación masiva sin revisión.
 
 ## 📈 Seguimiento
 
-| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                                     |
-| ------ | --------- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10                   |
-| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético                  |
-| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo                     |
-| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                                   |
-| S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03)     |
-| S5     | En curso  | 2026-11-09 |            | Editor de la extracción terminado (plugin); pendientes proveedor LLM, extracción con IA, API y F1         |
-| S6     | Terminado | 2026-11-09 | 2026-11-09 | Generador, validación, máquina de estados, API y vista previa; D-04 y D-05 provisionales                  |
-| S7     | Terminado | 2026-11-09 | 2026-11-09 | Funciones del plugin, publicación idempotente en cola, panel con confirmación y resumen; H3 alcanzado     |
-| S8     | Pendiente |            |            | Línea de IA; el contrato del chat y la API simulada están listos                                          |
-| S9     | En curso  | 2026-11-09 |            | Chat del plugin y relación de actividades con unidades hechos; faltan RAG y límites de IA (línea de IA)   |
-| S10    | En curso  | 2026-11-09 |            | Panel del docente del plugin hecho contra el contrato; faltan indicadores y señales (línea de IA)         |
-| S11    | En curso  | 2026-11-09 |            | Análisis del estudiante y seguimiento del plugin hechos; faltan recomendaciones y validador (línea de IA) |
-| S12    | En curso  | 2026-11-09 |            | Revisión OWASP, prueba de carga y verificación de punta a punta hechas; faltan IA, piloto y SUS           |
-| S13    | En curso  | 2026-11-09 |            | Producción, copias, monitoreo y manuales hechos; faltan despliegue real, tesis y v1.0.0                   |
+| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                                 |
+| ------ | --------- | ---------- | ---------- | ----------------------------------------------------------------------------------------------------- |
+| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10               |
+| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético              |
+| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo                 |
+| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                               |
+| S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03) |
+| S5     | En curso  | 2026-11-09 |            | Editor y API de extracción hechos; falta el F1 con sílabos reales (D-03)                              |
+| S6     | Terminado | 2026-11-09 | 2026-11-09 | Generador, validación, máquina de estados, API y vista previa; D-04 y D-05 provisionales              |
+| S7     | Terminado | 2026-11-09 | 2026-11-09 | Funciones del plugin, publicación idempotente en cola, panel con confirmación y resumen; H3 alcanzado |
+| S8     | En curso  | 2026-11-10 |            | Chat, orquestador y seudonimización hechos; faltan las funciones de lectura de Moodle (plugin)        |
+| S9     | En curso  | 2026-11-09 |            | Chat del plugin, límites de IA y pruebas de ataque hechos; falta el RAG (depende de D-07)             |
+| S10    | En curso  | 2026-11-09 |            | Panel del docente del plugin hecho contra el contrato; faltan indicadores y señales (línea de IA)     |
+| S11    | En curso  | 2026-11-09 |            | Análisis del estudiante, seguimiento y validador de lenguaje hechos; faltan las recomendaciones (IA)  |
+| S12    | En curso  | 2026-11-09 |            | Revisión OWASP, prueba de carga y verificación de punta a punta hechas; faltan IA, piloto y SUS       |
+| S13    | En curso  | 2026-11-09 |            | Producción, copias, monitoreo y manuales hechos; faltan despliegue real, tesis y v1.0.0               |
