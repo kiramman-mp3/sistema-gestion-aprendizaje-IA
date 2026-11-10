@@ -60,6 +60,7 @@ if (!courseId) {
 }
 const teacherId = userId("prueba_docente");
 const outsiderId = userId("prueba_ajeno");
+const adminId = userId("prueba_admin");
 const studentIds = new Set(
   JSON.parse(
     php(
@@ -216,6 +217,69 @@ check(
   outsider.status === 403,
   `HTTP ${outsider.status}`,
 );
+
+console.log("\n6. Administración (CU-06 y CU-07)");
+if (!adminId) {
+  console.log("  se omite: falta prueba_admin (seed_docentes_prueba.php)");
+} else {
+  const teacherAudit = await call("GET", "/audit");
+  check(
+    "un docente no puede consultar la auditoría (403 FORBIDDEN_CAPABILITY)",
+    teacherAudit.status === 403 && json(teacherAudit).code === "FORBIDDEN_CAPABILITY",
+    `HTTP ${teacherAudit.status}`,
+  );
+  const teacherRules = await call("GET", "/admin/difficulty-rules");
+  check("un docente no puede ver las reglas (403)", teacherRules.status === 403);
+
+  const audit = await call("GET", "/audit?limit=5", undefined, { as: adminId });
+  const page = json(audit);
+  check(
+    "el administrador consulta la auditoría (200)",
+    audit.status === 200 && Array.isArray(page.items),
+    `HTTP ${audit.status}`,
+  );
+  check("la auditoría no trae nombres de estudiantes", noNames(audit.text));
+  const denied = await call("GET", "/audit?outcome=DENIED&limit=200", undefined, { as: adminId });
+  check(
+    "filtra por resultado",
+    json(denied).items?.every((e) => e.outcome === "DENIED") ?? false,
+    `${json(denied).items?.length ?? 0} eventos denegados`,
+  );
+
+  const put = await call(
+    "PUT",
+    "/admin/difficulty-rules/GRADE_BELOW_THRESHOLD",
+    { courseId, enabled: true, params: { thresholdPercent: 95, minActivities: 1 } },
+    { as: adminId },
+  );
+  check("guarda una regla del curso (200)", put.status === 200, `HTTP ${put.status}`);
+  const changed = await call("GET", `/analytics/courses/${courseId}`);
+  check(
+    "la analítica usa la regla nueva (con umbral 95 salen más señales)",
+    (json(changed).signals ?? []).length > (dashboard.signals ?? []).length,
+    `${dashboard.signals?.length ?? 0} → ${json(changed).signals?.length ?? 0} señales`,
+  );
+  const bad = await call(
+    "PUT",
+    "/admin/difficulty-rules/GRADE_BELOW_THRESHOLD",
+    { courseId, enabled: true, params: { thresholdPercent: 500 } },
+    { as: adminId },
+  );
+  check("rechaza un umbral inválido (400)", bad.status === 400, `HTTP ${bad.status}`);
+  const removed = await call(
+    "DELETE",
+    `/admin/difficulty-rules/GRADE_BELOW_THRESHOLD?courseId=${courseId}`,
+    undefined,
+    { as: adminId },
+  );
+  check("quita la regla del curso (204)", removed.status === 204, `HTTP ${removed.status}`);
+  const trail = await call("GET", "/audit?action=rules.&limit=10", undefined, { as: adminId });
+  check(
+    "los cambios de reglas quedaron en la auditoría",
+    (json(trail).items ?? []).some((e) => e.action === "rules.update") &&
+      (json(trail).items ?? []).some((e) => e.action === "rules.reset"),
+  );
+}
 
 console.log(
   failures === 0
