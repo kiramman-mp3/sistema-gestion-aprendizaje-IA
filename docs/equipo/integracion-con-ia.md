@@ -83,11 +83,11 @@ Además:
 
 ## Entre los dos
 
-| Necesita                               | De     | Estado                                                          |
-| -------------------------------------- | ------ | --------------------------------------------------------------- |
-| API de extracción real                 | Pashma | Pendiente; la interfaz y el simulador están listos              |
-| `POST /assistant/chat` con streaming   | Pashma | Pendiente; la interfaz y el simulador están listos              |
-| `GET /analytics/...` y recomendaciones | Pashma | Pendiente; las pantallas y el simulador están listos            |
-| Sílabos reales (D-03)                  | José   | Pendiente con la institución; hoy solo hay el sílabo de ejemplo |
-| Tipos de actividad (D-05)              | José   | Provisional: `assign`, `forum`, `quiz`, `label`, `page`         |
-| Relación actividad ↔ unidad            | José   | Hecha: API, pantalla y registro automático al publicar          |
+| Necesita                               | De     | Estado                                                               |
+| -------------------------------------- | ------ | -------------------------------------------------------------------- |
+| API de extracción real                 | Pashma | Hecha; con `AI_PROVIDER=mock` devuelve el sílabo de ejemplo          |
+| `POST /assistant/chat` con streaming   | Pashma | Hecha; con `AI_PROVIDER=mock` responde con datos de las herramientas |
+| `GET /analytics/...` y recomendaciones | Pashma | Hechas; con Moodle real esperan las funciones de lectura             |
+| Sílabos reales (D-03)                  | José   | Pendiente con la institución; hoy solo hay el sílabo de ejemplo      |
+| Tipos de actividad (D-05)              | José   | Provisional: `assign`, `forum`, `quiz`, `label`, `page`              |
+| Relación actividad ↔ unidad            | José   | Hecha: API, pantalla y registro automático al publicar               |
