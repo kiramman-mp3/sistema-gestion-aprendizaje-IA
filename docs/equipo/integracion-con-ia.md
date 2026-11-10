@@ -82,10 +82,10 @@ Además:
       reales, que necesitan ClamAV y el worker documental.
 - [x] Chat con la API real (`pnpm smoke:asistente`): pregunta con herramienta (pendientes y notas coinciden con
       Moodle, sin la nota oculta), `data.students` con seudónimos, historial sin nombres, 404 y 400.
-- [ ] Chat: una pregunta con datos incompletos, el 429, el 503 y la interrupción con la API real (están probados en la
+- [x] Chat: una pregunta con datos incompletos, el 429, el 503 y la interrupción con la API real (están probados en la
       pantalla con el simulador). Hecho con la API y Gemini reales (`pnpm smoke:ia`): el chat con herramientas, la
-      aclaración, las evidencias y los ataques ([resultados](../resultados/ia-real-sintetica.md)); faltan los errores en
-      la pantalla.
+      aclaración, las evidencias y los ataques ([resultados](../resultados/ia-real-sintetica.md)). El 429, el 503 y la
+      interrupción se probaron en el navegador con el backend real ([pruebas de pantalla](../resultados/pruebas-de-pantalla.md)).
 - [ ] Panel: indicadores con un valor nulo, señales con explicación, evidencias y recomendación con 422. Hecho con la
       API real: indicadores con definición, señales con explicación y evidencias separadas (`pnpm smoke:asistente`);
       faltan el valor nulo y la recomendación con 422.
