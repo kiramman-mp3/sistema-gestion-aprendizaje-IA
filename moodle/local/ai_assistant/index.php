@@ -45,6 +45,7 @@ $PAGE->requires->js_call_amd('local_ai_assistant/syllabus', 'init', [(int) $cour
 $PAGE->requires->js_call_amd('local_ai_assistant/proposal_preview', 'init', [(int) $course->id, $proposalid]);
 $PAGE->requires->js_call_amd('local_ai_assistant/chat', 'init', [(int) $course->id]);
 $PAGE->requires->js_call_amd('local_ai_assistant/analytics', 'init', [(int) $course->id]);
+$PAGE->requires->js_call_amd('local_ai_assistant/mapping', 'init', [(int) $course->id]);
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('local_ai_assistant/assistant', [

@@ -51,6 +51,15 @@ export const getCourseStudents = (courseId) =>
   Ajax.call([{ methodname: "local_ai_assistant_get_course_students", args: { courseid: courseId } }])[0];
 
 /**
+ * Lists the activities of the course. Moodle answers it with the teacher's session.
+ *
+ * @param {number} courseId
+ * @returns {Promise<Array<{cmid: number, name: string, modname: string, sectionnum: number, sectionname: string, visible: boolean}>>}
+ */
+export const getCourseActivities = (courseId) =>
+  Ajax.call([{ methodname: "local_ai_assistant_get_course_activities", args: { courseid: courseId } }])[0];
+
+/**
  * Calls the backend with a fresh token. Each token is accepted only once.
  *
  * @param {number} courseId
