@@ -37,6 +37,8 @@ export function configureApp(app: INestApplication): void {
     credentials: false,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Authorization", "Content-Type", "Idempotency-Key", "Accept"],
+    // Sin esto el navegador oculta Retry-After del 429 y el plugin no puede decir cuánto esperar.
+    exposedHeaders: ["Retry-After"],
     maxAge: 600,
   });
 }

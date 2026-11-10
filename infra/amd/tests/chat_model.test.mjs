@@ -5,11 +5,15 @@ import {
   cleanMessage,
   closeTurn,
   codeFromError,
+  displayText,
   emptyConversation,
+  errorExtras,
   errorKind,
   failTurn,
+  forgetConversation,
   fromHistory,
   MAX_MESSAGE_LENGTH,
+  parseStudents,
   sourceUrl,
   startTurn,
   toChatRequest,
@@ -289,5 +293,116 @@ describe("fuentes", () => {
     expect(
       sourceUrl({ type: "document", id: "d1", url: "https://x.test/d" }, "http://moodle.test", 7),
     ).toBe("https://x.test/d");
+  });
+});
+
+describe("nombres de estudiantes (ADR-010)", () => {
+  const A = "Estudiante#00000003";
+  const B = "Estudiante#00000005";
+  const students = [
+    { alias: A, studentId: 3 },
+    { alias: B, studentId: 5 },
+  ];
+  const message = (text, list = students) => ({ text, students: list });
+  const fallback = (id) => `Estudiante ${id}`;
+  const names = new Map([
+    [3, "Carla Cedeño"],
+    [5, "Andrés Álvarez"],
+  ]);
+
+  it("el evento final guarda los seudónimos de data.students", () => {
+    const done = applyEvent(
+      asked(),
+      ev("final", { conversationId: "c", answer: `${A} y ${B}`, data: { students } }),
+    );
+
+    expect(last(done).students).toEqual(students);
+  });
+
+  it("ignora lo que no tenga el formato esperado", () => {
+    expect(parseStudents(null)).toEqual([]);
+    expect(parseStudents({})).toEqual([]);
+    expect(parseStudents({ students: "no" })).toEqual([]);
+    expect(
+      parseStudents({
+        students: [
+          { alias: "Estudiante#1", studentId: 3 },
+          { alias: A, studentId: "3" },
+          { alias: A, studentId: 0 },
+          null,
+          { alias: B, studentId: 5 },
+        ],
+      }),
+    ).toEqual([{ alias: B, studentId: 5 }]);
+  });
+
+  it("sustituye cada seudónimo por el nombre, todas las veces que aparece", () => {
+    expect(displayText(message(`${A} no entregó. ${B} sí. ${A} tampoco.`), names, fallback)).toBe(
+      "Carla Cedeño no entregó. Andrés Álvarez sí. Carla Cedeño tampoco.",
+    );
+  });
+
+  it("un estudiante que Moodle no lista, o sin nombres cargados, se muestra con su id", () => {
+    expect(displayText(message(`${A} y ${B}`), new Map([[3, "Carla Cedeño"]]), fallback)).toBe(
+      "Carla Cedeño y Estudiante 5",
+    );
+    expect(displayText(message(`${A}`), null, fallback)).toBe("Estudiante 3");
+  });
+
+  it("no toca un seudónimo que no está en data.students ni un texto sin estudiantes", () => {
+    const other = "Estudiante#00000009";
+    expect(displayText(message(`${other}`), names, fallback)).toBe(other);
+    expect(displayText({ text: `${A}` }, names, fallback)).toBe(A);
+    expect(displayText(message("Hola", []), names, fallback)).toBe("Hola");
+  });
+
+  it("un nombre con símbolos de reemplazo de JavaScript se escribe tal cual", () => {
+    expect(displayText(message(A), new Map([[3, "Ana $& $1 $$"]]), fallback)).toBe("Ana $& $1 $$");
+  });
+});
+
+describe("errores del chat: 429, 404 y 400", () => {
+  it("clasifica la conversación inexistente y la petición inválida", () => {
+    expect(errorKind("CONVERSATION_NOT_FOUND")).toBe("notfound");
+    expect(errorKind(undefined, 404)).toBe("notfound");
+    expect(errorKind("VALIDATION_ERROR")).toBe("validation");
+    expect(errorKind(undefined, 400)).toBe("validation");
+    expect(codeFromError({ status: 404 })).toBe("CONVERSATION_NOT_FOUND");
+    expect(codeFromError({ status: 400 })).toBe("VALIDATION_ERROR");
+  });
+
+  it("toma de Retry-After los segundos a esperar y descarta valores que no sirven", () => {
+    expect(errorExtras({ retryAfter: 30 }).retryAfter).toBe(30);
+    expect(errorExtras({ retryAfter: 1.2 }).retryAfter).toBe(2);
+    expect(errorExtras({ retryAfter: 0 }).retryAfter).toBeNull();
+    expect(errorExtras({ retryAfter: NaN }).retryAfter).toBeNull();
+    expect(errorExtras({}).retryAfter).toBeNull();
+  });
+
+  it("lista los campos que el backend rechazó, hasta cinco", () => {
+    const details = Array.from({ length: 7 }, (_, i) => ({ path: `campo${i}`, message: "mal" }));
+
+    expect(errorExtras({ details }).details).toEqual([
+      "campo0: mal",
+      "campo1: mal",
+      "campo2: mal",
+      "campo3: mal",
+      "campo4: mal",
+    ]);
+    expect(
+      errorExtras({ details: [{ message: "solo texto" }, { path: "x" }, null] }).details,
+    ).toEqual(["solo texto"]);
+    expect(errorExtras({ details: "no" }).details).toEqual([]);
+  });
+
+  it("failTurn guarda lo que se mostrará y forgetConversation suelta el id", () => {
+    const failed = failTurn(asked(), "RATE_LIMITED", { retryAfter: 30, details: ["a"] });
+
+    expect(last(failed)).toMatchObject({
+      errorCode: "RATE_LIMITED",
+      retryAfter: 30,
+      details: ["a"],
+    });
+    expect(forgetConversation({ conversationId: "c", messages: [] }).conversationId).toBeNull();
   });
 });

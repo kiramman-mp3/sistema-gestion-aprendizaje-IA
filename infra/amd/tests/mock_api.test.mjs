@@ -204,10 +204,50 @@ describe("chat (Sprints 8 y 9)", () => {
     expect(incomplete.incompleteData).toBe(true);
   });
 
-  it("un mensaje vacío responde 400", async () => {
-    expect((await call("POST", "/assistant/chat", { courseId: 7, message: "  " })).status).toBe(
-      400,
+  it("un mensaje vacío responde 400 con details", async () => {
+    const res = await call("POST", "/assistant/chat", { courseId: 7, message: "  " });
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      code: "VALIDATION_ERROR",
+      details: [{ path: "message", message: expect.any(String) }],
+    });
+  });
+
+  it("la respuesta nombra a los estudiantes con seudónimos y los explica en data.students", async () => {
+    const res = await call(
+      "POST",
+      "/assistant/chat",
+      { courseId: 7, message: "hola" },
+      { Accept: "application/json" },
     );
+    const body = await res.json();
+
+    expect(body.data.students).toEqual([
+      { alias: "Estudiante#00000003", studentId: 3 },
+      { alias: "Estudiante#00000005", studentId: 5 },
+      { alias: "Estudiante#00000006", studentId: 6 },
+    ]);
+    for (const { alias } of body.data.students) expect(body.answer).toContain(alias);
+  });
+
+  it("el 429 trae Retry-After y el navegador puede leerlo", async () => {
+    const res = await call("POST", "/assistant/chat", { courseId: 7, message: "pasé el límite" });
+
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("30");
+    expect(res.headers.get("access-control-expose-headers")).toContain("Retry-After");
+  });
+
+  it("una conversación que el simulador no conoce responde 404 CONVERSATION_NOT_FOUND", async () => {
+    const res = await call("POST", "/assistant/chat", {
+      courseId: 7,
+      conversationId: "99999999-9999-4999-8999-999999999999",
+      message: "hola",
+    });
+
+    expect(res.status).toBe(404);
+    expect((await res.json()).code).toBe("CONVERSATION_NOT_FOUND");
   });
 });
 

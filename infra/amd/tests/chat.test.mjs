@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { backend, stream } from "./stubs/assistant.mjs";
+import { backend, stream, students } from "./stubs/assistant.mjs";
 import { init } from "../../../moodle/local/ai_assistant/amd/src/chat.js";
 
 const ev = (event, data) => ({ event, data: JSON.stringify(data) });
@@ -46,6 +46,8 @@ beforeEach(() => {
   backend.calls = [];
   backend.handler = async () => ({});
   stream.calls = [];
+  students.list = [];
+  students.fails = false;
   document.body.innerHTML = `
     <div data-region="local_ai_assistant">
       <section class="d-none" data-region="chat"></section>
@@ -387,5 +389,124 @@ describe("conversaciones", () => {
     await init(7);
 
     expect(backend.calls).toHaveLength(0);
+  });
+});
+
+describe("nombres reales en las respuestas (ADR-010)", () => {
+  const A = "Estudiante#00000003";
+  const B = "Estudiante#00000005";
+  const withStudents = (answer, list) =>
+    answerWith([ev("final", { ...FINAL, answer, data: { students: list } })]);
+  const ask = async () => {
+    await init(7);
+    type("¿quién no entregó?");
+    submit();
+  };
+
+  it("cambia cada seudónimo por el nombre que da Moodle, sin mandar nombres al backend", async () => {
+    students.list = [
+      { id: 3, fullname: "Carla Cedeño" },
+      { id: 5, fullname: "Andrés Álvarez" },
+    ];
+    withStudents(`${A} y ${B} no entregaron. ${A} tiene dos pendientes.`, [
+      { alias: A, studentId: 3 },
+      { alias: B, studentId: 5 },
+    ]);
+
+    await ask();
+
+    await vi.waitFor(() =>
+      expect(text()).toContain("Carla Cedeño y Andrés Álvarez no entregaron. Carla Cedeño tiene"),
+    );
+    expect(text()).not.toContain("Estudiante#");
+    expect(JSON.stringify(stream.calls[0].json)).not.toContain("Carla");
+  });
+
+  it("si Moodle no lista a un estudiante muestra «Student N», nunca el seudónimo", async () => {
+    students.list = [{ id: 3, fullname: "Carla Cedeño" }];
+    withStudents(`${A} y ${B}`, [
+      { alias: A, studentId: 3 },
+      { alias: B, studentId: 5 },
+    ]);
+
+    await ask();
+
+    await vi.waitFor(() => expect(text()).toContain("Carla Cedeño y Student 5"));
+    expect(text()).not.toContain("Estudiante#");
+  });
+
+  it("si no se pueden cargar los nombres, muestra «Student N» y lo intenta de nuevo en la siguiente respuesta", async () => {
+    students.fails = true;
+    withStudents(A, [{ alias: A, studentId: 3 }]);
+    await ask();
+    await vi.waitFor(() => expect(text()).toContain("Student 3"));
+    await vi.waitFor(() => expect(input().disabled).toBe(false));
+
+    students.fails = false;
+    students.list = [{ id: 3, fullname: "Carla Cedeño" }];
+    type("otra");
+    submit();
+
+    await vi.waitFor(() => expect(text()).toContain("Carla Cedeño"));
+  });
+
+  it("un nombre con HTML se muestra como texto", async () => {
+    students.list = [{ id: 3, fullname: "<img src=x onerror=alert(1)>" }];
+    withStudents(A, [{ alias: A, studentId: 3 }]);
+
+    await ask();
+
+    await vi.waitFor(() => expect(text()).toContain("<img src=x onerror=alert(1)>"));
+    expect(log().querySelector("img")).toBeNull();
+  });
+});
+
+describe("errores con datos: 429, 404 y 400", () => {
+  const fails = (error) => {
+    stream.calls = [];
+    stream.handler = async () => {
+      throw Object.assign(new Error("x"), error);
+    };
+  };
+
+  it("429 con Retry-After dice cuántos segundos esperar", async () => {
+    fails({ status: 429, code: "RATE_LIMITED", retryAfter: 42 });
+    await init(7);
+    type("pregunta");
+    submit();
+
+    await vi.waitFor(() => expect(text()).toContain("Try again in 42 seconds."));
+  });
+
+  it("404 CONVERSATION_NOT_FOUND olvida la conversación y devuelve la pregunta al cuadro", async () => {
+    sessionStorage.setItem("local_ai_assistant_chat_7", "11111111-1111-4111-8111-111111111111");
+    backend.handler = async () => ({ id: "11111111-1111-4111-8111-111111111111", messages: [] });
+    await init(7);
+    fails({ status: 404, code: "CONVERSATION_NOT_FOUND" });
+    type("mi pregunta");
+    submit();
+
+    await vi.waitFor(() => expect(text()).toContain("no longer exists"));
+
+    expect(input().value).toBe("mi pregunta");
+    expect(sessionStorage.getItem("local_ai_assistant_chat_7")).toBeNull();
+    stream.handler = async ({ onEvent }) => onEvent(ev("final", FINAL));
+    submit();
+    await vi.waitFor(() => expect(stream.calls.length).toBe(2));
+    expect(stream.calls[1].json.conversationId).toBeNull();
+  });
+
+  it("400 muestra los campos que se rechazaron", async () => {
+    fails({
+      status: 400,
+      code: "VALIDATION_ERROR",
+      details: [{ path: "message", message: "Demasiado largo" }],
+    });
+    await init(7);
+    type("pregunta");
+    submit();
+
+    await vi.waitFor(() => expect(text()).toContain("The message was not accepted"));
+    expect(text()).toContain("message: Demasiado largo");
   });
 });

@@ -20,7 +20,9 @@
  *
  * - `token`: `{"text": "..."}`, a piece of the answer.
  * - `tool`: `{"name": "get_assignment_submissions"}`, the assistant is consulting data.
- * - `final`: the complete `ChatResponse`. Its `answer` replaces what was streamed.
+ * - `final`: the complete `ChatResponse`. Its `answer` replaces what was streamed, and its `data.students` lists
+ *   the pseudonyms (`Estudiante#NNNNNNNN`) that appear in the answer with the Moodle id of each student; the
+ *   page swaps them for the names Moodle gives to the teacher's session (ADR-010).
  * - `error`: `{"code": "...", "message": "..."}`. No answer is invented.
  *
  * No function changes its input.
@@ -29,6 +31,10 @@
  * @copyright  2026 Smart LMS project
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+/** Pseudonym the backend uses for a student in an answer. */
+const ALIAS_PATTERN = /Estudiante#\d{8}/g;
+const ALIAS_EXACT = /^Estudiante#\d{8}$/;
 
 /** Same limit as the API (`message.maxLength`). */
 export const MAX_MESSAGE_LENGTH = 2000;
@@ -85,7 +91,7 @@ export const startTurn = (conversation, text) => ({
   messages: [
     ...conversation.messages,
     { role: "user", text: cleanMessage(text), status: "done" },
-    { role: "assistant", text: "", status: "streaming", tools: [], sources: [], incompleteData: false, generatedAt: null, errorCode: null },
+    { role: "assistant", text: "", status: "streaming", tools: [], sources: [], students: [], incompleteData: false, generatedAt: null, errorCode: null },
   ],
 });
 
@@ -102,6 +108,37 @@ const parseData = (data) => {
   } catch {
     return null;
   }
+};
+
+/**
+ * The pseudonyms of a `final` event that can be trusted: an alias in the expected format and a Moodle id.
+ *
+ * @param {{students?: unknown}|null|undefined} data The `data` of the response.
+ * @returns {Array<{alias: string, studentId: number}>}
+ */
+export const parseStudents = (data) =>
+  Array.isArray(data?.students)
+    ? data.students.filter((student) => student && ALIAS_EXACT.test(student.alias) && Number.isInteger(student.studentId) && student.studentId > 0)
+    : [];
+
+/**
+ * The text of a message as the teacher sees it: each pseudonym replaced by the student's name. A student that
+ * Moodle does not list (or names that could not be loaded) shows as `fallback(id)`, never as the alias.
+ *
+ * @param {{text: string, students?: Array<{alias: string, studentId: number}>}} message
+ * @param {Map<number, string>|null} names Names by Moodle id, or null while they are not known.
+ * @param {function(number): string} fallback Text for an unknown student, such as `Student 12`.
+ * @returns {string}
+ */
+export const displayText = (message, names, fallback) => {
+  if (!message.students?.length) {
+    return message.text;
+  }
+  const idByAlias = new Map(message.students.map((student) => [student.alias, student.studentId]));
+  return message.text.replace(ALIAS_PATTERN, (alias) => {
+    const id = idByAlias.get(alias);
+    return id === undefined ? alias : (names?.get(id) ?? fallback(id));
+  });
 };
 
 const withLast = (conversation, change) => {
@@ -136,6 +173,7 @@ export const applyEvent = (conversation, event) => {
           text: String(data.answer ?? ""),
           status: "done",
           sources: Array.isArray(data.sources) ? data.sources : [],
+          students: parseStudents(data.data),
           incompleteData: data.incompleteData === true,
           generatedAt: data.generatedAt ?? null,
         })),
@@ -154,9 +192,19 @@ export const applyEvent = (conversation, event) => {
  *
  * @param {object} conversation
  * @param {string} errorCode
+ * @param {{retryAfter?: number|null, details?: string[]}} [extra] Seconds to wait and the invalid fields.
  * @returns {object}
  */
-export const failTurn = (conversation, errorCode) => withLast(conversation, () => ({ status: "error", errorCode }));
+export const failTurn = (conversation, errorCode, extra = {}) =>
+  withLast(conversation, () => ({ status: "error", errorCode, retryAfter: extra.retryAfter ?? null, details: extra.details ?? [] }));
+
+/**
+ * The conversation without its id, so the next message starts a new one. Used when the backend no longer has it.
+ *
+ * @param {object} conversation
+ * @returns {object}
+ */
+export const forgetConversation = (conversation) => ({ ...conversation, conversationId: null });
 
 /**
  * Closes a stream that ended without a `final` event: what arrived is not a complete answer.
@@ -174,7 +222,7 @@ export const closeTurn = (conversation) => {
  *
  * @param {string|undefined} code Code from the API or from the stream.
  * @param {number} [status] HTTP status, when the error came before the stream started.
- * @returns {string} One of `ratelimited`, `unavailable`, `forbidden`, `interrupted`, `other`.
+ * @returns {string} One of `ratelimited`, `unavailable`, `forbidden`, `notfound`, `validation`, `interrupted`, `other`.
  */
 export const errorKind = (code, status) => {
   if (status === 429 || code === "RATE_LIMITED") {
@@ -185,6 +233,12 @@ export const errorKind = (code, status) => {
   }
   if (status === 403 || (code && code.startsWith("FORBIDDEN"))) {
     return "forbidden";
+  }
+  if (status === 404 || code === "CONVERSATION_NOT_FOUND") {
+    return "notfound";
+  }
+  if (status === 400 || code === "VALIDATION_ERROR") {
+    return "validation";
   }
   if (code === "STREAM_INTERRUPTED") {
     return "interrupted";
@@ -203,9 +257,26 @@ export const codeFromError = (error) => {
   if (error.name === "AbortError") {
     return "STREAM_INTERRUPTED";
   }
-  const byStatus = { 429: "RATE_LIMITED", 503: "SERVICE_UNAVAILABLE", 403: "FORBIDDEN" };
+  const byStatus = { 429: "RATE_LIMITED", 503: "SERVICE_UNAVAILABLE", 403: "FORBIDDEN", 404: "CONVERSATION_NOT_FOUND", 400: "VALIDATION_ERROR" };
   return byStatus[error.status] ?? error.code ?? "CONNECTION";
 };
+
+/** Most invalid fields listed to the teacher. */
+const MAX_DETAILS = 5;
+
+/**
+ * What the interface needs besides the code: how long to wait after a 429 and which fields a 400 rejected.
+ *
+ * @param {{retryAfter?: number, details?: Array<{path?: string, message?: string}>}} error
+ * @returns {{retryAfter: number|null, details: string[]}}
+ */
+export const errorExtras = (error) => ({
+  retryAfter: Number.isFinite(error.retryAfter) && error.retryAfter > 0 ? Math.ceil(error.retryAfter) : null,
+  details: (Array.isArray(error.details) ? error.details : [])
+    .filter((detail) => detail && typeof detail.message === "string")
+    .slice(0, MAX_DETAILS)
+    .map((detail) => (detail.path ? `${detail.path}: ${detail.message}` : detail.message)),
+});
 
 /**
  * Link for a source of an answer, or null if there is nothing to open.
@@ -249,6 +320,7 @@ export const fromHistory = (history) => ({
     status: "done",
     tools: [],
     sources: [],
+    students: [],
     incompleteData: false,
     generatedAt: message.createdAt ?? null,
     errorCode: null,

@@ -86,6 +86,7 @@ export const callBackend = async (courseId, path, options = {}) => {
     error.code = body.code;
     error.status = response.status;
     error.details = body.details;
+    error.retryAfter = Number(response.headers.get("Retry-After")) || null;
     throw error;
   }
   return body;
@@ -115,6 +116,8 @@ export const streamBackend = async (courseId, path, { json, onEvent, signal }) =
     const error = new Error(body.message || `HTTP ${response.status}`);
     error.code = body.code;
     error.status = response.status;
+    error.details = body.details;
+    error.retryAfter = Number(response.headers.get("Retry-After")) || null;
     throw error;
   }
   if (!(response.headers.get("content-type") ?? "").includes("text/event-stream")) {

@@ -34,6 +34,14 @@ describe("CORS (e2e)", () => {
     expect(res.headers["access-control-allow-credentials"]).toBeUndefined();
   });
 
+  it("deja que el navegador lea Retry-After en las respuestas", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/api/v1/session")
+      .set("Origin", "http://moodle.test");
+
+    expect(res.headers["access-control-expose-headers"]).toMatch(/Retry-After/i);
+  });
+
   it("no autoriza otros orígenes", async () => {
     const res = await request(app.getHttpServer())
       .options("/api/v1/session")
