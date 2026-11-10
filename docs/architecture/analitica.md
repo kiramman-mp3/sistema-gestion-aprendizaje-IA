@@ -120,11 +120,27 @@ Se guarda en `pedagogical_recommendations` (evidencias y contenido, estado `GENE
 `AI_DAILY_RECOMMENDATIONS_PER_TEACHER` (50): al agotarlo, `429 RATE_LIMITED` con `Retry-After`. La auditoría
 (`recommendation.generate`, `analytics.course_view`, `analytics.student_view`) guarda solo metadatos escalares.
 
+La recomendación recibe además hasta tres pasajes del sílabo del curso sobre metodología y evaluación, como datos
+delimitados, para que las estrategias sean coherentes con él ([ADR-019](adr/0019-rag-embeddings-pgvector.md)); si la
+búsqueda falla, se genera igual con las evidencias.
+
 ## Lo que falta
 
-- Probar contra un Moodle real (funciones de lectura del plugin).
 - La calidad de las recomendaciones con un modelo real: hoy solo se probó el flujo y las barreras, no si son
   pertinentes (evaluación del Sprint 12, IA-05).
-- Reglas administrables por API (`/admin/difficulty-rules`): falta definir el permiso de administrador.
-- `get_student_learning_evidence` como herramienta del chat.
-- Evolución en el tiempo (ver ADR-018): hoy no se guardan snapshots.
+
+## Evolución en el tiempo (ADR-021)
+
+Al calcular el panel se guarda un snapshot de los indicadores, como mucho uno por día, curso y docente
+(`analytics_snapshots`, solo valores numéricos y la cantidad de señales). `GET /analytics/courses/:courseId/history?days=`
+devuelve los del propio docente, del más antiguo al más reciente, y el panel del plugin los muestra en la tabla
+«Evolución» a partir de dos visitas. Los días sin visita son huecos: no se rellenan. Se conservan
+`ANALYTICS_SNAPSHOT_RETENTION_DAYS` días (365) y una tarea diaria borra los vencidos.
+
+## Reglas administrables (ADR-020)
+
+El administrador (capacidad `local/ai_assistant:administer`) ve, guarda y quita las reglas de las señales con
+`GET`, `PUT` y `DELETE /admin/difficulty-rules`, para la institución o para un curso (que reemplaza a la institucional).
+Los parámetros se validan con el esquema estricto de cada regla y cada cambio queda en la auditoría. Hay una pantalla
+«Administración» en el plugin. Con una regla de curso de umbral 95 en el curso de prueba, las señales pasan de 4 a 13
+(`pnpm smoke:asistente`).

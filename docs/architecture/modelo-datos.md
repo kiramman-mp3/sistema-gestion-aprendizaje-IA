@@ -140,17 +140,18 @@ Hace idempotente la publicación (RF-09).
 
 ### `document_chunks`
 
-| Campo              | Tipo      | Notas                                                      |
-| ------------------ | --------- | ---------------------------------------------------------- |
-| `document_id`      | uuid FK   |                                                            |
-| `moodle_course_id` | int       | Duplicado a propósito para filtrar antes de buscar (RF-14) |
-| `page`             | int null  |                                                            |
-| `chunk_index`      | int       |                                                            |
-| `content`          | text      |                                                            |
-| `embedding`        | vector(N) | `pgvector`; N depende del modelo de D-07                   |
-| `embedding_model`  | text      | Permite reindexar al cambiar de modelo                     |
+| Campo              | Tipo         | Notas                                                                                                             |
+| ------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `document_id`      | uuid FK      |                                                                                                                   |
+| `moodle_course_id` | int          | Duplicado a propósito para filtrar antes de buscar (RF-14)                                                        |
+| `page`             | int null     |                                                                                                                   |
+| `chunk_index`      | int          |                                                                                                                   |
+| `content`          | text         |                                                                                                                   |
+| `embedding`        | vector(1024) | `pgvector`; 1024 es la dimensión de los embeddings de demostración (ADR-019); con el modelo de D-07 puede cambiar |
+| `embedding_model`  | text         | Permite reindexar al cambiar de modelo                                                                            |
 
-Índices: `(moodle_course_id)`, índice vectorial HNSW sobre `embedding`.
+Índices: `(moodle_course_id)`, único `(document_id, chunk_index)` e índice vectorial HNSW por coseno sobre `embedding`
+(creado con SQL: Prisma no lo conoce, ver ADR-019).
 
 ### `ai_conversations` y `ai_messages`
 
@@ -180,14 +181,17 @@ sistema (necesario para el rendimiento por unidad, RF-15).
 
 Historial para calcular la evolución (RF-15).
 
-| Campo              | Tipo      | Notas                                      |
-| ------------------ | --------- | ------------------------------------------ |
-| `moodle_course_id` | int       |                                            |
-| `moodle_user_id`   | int null  | Nulo para indicadores del curso completo   |
-| `taken_at`         | timestamp |                                            |
-| `indicators`       | jsonb     | Valores calculados y versión de la fórmula |
+| Campo              | Tipo      | Notas                                                                                                 |
+| ------------------ | --------- | ----------------------------------------------------------------------------------------------------- |
+| `moodle_course_id` | int       |                                                                                                       |
+| `moodle_user_id`   | int null  | Nulo para indicadores del curso completo                                                              |
+| `taken_by`         | int null  | Docente que abrió el panel (ADR-021)                                                                  |
+| `taken_on`         | date null | Día UTC del snapshot                                                                                  |
+| `taken_at`         | timestamp |                                                                                                       |
+| `indicators`       | jsonb     | `{formula, signals, values}`: versión de la fórmula, cantidad de señales y el valor de cada indicador |
 
-Índice: `(moodle_course_id, moodle_user_id, taken_at)`.
+Índices: `(moodle_course_id, moodle_user_id, taken_at)` y único `(integration_account_id, moodle_course_id, taken_by, taken_on)`
+(uno por día, curso y docente).
 
 ### `difficulty_rules`
 

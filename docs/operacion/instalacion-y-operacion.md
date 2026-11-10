@@ -136,22 +136,31 @@ Con `sudo crontab -e`:
 45 3 * * 0  cd /opt/smart-lms && BACKUP_PASSPHRASE_FILE=/etc/smart-lms/backup.pass ROW_TOLERANCE=200 infra/scripts/restore-test.sh >> /var/log/smart-lms-restore-test.log 2>&1
 # Salud cada 5 minutos; avisa por correo solo si algo falla
 */5 * * * * cd /opt/smart-lms && infra/monitoring/check-health.sh > /tmp/smart-lms-health.txt || mail -s "Smart LMS: $(head -1 /tmp/smart-lms-health.txt)" admin@ejemplo.edu.ec < /tmp/smart-lms-health.txt
+# Errores y consumo de IA cada 15 minutos
+*/15 * * * * cd /opt/smart-lms && infra/monitoring/check-ai-usage.sh > /tmp/smart-lms-ai.txt || mail -s "Smart LMS IA: $(head -1 /tmp/smart-lms-ai.txt)" admin@ejemplo.edu.ec < /tmp/smart-lms-ai.txt
 ```
+
+`check-ai-usage.sh` consulta la base (solo lectura) y avisa cuando hay más de `ERRORS_MAX_PER_HOUR` (20) errores en la
+auditoría en la última hora, cuando un docente pasa del `TOKEN_WARN_PERCENT` (80) % de su tope diario de tokens, cuando el
+consumo total de 24 horas pasa de `TOKENS_ALERT_DAILY` (5 000 000) o cuando hay más de `LIMITED_MAX_PER_HOUR` (50) rechazos
+por límite. Solo informa cantidades, nunca ids de docentes. El costo en dinero depende del precio del proveedor (D-07): con
+el modelo elegido se ajusta `TOKENS_ALERT_DAILY`. El envío de las alertas a un canal (correo, chat) depende de la institución.
 
 `ROW_TOLERANCE` admite las filas que se escriben entre la copia nocturna y la prueba del domingo (por ejemplo, de
 auditoría). Una copia sin probar no cuenta: revisa el registro de la prueba cada semana.
 
 ## Operación diaria
 
-| Tarea                    | Comando                                                                                                                                                |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Ver el estado            | `$COMPOSE ps` y `infra/monitoring/check-health.sh`                                                                                                     |
-| Ver los registros        | `$COMPOSE logs -f --tail=200 api` (rotan solos: 5 archivos de 10 MB por servicio)                                                                      |
-| Reiniciar el backend     | `$COMPOSE restart api`                                                                                                                                 |
-| Copia manual             | `BACKUP_PASSPHRASE_FILE=/etc/smart-lms/backup.pass infra/scripts/backup.sh`                                                                            |
-| Probar la última copia   | `BACKUP_PASSPHRASE_FILE=/etc/smart-lms/backup.pass infra/scripts/restore-test.sh`                                                                      |
-| Rotar el token de Moodle | `setup_integration.php --rotate` en el servidor de Moodle (ajusta la ruta de `config.php` del script); actualiza `MOODLE_TOKEN` y `$COMPOSE up -d api` |
-| Rotar el secreto JWT     | Nuevo valor en `api.env` y en el ajuste del plugin **a la vez**; reinicia el backend. Los tokens en vuelo (5 min) fallarán una vez                     |
+| Tarea                                 | Comando                                                                                                                                                                                                                                                                      |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ver el estado                         | `$COMPOSE ps` y `infra/monitoring/check-health.sh`                                                                                                                                                                                                                           |
+| Ver los registros                     | `$COMPOSE logs -f --tail=200 api` (rotan solos: 5 archivos de 10 MB por servicio)                                                                                                                                                                                            |
+| Reiniciar el backend                  | `$COMPOSE restart api`                                                                                                                                                                                                                                                       |
+| Copia manual                          | `BACKUP_PASSPHRASE_FILE=/etc/smart-lms/backup.pass infra/scripts/backup.sh`                                                                                                                                                                                                  |
+| Probar la última copia                | `BACKUP_PASSPHRASE_FILE=/etc/smart-lms/backup.pass infra/scripts/restore-test.sh`                                                                                                                                                                                            |
+| Rotar el token de Moodle              | `setup_integration.php --rotate` en el servidor de Moodle (ajusta la ruta de `config.php` del script); actualiza `MOODLE_TOKEN` y `$COMPOSE up -d api`                                                                                                                       |
+| Rotar el secreto JWT                  | **Cada 90 días** ([ADR-022](../architecture/adr/0022-rotacion-secreto-jwt-cada-90-dias.md)), o de inmediato si se sospecha que se expuso. Nuevo valor en `api.env` y en el ajuste del plugin **a la vez**; reinicia el backend. Los tokens en vuelo (5 min) fallarán una vez |
+| Actualizar los digest de las imágenes | `docker buildx imagetools inspect <imagen>:<etiqueta>` da el `Digest`; actualiza el `@sha256:` en `docker-compose*.yml` y en los `FROM` de los Dockerfile al subir de versión una imagen                                                                                     |
 
 ## Actualizar a una versión nueva
 

@@ -86,13 +86,31 @@ ignora.
 Todas son de lectura y están en `apps/api/src/assistant/tools/moodle-tools.ts`. Reciben los datos de
 `MoodleRead` (el contrato de [`packages/contracts/src/moodle/read.ts`](../../packages/contracts/src/moodle/read.ts)).
 
-| Herramienta                  | Argumentos                         | Devuelve                                                                                                        | Función de Moodle                                     |
-| ---------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `get_course_activities`      | ninguno                            | Actividades con tipo, sección, fecha de entrega y visibilidad                                                   | `local_ai_assistant_list_activities`                  |
-| `get_assignment_submissions` | `cmid`                             | Conteos por estado y seudónimos de quienes faltan o entregaron tarde                                            | `local_ai_assistant_get_submissions`                  |
-| `get_pending_grading`        | `cmid` opcional                    | Entregas sin calificar por actividad, con seudónimos                                                            | `local_ai_assistant_get_pending_grading`              |
-| `get_grade_summary`          | `cmid` y `belowPercent` opcionales | Notas calificadas, sin nota, promedio, mínimo y máximo; con `belowPercent`, quiénes están por debajo            | `local_ai_assistant_get_grades`                       |
-| `get_unit_performance`       | ninguno                            | Promedio de notas por unidad del sílabo revisado, con los mismos cálculos del panel ([analítica](analitica.md)) | las de la analítica: actividades, estudiantes y notas |
+| Herramienta                     | Argumentos                         | Devuelve                                                                                                                    | Función de Moodle                                     |
+| ------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `get_course_activities`         | ninguno                            | Actividades con tipo, sección, fecha de entrega y visibilidad                                                               | `local_ai_assistant_list_activities`                  |
+| `get_assignment_submissions`    | `cmid`                             | Conteos por estado y seudónimos de quienes faltan o entregaron tarde                                                        | `local_ai_assistant_get_submissions`                  |
+| `get_pending_grading`           | `cmid` opcional                    | Entregas sin calificar por actividad, con seudónimos                                                                        | `local_ai_assistant_get_pending_grading`              |
+| `get_grade_summary`             | `cmid` y `belowPercent` opcionales | Notas calificadas, sin nota, promedio, mínimo y máximo; con `belowPercent`, quiénes están por debajo                        | `local_ai_assistant_get_grades`                       |
+| `get_unit_performance`          | ninguno                            | Promedio de notas por unidad del sílabo revisado, con los mismos cálculos del panel ([analítica](analitica.md))             | las de la analítica: actividades, estudiantes y notas |
+| `get_student_learning_evidence` | `student` (seudónimo)              | Lo observado, lo calculado y lo que falta de un estudiante; **solo con `viewanalytics`**                                    | las de la analítica (la misma pantalla de análisis)   |
+| `search_course_documents`       | `query`, `maxResults` opcional     | Pasajes de los documentos del curso con su página; el curso sale del token ([ADR-019](adr/0019-rag-embeddings-pgvector.md)) | ninguna: busca en `document_chunks`                   |
+
+`get_student_learning_evidence` está en `tools/student-tools.ts` y `search_course_documents` en `tools/document-tools.ts`.
+Una herramienta con `requires: "viewanalytics"` no se le ofrece al modelo a un docente sin esa capacidad, y si el
+modelo la pide igual no se ejecuta (RF-02). El estudiante se identifica por su seudónimo y el id de Moodle sale de la
+lista de estudiantes del curso del token, nunca de lo que escriba el modelo.
+
+## Criterio aplicado y aclaración única
+
+- **Criterio aplicado.** Cada herramienta informa las reglas con las que calculó el dato («un borrador no cuenta como
+  entrega», «una nota ausente no entra al promedio»…). La respuesta las junta sin repetir en `criteria` y el plugin las
+  muestra en una lista desplegable bajo la respuesta. Una aclaración o una respuesta sin consultas no trae criterios.
+- **Aclaración única.** El orquestador ofrece la herramienta propia `ask_clarification`: si la pregunta es ambigua y el
+  modelo no puede responder sin saber más, la llama **una sola vez** con una pregunta corta. El turno termina con esa
+  pregunta, sin datos, fuentes ni criterios, y se guarda con `intent = "clarification"`. Si lo último que dijo el asistente
+  fue una aclaración, la herramienta ya no se ofrece y el modelo debe responder con lo que tenga; un modelo que insista no
+  obtiene otra aclaración. Con una respuesta normal de por medio, vuelve a ofrecerse.
 
 Una nota ausente no cuenta como cero: no entra al promedio y se informa aparte (`withoutGrade`). Si Moodle
 recorta una lista por volumen (`truncated`), la respuesta se marca `incompleteData`.
@@ -141,14 +159,16 @@ el mensaje ni la respuesta.
 | `UsageQuotaService`             | `apps/api/src/assistant/usage-quota.service.ts`                |
 | Herramientas y registro         | `apps/api/src/assistant/tools/`                                |
 | `MoodleReadService`             | `apps/api/src/integrations/moodle/moodle-read.service.ts`      |
+| Indexación y búsqueda (RAG)     | `apps/api/src/rag/`                                            |
 | `Pseudonymizer`                 | `apps/api/src/privacy/`                                        |
 | `LlmService` y proveedores      | `apps/api/src/llm/`                                            |
 | Mantenimiento de conversaciones | `apps/api/src/maintenance/conversation-maintenance.service.ts` |
 
 ## Lo que falta
 
-- Las funciones de lectura del plugin y la prueba contra un Moodle real.
-- `get_teacher_courses` (el token fija un solo curso) y `get_student_learning_evidence`.
-- RAG y `search_course_documents` (dependen del modelo de embeddings, D-07).
-- La aclaración única ante preguntas ambiguas y el «criterio aplicado» en la respuesta.
+- `get_teacher_courses`: el token fija un solo curso.
+- Probar `get_assignment_submissions` y `get_student_learning_evidence` en el chat con un proveedor real: el de
+  demostración no las elige (las funciones de Moodle sí están verificadas por REST).
+- La calidad de la recuperación de documentos y de la aclaración con un modelo real: los embeddings de demostración solo
+  comparan palabras (D-07).
 - Un adaptador de proveedor real: hoy solo existen el de demostración (`AI_PROVIDER=mock`, responde con datos de ejemplo y lo avisa en cada respuesta) y el que responde `AI_PROVIDER_UNAVAILABLE`.
