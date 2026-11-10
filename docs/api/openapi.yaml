@@ -640,6 +640,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "503":
+          description: No se pudieron leer las actividades o los estudiantes de Moodle (`MOODLE_UNAVAILABLE`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /analytics/courses/{courseId}/students/{studentId}:
     get:
@@ -660,6 +666,18 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          description: El estudiante no está matriculado en el curso (`STUDENT_NOT_FOUND`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: No se pudieron leer los datos de Moodle (`MOODLE_UNAVAILABLE`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /analytics/courses/{courseId}/students/{studentId}/recommendations:
     post:
@@ -680,8 +698,35 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          description: El estudiante no está matriculado en el curso (`STUDENT_NOT_FOUND`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "422":
-          description: Datos insuficientes para recomendar
+          description: |
+            Datos insuficientes para recomendar (`INSUFFICIENT_DATA`): sin porcentaje de entregas ni promedio de
+            notas. `details` lista lo que falta.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Límite diario de recomendaciones por docente (`RATE_LIMITED`); `Retry-After` indica cuánto esperar
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: |
+            El proveedor de IA no respondió o la recomendación no cumplió las reglas de lenguaje tras un reintento
+            (`AI_PROVIDER_UNAVAILABLE`), o no se pudieron leer los datos de Moodle (`MOODLE_UNAVAILABLE`). No se
+            guarda nada.
           content:
             application/json:
               schema:

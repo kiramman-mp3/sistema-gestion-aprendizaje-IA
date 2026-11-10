@@ -86,12 +86,13 @@ ignora.
 Todas son de lectura y están en `apps/api/src/assistant/tools/moodle-tools.ts`. Reciben los datos de
 `MoodleRead` (el contrato de [`packages/contracts/src/moodle/read.ts`](../../packages/contracts/src/moodle/read.ts)).
 
-| Herramienta                  | Argumentos                         | Devuelve                                                                                             | Función de Moodle                        |
-| ---------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `get_course_activities`      | ninguno                            | Actividades con tipo, sección, fecha de entrega y visibilidad                                        | `local_ai_assistant_list_activities`     |
-| `get_assignment_submissions` | `cmid`                             | Conteos por estado y seudónimos de quienes faltan o entregaron tarde                                 | `local_ai_assistant_get_submissions`     |
-| `get_pending_grading`        | `cmid` opcional                    | Entregas sin calificar por actividad, con seudónimos                                                 | `local_ai_assistant_get_pending_grading` |
-| `get_grade_summary`          | `cmid` y `belowPercent` opcionales | Notas calificadas, sin nota, promedio, mínimo y máximo; con `belowPercent`, quiénes están por debajo | `local_ai_assistant_get_grades`          |
+| Herramienta                  | Argumentos                         | Devuelve                                                                                                        | Función de Moodle                                     |
+| ---------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `get_course_activities`      | ninguno                            | Actividades con tipo, sección, fecha de entrega y visibilidad                                                   | `local_ai_assistant_list_activities`                  |
+| `get_assignment_submissions` | `cmid`                             | Conteos por estado y seudónimos de quienes faltan o entregaron tarde                                            | `local_ai_assistant_get_submissions`                  |
+| `get_pending_grading`        | `cmid` opcional                    | Entregas sin calificar por actividad, con seudónimos                                                            | `local_ai_assistant_get_pending_grading`              |
+| `get_grade_summary`          | `cmid` y `belowPercent` opcionales | Notas calificadas, sin nota, promedio, mínimo y máximo; con `belowPercent`, quiénes están por debajo            | `local_ai_assistant_get_grades`                       |
+| `get_unit_performance`       | ninguno                            | Promedio de notas por unidad del sílabo revisado, con los mismos cálculos del panel ([analítica](analitica.md)) | las de la analítica: actividades, estudiantes y notas |
 
 Una nota ausente no cuenta como cero: no entra al promedio y se informa aparte (`withoutGrade`). Si Moodle
 recorta una lista por volumen (`truncated`), la respuesta se marca `incompleteData`.
@@ -147,7 +148,7 @@ el mensaje ni la respuesta.
 ## Lo que falta
 
 - Las funciones de lectura del plugin y la prueba contra un Moodle real.
-- `get_teacher_courses` (el token fija un solo curso) y `get_unit_performance` (necesita la analítica).
+- `get_teacher_courses` (el token fija un solo curso) y `get_student_learning_evidence`.
 - RAG y `search_course_documents` (dependen del modelo de embeddings, D-07).
 - La aclaración única ante preguntas ambiguas y el «criterio aplicado» en la respuesta.
-- Un adaptador de proveedor real: hoy solo existen el simulado y el que responde `AI_PROVIDER_UNAVAILABLE`.
+- Un adaptador de proveedor real: hoy solo existen el de demostración (`AI_PROVIDER=mock`, responde con datos de ejemplo y lo avisa en cada respuesta) y el que responde `AI_PROVIDER_UNAVAILABLE`.

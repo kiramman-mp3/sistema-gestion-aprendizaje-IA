@@ -56,6 +56,20 @@ usa seudónimos `Estudiante#NNNNNNNN`. La pantalla del chat debe:
 También hay que actualizar `pnpm mock:ai` para que devuelva `data.students`, así el simulador y la API real
 coinciden. El detalle del chat está en [asistente conversacional](../architecture/asistente-chat.md).
 
+## 2.1 Ya se puede integrar con la API real
+
+Con `AI_PROVIDER=mock` en el `.env`, el backend responde con datos de demostración: la extracción devuelve el
+sílabo de ejemplo (las fechas y ponderaciones que el documento subido no trae quedan anuladas y marcadas para
+revisión), el chat consulta una herramienta según palabras clave y las recomendaciones traen un texto de
+ejemplo. Cada respuesta de chat y de recomendación lleva el aviso «Respuesta de demostración». No vale para
+medir calidad ni tiempos, y no se permite en producción.
+
+Las herramientas del chat, la analítica y las recomendaciones leen de Moodle con las funciones del punto 1:
+hasta que existan, esas rutas responden `503 MOODLE_UNAVAILABLE` o el chat dice que no pudo consultar. También
+están listas `GET /analytics/courses/:courseId`, `GET …/students/:studentId` y
+`POST …/students/:studentId/recommendations`
+([analítica](../architecture/analitica.md)).
+
 ## 3. Importante: curso de prueba con datos sintéticos
 
 Un Moodle local con un curso que tenga estudiantes ficticios, actividades de varios tipos, entregas completas

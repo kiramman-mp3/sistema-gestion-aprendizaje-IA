@@ -44,9 +44,9 @@ ese contrato con datos de prueba.
 
 ### Sprints 10 y 11 · Analítica y asistente pedagógico
 
-- [ ] `feature/analytics-indicators`, `feature/analytics-snapshots`, `feature/difficulty-signals` y `feature/analytics-api`.
-- [ ] Herramienta `get_unit_performance` para el chat.
-- [ ] `feature/student-evidence` y `feature/pedagogical-recommendations` con el validador de lenguaje (sin diagnósticos ni etiquetas). El validador y `POST /recommendations/:id/followups` están hechos; falta la generación.
+- [x] `feature/analytics-indicators`, `feature/difficulty-signals` y `feature/analytics-api`. `feature/analytics-snapshots` queda aplazada (ADR-018). Probado con un Moodle simulado; con Moodle real esperan las funciones de lectura del plugin.
+- [x] Herramienta `get_unit_performance` para el chat.
+- [ ] `feature/student-evidence` y `feature/pedagogical-recommendations` con el validador de lenguaje (sin diagnósticos ni etiquetas). Hechos: la ruta de evidencias, la generación con el validador, `POST /analytics/courses/:courseId/students/:studentId/recommendations` y `POST /recommendations/:id/followups`. Falta la herramienta `get_student_learning_evidence` del chat y medir la pertinencia con un modelo real.
 
 ### Sprint 12 · Evaluación
 
