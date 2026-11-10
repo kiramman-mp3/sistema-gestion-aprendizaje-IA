@@ -165,6 +165,7 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │       │   ├── antivirus/          # Cliente de clamd y servicio de análisis
 │       │   ├── storage/            # Almacén de archivos subidos
 │       │   ├── syllabi/            # POST y GET /syllabi, encolado y resultados del worker
+│       │   ├── proposals/          # Propuestas de curso: generador, validación, estados y API
 │       │   ├── queue/              # Nombres de colas y conexión de BullMQ
 │       │   ├── maintenance/        # Retención de archivos y reintento de cargas
 │       │   └── integrations/       # Cliente REST de Moodle y cuenta de integración
@@ -326,14 +327,18 @@ Pendiente. El entorno de producción se define en el Sprint 13 (ver [roadmap](do
 Prefijo `/api/v1`. Todas las rutas salvo `/health` exigen el JWT del plugin. Contrato completo en
 [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
 
-| Método | Ruta           | Qué hace                                                    |
-| ------ | -------------- | ----------------------------------------------------------- |
-| GET    | `/health`      | Estado de la base, Redis, Moodle y el antivirus             |
-| GET    | `/session`     | Identidad, roles y capacidades del docente en el curso      |
-| POST   | `/syllabi`     | Carga un sílabo (multipart) y encola la extracción de texto |
-| GET    | `/syllabi/:id` | Estado, progreso, páginas y confianza de la extracción      |
+| Método | Ruta                     | Qué hace                                                                      |
+| ------ | ------------------------ | ----------------------------------------------------------------------------- |
+| GET    | `/health`                | Estado de la base, Redis, Moodle y el antivirus                               |
+| GET    | `/session`               | Identidad, roles y capacidades del docente en el curso                        |
+| POST   | `/syllabi`               | Carga un sílabo (multipart) y encola la extracción de texto                   |
+| GET    | `/syllabi/:id`           | Estado, progreso, páginas y confianza de la extracción                        |
+| POST   | `/proposals`             | Genera la propuesta de curso desde una extracción revisada (`publish`)        |
+| GET    | `/proposals/:id`         | Propuesta con sus elementos y la revisión (`issues`)                          |
+| PATCH  | `/proposals/:id`         | Reemplaza los elementos; una propuesta aprobada vuelve a revisión (`publish`) |
+| POST   | `/proposals/:id/approve` | Aprueba una propuesta en revisión y sin errores (`publish`)                   |
 
-El flujo de carga y extracción está en [`docs/architecture/procesamiento-silabos.md`](docs/architecture/procesamiento-silabos.md).
+El flujo de carga y extracción está en [`docs/architecture/procesamiento-silabos.md`](docs/architecture/procesamiento-silabos.md); el de propuestas, en [`docs/architecture/propuestas.md`](docs/architecture/propuestas.md).
 
 ### Migraciones
 
@@ -377,7 +382,8 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 - [x] Autenticación plugin–backend, autorización, auditoría y página del asistente (Sprint 3)
 - [x] Carga segura de sílabos, cola, extracción de texto y OCR (Sprint 4)
 - [ ] Extracción estructurada con IA y revisión del docente (Sprint 5; el editor del plugin ya está, falta la extracción con IA)
-- [ ] Generación y publicación de cursos (Sprints 6–7)
+- [x] Propuesta de curso: generador, validación, estados, API y vista previa (Sprint 6)
+- [ ] Publicación en Moodle (Sprint 7)
 - [ ] Asistente conversacional (Sprints 8–9)
 - [ ] Analítica y asistente pedagógico (Sprints 10–11)
 - [ ] Evaluación con docentes (Sprint 12)

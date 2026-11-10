@@ -363,15 +363,25 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** proponer la estructura del curso a partir de la extracción aprobada.
 
-- [ ] `feature/proposal-generator`: unidades → secciones; actividades → tipos de Moodle según D-05.
-- [ ] Cada actividad queda vinculada a una unidad y a un resultado de aprendizaje.
-- [ ] Validación de ponderaciones contra la configuración institucional (D-04).
-- [ ] `feature/proposal-state-machine`: `DRAFT → NEEDS_REVIEW → APPROVED → PUBLISHING → PUBLISHED`, con `REJECTED` y `FAILED`; transiciones probadas.
-- [ ] `feature/proposal-api`: `POST /proposals`, `GET /proposals/:id`, `PATCH /proposals/:id`, `POST /proposals/:id/approve`.
-- [ ] Detección de reprocesamiento del mismo sílabo (checksum) para evitar propuestas duplicadas.
-- [ ] `feature/plugin-proposal-preview`: vista previa editable de secciones y actividades.
+- [x] `feature/proposal-generator`: unidades → secciones; actividades → tipos de Moodle según D-05 (tabla provisional en `activity-type-map.ts`).
+- [x] Cada actividad queda vinculada a una unidad y a un resultado de aprendizaje (hereda los de su unidad; si no hay ninguno, la revisión lo marca).
+- [x] Validación de ponderaciones contra la configuración institucional (D-04), con una política provisional (`proposal-policy.ts`).
+- [x] `feature/proposal-state-machine`: `DRAFT → NEEDS_REVIEW → APPROVED → PUBLISHING → PUBLISHED`, con `REJECTED` y `FAILED`; las 49 combinaciones probadas.
+- [x] `feature/proposal-api`: `POST /proposals`, `GET /proposals/:id`, `PATCH /proposals/:id`, `POST /proposals/:id/approve` ([ADR-014](architecture/adr/0014-edicion-propuestas-reemplazo-concurrencia.md)).
+- [x] Detección de reprocesamiento del mismo sílabo (checksum) para evitar propuestas duplicadas (`409 PROPOSAL_EXISTS` y `confirmDuplicate`).
+- [x] `feature/plugin-proposal-preview`: vista previa editable de secciones y actividades.
 
 **Criterio de aceptación:** el docente edita y aprueba una propuesta; las transiciones inválidas se rechazan.
+**Resultado:** cumplido (FUN-05). Probado con 38 pruebas e2e, 60 de la máquina de estados, 3 contra PostgreSQL real (incluidas tres aprobaciones simultáneas: solo una se aplica) y 28 de la vista previa en un DOM simulado. Diseño en [`docs/architecture/propuestas.md`](architecture/propuestas.md).
+
+**Desvíos:**
+
+- El generador necesita `unitRef` para ubicar el periodo de cada actividad; se expone en el contrato como campo de `ProposalItem`.
+- La respuesta de la propuesta incluye `issues` (errores que impiden aprobar y advertencias), calculadas al leer y no guardadas.
+- `POST /proposals` exige que el sílabo esté `REVIEWED`: la propuesta parte de lo que el docente revisó.
+- D-04 y D-05 siguen abiertas: la política (total 100 por periodo, todos los tipos permitidos) y la tabla de tipos de Moodle son provisionales y se cambian en un solo lugar.
+- El contrato no tiene ruta para rechazar (`NEEDS_REVIEW → REJECTED`); la transición existe en la máquina de estados.
+- Falta comprobar la vista previa en Moodle con la API real (depende de la extracción con IA del Sprint 5).
 
 ### Sprint 7 · Semanas 15–16 — Publicación idempotente
 
@@ -553,7 +563,7 @@ de modelos propios y publicación masiva sin revisión.
 | S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                               |
 | S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03) |
 | S5     | En curso  | 2026-11-09 |            | Editor de la extracción terminado (plugin); pendientes proveedor LLM, extracción con IA, API y F1     |
-| S6     | Pendiente |            |            |                                                                                                       |
+| S6     | Terminado | 2026-11-09 | 2026-11-09 | Generador, validación, máquina de estados, API y vista previa; D-04 y D-05 provisionales              |
 | S7     | Pendiente |            |            |                                                                                                       |
 | S8     | Pendiente |            |            |                                                                                                       |
 | S9     | Pendiente |            |            |                                                                                                       |

@@ -239,6 +239,14 @@ paths:
       tags: [proposals]
       operationId: createProposal
       summary: Generar una propuesta a partir de una versión de extracción (RF-07)
+      description: |
+        Requiere la capacidad `publish`. Cada unidad de la extracción es una sección y cada actividad
+        un elemento hijo, con el tipo de Moodle según D-05 (provisional). Las fechas y ponderaciones son
+        las de la extracción o `null`; nunca se inventan. La propuesta nace en `NEEDS_REVIEW`.
+
+        El sílabo debe estar `REVIEWED` (el docente guardó su revisión). Si el mismo sílabo ya tiene una
+        propuesta que no fue rechazada, responde 409 `PROPOSAL_EXISTS` y no la duplica, salvo que se
+        envíe `confirmDuplicate: true`.
       requestBody:
         required: true
         content:
@@ -253,6 +261,9 @@ paths:
                 extractionVersion:
                   type: integer
                   minimum: 1
+                confirmDuplicate:
+                  type: boolean
+                  description: Confirma que se quiere otra propuesta aunque el sílabo ya tenga una
       responses:
         "201":
           description: Propuesta creada
@@ -266,12 +277,31 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          description: |
+            `SYLLABUS_NOT_FOUND` (un sílabo de otro curso responde igual que uno inexistente) o
+            `EXTRACTION_NOT_FOUND`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: |
+            `EXTRACTION_NOT_REVIEWED` (el docente aún no guardó su revisión), `EXTRACTION_INVALID` o
+            `PROPOSAL_EXISTS` (`details[0].message` trae el id de la propuesta existente)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /proposals/{proposalId}:
     get:
       tags: [proposals]
       operationId: getProposal
       summary: Consultar una propuesta
+      description: |
+        Una propuesta de otro curso responde 404 (`PROPOSAL_NOT_FOUND`), igual que una inexistente. Incluye
+        `issues`, la revisión del estado guardado.
       parameters:
         - $ref: "#/components/parameters/ProposalId"
       responses:
@@ -289,6 +319,12 @@ paths:
       tags: [proposals]
       operationId: updateProposal
       summary: Editar ítems de la propuesta (vuelve a NEEDS_REVIEW si estaba aprobada)
+      description: |
+        Requiere la capacidad `publish`. Reemplaza todos los ítems por los enviados; la posición es el
+        orden del arreglo. Un ítem nuevo trae un UUID generado por el cliente. `moodleItemId` y
+        `publishStatus` son de solo lectura y se ignoran. Una sección no tiene padre; cualquier otro ítem
+        cuelga de una sección de la misma propuesta. Solo se edita en `DRAFT`, `NEEDS_REVIEW` y
+        `APPROVED`; editar una propuesta aprobada borra la aprobación y la devuelve a `NEEDS_REVIEW`.
       parameters:
         - $ref: "#/components/parameters/ProposalId"
       requestBody:
@@ -314,16 +350,27 @@ paths:
           $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          $ref: "#/components/responses/InvalidTransition"
+          description: |
+            `PROPOSAL_NOT_EDITABLE` (el estado no admite ediciones), `ITEM_ID_CONFLICT` (un id ya
+            pertenece a otra propuesta) o `PROPOSAL_CHANGED` (otra petición la cambió a la vez)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /proposals/{proposalId}/approve:
     post:
       tags: [proposals]
       operationId: approveProposal
       summary: Aprobar la propuesta (RF-08)
+      description: |
+        Requiere la capacidad `publish`. Solo se aprueba desde `NEEDS_REVIEW`, y solo si la revisión
+        (`issues`) no tiene errores; las advertencias no lo impiden. Registra quién aprobó y cuándo.
       parameters:
         - $ref: "#/components/parameters/ProposalId"
       responses:
@@ -337,8 +384,16 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
-          $ref: "#/components/responses/InvalidTransition"
+          description: |
+            `INVALID_TRANSITION` (el estado no permite aprobar), `PROPOSAL_HAS_ERRORS` (`details` lista
+            los errores) o `PROPOSAL_CHANGED` (otra petición la cambió a la vez)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /proposals/{proposalId}/publish:
     post:
@@ -925,6 +980,12 @@ components:
           type: [string, "null"]
         position:
           type: integer
+          description: Orden de visualización; en la edición se toma del orden del arreglo
+        unitRef:
+          type: string
+          description: |
+            Ruta de la unidad en la extracción (`gradingPeriods[0].units[1]`). Ubica el periodo de
+            calificación para validar ponderaciones. Si se omite, un ítem hereda el de su sección.
         learningOutcomeIds:
           type: array
           items:
@@ -970,6 +1031,36 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProposalItem"
+        issues:
+          type: array
+          readOnly: true
+          description: Revisión del estado guardado. Los `error` impiden aprobar; los `warning`, no.
+          items:
+            $ref: "#/components/schemas/ProposalIssue"
+
+    ProposalIssue:
+      type: object
+      required: [code, severity, itemId, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - EMPTY_PROPOSAL
+            - EMPTY_TITLE
+            - ITEM_TYPE_NOT_ENABLED
+            - PERIOD_WEIGHTS_EXCEED_TOTAL
+            - PERIOD_WEIGHTS_NOT_TOTAL
+            - ACTIVITY_WITHOUT_OUTCOME
+            - SECTION_WITHOUT_ACTIVITIES
+        severity:
+          type: string
+          enum: [error, warning]
+        itemId:
+          type: [string, "null"]
+          format: uuid
+          description: Ítem al que se refiere; `null` si afecta a la propuesta completa
+        message:
+          type: string
 
     PublishOperation:
       type: object
