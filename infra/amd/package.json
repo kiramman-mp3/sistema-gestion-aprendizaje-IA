@@ -1,0 +1,17 @@
+{
+  "name": "@smart-lms/plugin-js",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pruebas del JavaScript (AMD) del plugin local_ai_assistant, que corre en el navegador dentro de Moodle",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@smart-lms/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "jsdom": "^31.0.0",
+    "vitest": "^5.1.0"
+  }
+}

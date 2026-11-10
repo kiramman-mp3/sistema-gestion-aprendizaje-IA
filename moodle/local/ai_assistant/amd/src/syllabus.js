@@ -23,6 +23,7 @@
 
 import { getString } from "core/str";
 import { callBackend } from "local_ai_assistant/assistant";
+import { open as openExtractionEditor } from "local_ai_assistant/extraction_editor";
 
 /** Same limit as the backend (RF-03); checked here only to answer faster. */
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -35,6 +36,12 @@ const FAILURE_STRINGS = {
 };
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** The text is still being extracted (or the file is waiting for the queue). */
+const isReadingText = (syllabus) => syllabus.status === "UPLOADED" || syllabus.status === "PROCESSING";
+
+/** The structure extraction finished, successfully or not. */
+const isExtractionDone = (syllabus) => ["EXTRACTED", "REVIEWED", "FAILED"].includes(syllabus.status);
 
 /**
  * Shows a message in the status region.
@@ -71,19 +78,20 @@ const setProgress = (progress, percent) => {
 };
 
 /**
- * Polls the backend until the syllabus leaves the processing states.
+ * Polls the backend until the syllabus reaches a state the caller considers final.
  *
  * @param {number} courseId
  * @param {string} syllabusId
  * @param {HTMLElement} progress
+ * @param {function(object): boolean} [isDone] Defaults to "the text is no longer being read".
  * @returns {Promise<object|null>} The final syllabus, or null if it took too long.
  */
-const follow = async (courseId, syllabusId, progress) => {
+const follow = async (courseId, syllabusId, progress, isDone = (syllabus) => !isReadingText(syllabus)) => {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const syllabus = await callBackend(courseId, `/syllabi/${encodeURIComponent(syllabusId)}`);
     setProgress(progress, syllabus.progress ?? 0);
-    if (syllabus.status !== "UPLOADED" && syllabus.status !== "PROCESSING") {
+    if (isDone(syllabus)) {
       return syllabus;
     }
     await wait(POLL_INTERVAL_MS);
@@ -92,12 +100,34 @@ const follow = async (courseId, syllabusId, progress) => {
 };
 
 /**
+ * Starts the structure extraction and opens the editor when it is ready.
+ *
+ * @param {{courseId: number, progress: HTMLElement, status: HTMLElement}} view
+ * @param {string} syllabusId
+ */
+const extractStructure = async (view, syllabusId) => {
+  const { courseId, progress, status } = view;
+  show(status, "info", [await getString("syllabusextracting", "local_ai_assistant")]);
+  setProgress(progress, 0);
+  try {
+    await callBackend(courseId, `/syllabi/${encodeURIComponent(syllabusId)}/extract`, { method: "POST" });
+    const syllabus = await follow(courseId, syllabusId, progress, isExtractionDone);
+    setProgress(progress, null);
+    await showResult(view, syllabus);
+  } catch (error) {
+    setProgress(progress, null);
+    show(status, "danger", [await getString("syllabusextractfailed", "local_ai_assistant", error.code || error.message)]);
+  }
+};
+
+/**
  * Shows the final result of the processing.
  *
- * @param {HTMLElement} status
+ * @param {{courseId: number, progress: HTMLElement, status: HTMLElement}} view
  * @param {object|null} syllabus
  */
-const showResult = async (status, syllabus) => {
+const showResult = async (view, syllabus) => {
+  const { courseId, status } = view;
   if (!syllabus) {
     show(status, "warning", [await getString("syllabustimeout", "local_ai_assistant")]);
     return;
@@ -110,6 +140,11 @@ const showResult = async (status, syllabus) => {
     show(status, "danger", [message]);
     return;
   }
+  if (syllabus.status === "EXTRACTED" || syllabus.status === "REVIEWED") {
+    status.replaceChildren();
+    await openExtractionEditor(courseId, syllabus.id);
+    return;
+  }
   const messages = [
     syllabus.pageCount
       ? await getString("syllabusready", "local_ai_assistant", syllabus.pageCount)
@@ -119,6 +154,18 @@ const showResult = async (status, syllabus) => {
     messages.push(await getString("syllabuslowconfidence", "local_ai_assistant"));
   }
   show(status, syllabus.textConfidence === "low" ? "warning" : "success", messages);
+
+  if (syllabus.status === "TEXT_READY") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-primary mt-2";
+    button.textContent = await getString("syllabusextract", "local_ai_assistant");
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      extractStructure(view, syllabus.id);
+    });
+    status.append(button);
+  }
 };
 
 /**
@@ -140,12 +187,11 @@ const checkFile = async (file) => {
 /**
  * Uploads the selected file and follows its processing.
  *
- * @param {number} courseId
+ * @param {{courseId: number, progress: HTMLElement, status: HTMLElement}} view
  * @param {HTMLFormElement} form
- * @param {HTMLElement} progress
- * @param {HTMLElement} status
  */
-const upload = async (courseId, form, progress, status) => {
+const upload = async (view, form) => {
+  const { courseId, progress, status } = view;
   const file = form.elements.file.files[0];
   const invalid = await checkFile(file);
   if (invalid) {
@@ -179,15 +225,34 @@ const upload = async (courseId, form, progress, status) => {
 
   const syllabus = await follow(courseId, syllabusId, progress);
   setProgress(progress, null);
-  await showResult(status, syllabus);
+  await showResult(view, syllabus);
+};
+
+/**
+ * Shows the state of an already uploaded syllabus, so the teacher can come back to it.
+ *
+ * @param {{courseId: number, progress: HTMLElement, status: HTMLElement}} view
+ * @param {string} syllabusId
+ */
+const resume = async (view, syllabusId) => {
+  const { courseId, progress, status } = view;
+  try {
+    const syllabus = await follow(courseId, syllabusId, progress);
+    setProgress(progress, null);
+    await showResult(view, syllabus);
+  } catch (error) {
+    setProgress(progress, null);
+    show(status, "danger", [await getString("connectionerror", "local_ai_assistant", error.code || error.message)]);
+  }
 };
 
 /**
  * Entry point called from index.php.
  *
  * @param {number} courseId
+ * @param {string} [syllabusId] A syllabus to resume (from the `syllabusid` URL parameter).
  */
-export const init = (courseId) => {
+export const init = (courseId, syllabusId = "") => {
   const region = document.querySelector('[data-region="local_ai_assistant"] [data-region="syllabus"]');
   const form = region?.querySelector('[data-action="upload-syllabus"]');
   if (!form) {
@@ -196,12 +261,17 @@ export const init = (courseId) => {
   const progress = region.querySelector('[data-region="syllabus-progress"]');
   const status = region.querySelector('[data-region="syllabus-status"]');
   const button = form.querySelector('[type="submit"]');
+  const view = { courseId, progress, status };
+
+  if (syllabusId) {
+    resume(view, syllabusId);
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     button.disabled = true;
     try {
-      await upload(courseId, form, progress, status);
+      await upload(view, form);
     } catch (error) {
       setProgress(progress, null);
       show(status, "danger", [await getString("connectionerror", "local_ai_assistant", error.code || error.message)]);

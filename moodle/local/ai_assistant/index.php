@@ -25,6 +25,7 @@
 require(__DIR__ . '/../../config.php');
 
 $courseid = required_param('courseid', PARAM_INT);
+$syllabusid = optional_param('syllabusid', '', PARAM_ALPHANUMEXT);
 $course = get_course($courseid);
 require_login($course);
 
@@ -39,7 +40,7 @@ $PAGE->set_title(get_string('assistant', 'local_ai_assistant') . ': ' . format_s
 $PAGE->set_heading(format_string($course->fullname));
 
 $PAGE->requires->js_call_amd('local_ai_assistant/assistant', 'init', [(int) $course->id]);
-$PAGE->requires->js_call_amd('local_ai_assistant/syllabus', 'init', [(int) $course->id]);
+$PAGE->requires->js_call_amd('local_ai_assistant/syllabus', 'init', [(int) $course->id, $syllabusid]);
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('local_ai_assistant/assistant', [
