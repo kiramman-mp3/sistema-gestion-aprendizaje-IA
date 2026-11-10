@@ -23,6 +23,7 @@
 
 import Ajax from "core/ajax";
 import { getString } from "core/str";
+import { readEvents } from "local_ai_assistant/sse";
 
 const CAPABILITY_STRINGS = {
   use: "capuse",
@@ -69,6 +70,39 @@ export const callBackend = async (courseId, path, options = {}) => {
     throw error;
   }
   return body;
+};
+
+/**
+ * POSTs to the backend and reads the answer as a stream of events (Server-Sent Events).
+ *
+ * If the backend answers with plain JSON instead of a stream, that body is delivered as a single `final`
+ * event, so the caller handles both the same way.
+ *
+ * @param {number} courseId
+ * @param {string} path Path under the API prefix.
+ * @param {{json: object, onEvent: function({event: string, data: string}): void, signal?: AbortSignal}} options
+ * @returns {Promise<void>} Resolves when the stream ends; rejects with `code` and `status` on an HTTP error.
+ */
+export const streamBackend = async (courseId, path, { json, onEvent, signal }) => {
+  const { token, backendurl } = await getBackendToken(courseId);
+  const response = await fetch(`${backendurl.replace(/\/+$/, "")}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream", "Content-Type": "application/json" },
+    body: JSON.stringify(json),
+    signal,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const error = new Error(body.message || `HTTP ${response.status}`);
+    error.code = body.code;
+    error.status = response.status;
+    throw error;
+  }
+  if (!(response.headers.get("content-type") ?? "").includes("text/event-stream")) {
+    onEvent({ event: "final", data: JSON.stringify(await response.json()) });
+    return;
+  }
+  await readEvents(response, onEvent);
 };
 
 /**
