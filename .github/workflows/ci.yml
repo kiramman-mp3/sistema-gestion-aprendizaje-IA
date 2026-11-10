@@ -31,6 +31,10 @@ jobs:
       - name: Instalar dependencias
         run: pnpm install --frozen-lockfile
 
+      # Falla si una dependencia de producción tiene una vulnerabilidad alta o crítica conocida.
+      - name: Auditoría de dependencias de producción
+        run: pnpm audit --prod --audit-level high
+
       - name: Linter
         run: pnpm lint
 
