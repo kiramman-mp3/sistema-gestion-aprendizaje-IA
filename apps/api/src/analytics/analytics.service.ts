@@ -7,6 +7,7 @@ import { AnalyticsDataService } from "./analytics-data.service";
 import type { AnalyticsDataset, Indicator } from "./analytics.types";
 import { resolveRules, type StoredRule } from "./difficulty-rules";
 import { evaluateSignals, type DifficultySignal } from "./difficulty-signals";
+import { SnapshotsService } from "./snapshots.service";
 import {
   computeCourseIndicators,
   computeStudentIndicators,
@@ -47,6 +48,7 @@ export class AnalyticsService {
     private readonly prisma: PrismaService,
     private readonly accounts: IntegrationAccountService,
     private readonly audit: AuditService,
+    private readonly snapshots: SnapshotsService,
   ) {}
 
   async courseAnalytics(auth: AuthContext, now = new Date()): Promise<CourseAnalyticsDto> {
@@ -62,10 +64,12 @@ export class AnalyticsService {
       resourceType: "course",
       metadata: { signals: signals.length },
     });
+    const indicators = computeCourseIndicators(dataset);
+    await this.snapshots.recordOncePerDay(auth, indicators, signals.length, now);
     return {
       courseId: auth.courseId,
       computedAt: now.toISOString(),
-      indicators: computeCourseIndicators(dataset),
+      indicators,
       signals,
     };
   }

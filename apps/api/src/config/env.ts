@@ -47,6 +47,8 @@ export const envSchema = z.object({
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(8_192),
   /** Días que se conserva una conversación con el asistente. Provisional hasta la política D-08. */
   AI_CONVERSATION_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
+  /** Días que se conservan los snapshots de indicadores (ADR-018). Provisional hasta la política D-08. */
+  ANALYTICS_SNAPSHOT_RETENTION_DAYS: z.coerce.number().int().positive().default(365),
   /** Tope de uso de IA por docente en 24 horas (RNF-07): mensajes y tokens (entrada + salida). */
   AI_DAILY_MESSAGES_PER_TEACHER: z.coerce.number().int().positive().default(200),
   /** Recomendaciones pedagógicas por docente en 24 horas. */

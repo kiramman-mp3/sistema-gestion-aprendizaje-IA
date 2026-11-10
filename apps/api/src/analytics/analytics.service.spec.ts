@@ -6,6 +6,7 @@ import { buildDataset, NOW } from "./analytics.fixtures";
 import { AnalyticsController } from "./analytics.controller";
 import { AnalyticsService } from "./analytics.service";
 import type { AnalyticsDataService } from "./analytics-data.service";
+import type { SnapshotsService } from "./snapshots.service";
 import type { AnalyticsDataset } from "./analytics.types";
 
 const AUTH = { moodleUserId: 42, courseId: 7 };
@@ -14,13 +15,15 @@ function setup(dataset: AnalyticsDataset = buildDataset(), storedRules: object[]
   const data = { load: jest.fn(async () => dataset) };
   const prisma = { difficultyRule: { findMany: jest.fn(async () => storedRules) } };
   const audit = { record: jest.fn().mockResolvedValue(undefined) };
+  const snapshots = { recordOncePerDay: jest.fn().mockResolvedValue(true) };
   const service = new AnalyticsService(
     data as unknown as AnalyticsDataService,
     prisma as unknown as PrismaService,
     { currentId: async () => "cuenta-1" } as unknown as IntegrationAccountService,
     audit as unknown as AuditService,
+    snapshots as unknown as SnapshotsService,
   );
-  return { service, prisma, audit };
+  return { service, prisma, audit, snapshots };
 }
 
 describe("AnalyticsService.courseAnalytics", () => {
@@ -229,11 +232,48 @@ describe("AnalyticsService.studentEvidence", () => {
   });
 });
 
+describe("snapshots de indicadores (ADR-018)", () => {
+  it("al abrir el panel pide guardar el snapshot del día con los indicadores y la cantidad de señales", async () => {
+    const { service, snapshots } = setup();
+
+    const result = await service.courseAnalytics(AUTH, NOW);
+
+    expect(snapshots.recordOncePerDay).toHaveBeenCalledWith(
+      AUTH,
+      result.indicators,
+      result.signals.length,
+      NOW,
+    );
+  });
+
+  it("las evidencias de un estudiante no guardan snapshot", async () => {
+    const { service, snapshots } = setup();
+
+    await service.studentEvidence(AUTH, 3, NOW);
+
+    expect(snapshots.recordOncePerDay).not.toHaveBeenCalled();
+  });
+});
+
 describe("AnalyticsController", () => {
+  it("la ruta de historial entrega la consulta al servicio de snapshots", async () => {
+    const history = jest.fn().mockResolvedValue({ courseId: 7, snapshots: [] });
+    const controller = new AnalyticsController({} as never, { history } as never);
+
+    await expect(controller.history(AUTH, { days: "30" })).resolves.toEqual({
+      courseId: 7,
+      snapshots: [],
+    });
+    expect(history).toHaveBeenCalledWith(AUTH, { days: "30" });
+  });
+
   it.each(["abc", "0", "-3", "1.5", "99999999999", ""])(
     "responde 404 si el id del estudiante es «%s»",
     (id) => {
-      const controller = new AnalyticsController({ studentEvidence: jest.fn() } as never);
+      const controller = new AnalyticsController(
+        { studentEvidence: jest.fn() } as never,
+        {} as never,
+      );
 
       expect(() => controller.student(AUTH, id)).toThrow(
         expect.objectContaining({
