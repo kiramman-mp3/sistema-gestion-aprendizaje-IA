@@ -426,16 +426,18 @@ validados por el tutor y Moodle local de desarrollo.
 
 - [x] `feature/ai-orchestrator`: bucle de tool calling con límite de iteraciones (5) y herramientas separadas de lectura y escritura: el modelo solo recibe las de lectura.
 - [ ] `feature/tool-teacher-courses`: `get_teacher_courses`, `get_course_activities`. **Parcial:** hecha `get_course_activities` contra el contrato de lectura; `get_teacher_courses` no, porque el token fija un solo curso.
-- [ ] `feature/tool-submissions`: `get_assignment_submissions` respetando los estados reales de Moodle (sin entrega, borrador, enviada, tardía). Código hecho; falta la función `local_ai_assistant_get_submissions` del plugin.
-- [ ] `feature/tool-pending-grading`: `get_pending_grading`. Código hecho; falta la función `local_ai_assistant_get_pending_grading` del plugin.
-- [ ] `feature/tool-grade-summary`: `get_course_grade_summary` con cálculos deterministas y normalización de escalas. Hecha como `get_grade_summary` (una nota ausente no cuenta como cero); falta la función `local_ai_assistant_get_grades` del plugin.
+- [ ] `feature/tool-submissions`: `get_assignment_submissions` respetando los estados reales de Moodle (sin entrega, borrador, enviada, tardía). Código y función `local_ai_assistant_get_submissions` hechos y verificados por REST con el curso `AN-401-PRUEBA`; falta probar la herramienta en el chat con el proveedor real (el de demostración no la elige).
+- [x] `feature/tool-pending-grading`: `get_pending_grading`. Verificada con Moodle real: devuelve los 4 pendientes del curso de prueba (`pnpm smoke:asistente`).
+- [x] `feature/tool-grade-summary`: `get_course_grade_summary` con cálculos deterministas y normalización de escalas. Hecha como `get_grade_summary` (una nota ausente no cuenta como cero); verificada con Moodle real: 11, 8 y 9 notas, sin la calificación oculta.
 - [x] `feature/pseudonymization`: el LLM recibe seudónimos; la respuesta lleva los seudónimos y `data.students` con su id de Moodle, y el plugin los sustituye por el nombre ([ADR-010](architecture/adr/0010-seudonimizacion.md)).
 - [x] `feature/chat-api`: `POST /assistant/chat` con streaming SSE o JSON, conversación persistida e historial con límite de contexto (20 mensajes).
 - [ ] Respuestas con actividad, curso, fecha de consulta, criterio aplicado, enlace a Moodle y aviso de datos incompletos.
 - [ ] Aclaración única cuando la pregunta es ambigua.
 
 **Criterio de aceptación:** las respuestas sobre entregas coinciden con Moodle en el conjunto de preguntas de referencia.
-**Avance de la parte del plugin (Sprint 9):** la pantalla del chat con streaming SSE está hecha y probada (contrato de eventos fijado en el OpenAPI, API simulada `pnpm mock:ai`).
+**Avance de la parte del plugin (Sprint 9):** la pantalla del chat con streaming SSE está hecha y probada (contrato de eventos fijado en el OpenAPI, API simulada `pnpm mock:ai`). Sustituye los seudónimos `Estudiante#NNNNNNNN` por los nombres que da Moodle (`data.students` y `get_course_students`) y maneja el 429 con `Retry-After`, el 503, el 404 `CONVERSATION_NOT_FOUND` y el 400 con `details`.
+
+**Avance de las lecturas de Moodle (2026-11-10):** las siete funciones del plugin y la capacidad `readdata` están hechas ([lecturas de Moodle](architecture/lecturas-moodle.md)), con 18 pruebas de PHPUnit, y el curso de prueba `AN-401-PRUEBA` permite verificar el chat y la analítica con la API real y `AI_PROVIDER=mock` (`pnpm smoke:asistente`).
 
 **Avance de la línea de IA:** la API del chat, el orquestador y la seudonimización están hechos y probados con el proveedor simulado. Las cuatro herramientas se probaron con un Moodle simulado que cumple el contrato de [`packages/contracts`](../packages/contracts/src/moodle/read.ts); no corren contra Moodle real hasta que el plugin tenga las funciones de lectura de [`docs/equipo/pendiente-de-jose.md`](equipo/pendiente-de-jose.md).
 
@@ -583,19 +585,19 @@ de modelos propios y publicación masiva sin revisión.
 
 ## 📈 Seguimiento
 
-| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                                      |
-| ------ | --------- | ---------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10                    |
-| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético                   |
-| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo                      |
-| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                                    |
-| S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03)      |
-| S5     | En curso  | 2026-11-09 |            | Editor y API de extracción hechos; falta el F1 con sílabos reales (D-03)                                   |
-| S6     | Terminado | 2026-11-09 | 2026-11-09 | Generador, validación, máquina de estados, API y vista previa; D-04 y D-05 provisionales                   |
-| S7     | Terminado | 2026-11-09 | 2026-11-09 | Funciones del plugin, publicación idempotente en cola, panel con confirmación y resumen; H3 alcanzado      |
-| S8     | En curso  | 2026-11-10 |            | Chat, orquestador y seudonimización hechos; faltan las funciones de lectura de Moodle (plugin)             |
-| S9     | En curso  | 2026-11-09 |            | Chat del plugin, límites de IA y pruebas de ataque hechos; falta el RAG (depende de D-07)                  |
-| S10    | En curso  | 2026-11-09 |            | Panel del plugin, indicadores, señales y API de analítica hechos; faltan snapshots y las reglas por API    |
-| S11    | En curso  | 2026-11-09 |            | Evidencias, recomendaciones, seguimiento y validador hechos; falta medir su pertinencia con un modelo real |
-| S12    | En curso  | 2026-11-09 |            | Revisión OWASP, prueba de carga y verificación de punta a punta hechas; faltan IA, piloto y SUS            |
-| S13    | En curso  | 2026-11-09 |            | Producción, copias, monitoreo y manuales hechos; faltan despliegue real, tesis y v1.0.0                    |
+| Sprint | Estado    | Inicio     | Fin        | Notas                                                                                                                                      |
+| ------ | --------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10                                                    |
+| S1     | En curso  | 2026-11-09 |            | Diseño terminado; pendientes entrevistas, sílabos, validación de prototipos y aval ético                                                   |
+| S2     | Terminado | 2026-11-09 | 2026-11-09 | Entorno, plugin, backend, Prisma y cliente de Moodle verificados de extremo a extremo                                                      |
+| S3     | Terminado | 2026-11-09 | 2026-11-09 | JWT, permisos de Moodle, auditoría y página del asistente; H1 alcanzado                                                                    |
+| S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03)                                      |
+| S5     | En curso  | 2026-11-09 |            | Editor y API de extracción hechos; falta el F1 con sílabos reales (D-03)                                                                   |
+| S6     | Terminado | 2026-11-09 | 2026-11-09 | Generador, validación, máquina de estados, API y vista previa; D-04 y D-05 provisionales                                                   |
+| S7     | Terminado | 2026-11-09 | 2026-11-09 | Funciones del plugin, publicación idempotente en cola, panel con confirmación y resumen; H3 alcanzado                                      |
+| S8     | En curso  | 2026-11-10 |            | Chat, orquestador, seudonimización y lecturas de Moodle hechos; falta probar `get_assignment_submissions` en el chat con el proveedor real |
+| S9     | En curso  | 2026-11-09 |            | Chat del plugin, límites de IA y pruebas de ataque hechos; falta el RAG (depende de D-07)                                                  |
+| S10    | En curso  | 2026-11-09 |            | Panel del plugin, indicadores, señales y API de analítica hechos; faltan snapshots y las reglas por API                                    |
+| S11    | En curso  | 2026-11-09 |            | Evidencias, recomendaciones, seguimiento y validador hechos; falta medir su pertinencia con un modelo real                                 |
+| S12    | En curso  | 2026-11-09 |            | Revisión OWASP, prueba de carga y verificación de punta a punta hechas; faltan IA, piloto y SUS                                            |
+| S13    | En curso  | 2026-11-09 |            | Producción, copias, monitoreo y manuales hechos; faltan despliegue real, tesis y v1.0.0                                                    |

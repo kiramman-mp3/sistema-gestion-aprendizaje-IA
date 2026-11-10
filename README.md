@@ -180,15 +180,15 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 ├── packages/
 │   └── contracts/                  # Esquema del sílabo v1, métricas de extracción, lecturas de Moodle, contratos de la cola y JSON Schema
 ├── moodle/local/ai_assistant/      # Plugin de Moodle
-│   ├── classes/external/           # get_backend_token (AJAX), check_access, publish_section y publish_module (integración)
-│   ├── classes/local/              # Emisor de tokens, publicador de secciones y actividades, observador
+│   ├── classes/external/           # get_backend_token (AJAX), check_access, publish_section, publish_module y read (siete lecturas de integración)
+│   ├── classes/local/              # Emisor de tokens, publicador de secciones y actividades, lectura de datos académicos (reader.php) y observador
 │   ├── amd/src/ y amd/build/       # Módulos de la página (carga, editor de la extracción, propuesta, publicación, chat, analítica, relación de actividades) y su build
 │   ├── templates/                  # Plantilla Mustache de la página
 │   ├── db/                         # Capacidades, servicios web, tabla de mapeo (install.xml, upgrade.php) y eventos
 │   └── index.php, lib.php          # Página del asistente y enlace en el curso
 ├── infra/
 │   ├── docker/                     # Init de PostgreSQL e imagen de phpcs
-│   ├── moodle/                     # local.yml de moodle-docker, Apache y scripts CLI (integración, seed)
+│   ├── moodle/                     # local.yml de moodle-docker, Apache y scripts CLI (integración, seed y curso de prueba)
 │   ├── amd/                        # Rollup de los módulos AMD y pruebas de su JavaScript (Vitest + jsdom)
 │   ├── mocks/                      # API de IA simulada para desarrollar la interfaz (`pnpm mock:ai`)
 │   ├── loadtest/                   # Prueba de carga básica (`pnpm loadtest`)
@@ -306,30 +306,31 @@ conocidos. En resumen:
 
 ### Desarrollo
 
-| Comando                                          | Qué hace                                                                       |
-| ------------------------------------------------ | ------------------------------------------------------------------------------ |
-| `pnpm lint`                                      | ESLint en todo el repositorio                                                  |
-| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                                     |
-| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                                    |
-| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                                             |
-| `pnpm test`                                      | Pruebas de todos los paquetes                                                  |
-| `pnpm build`                                     | Compila todos los paquetes                                                     |
-| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                                         |
-| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                      |
-| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                              |
-| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                             |
-| `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                                  |
-| `pnpm --filter @smart-lms/plugin-js test`        | Pruebas del JavaScript del plugin (modelo y editor de la extracción)           |
-| `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                                 |
-| `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                           |
-| `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                             |
-| `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                                |
-| `pnpm mock:ai`                                   | API de IA simulada (puerto 3100) para probar la interfaz sin el LLM            |
-| `pnpm loadtest -- --scenario session`            | Prueba de carga básica del backend (también `--scenario chat`)                 |
-| `pnpm smoke:publicacion`                         | Verificación de punta a punta de CU-02 y CU-03 con Moodle real                 |
-| `pnpm eval:extraction [dir] [--check]`           | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia |
-| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`       |
-| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle                            |
+| Comando                                          | Qué hace                                                                          |
+| ------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `pnpm lint`                                      | ESLint en todo el repositorio                                                     |
+| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                                        |
+| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                                       |
+| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                                                |
+| `pnpm test`                                      | Pruebas de todos los paquetes                                                     |
+| `pnpm build`                                     | Compila todos los paquetes                                                        |
+| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                                            |
+| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                         |
+| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                                 |
+| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                                |
+| `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                                     |
+| `pnpm --filter @smart-lms/plugin-js test`        | Pruebas del JavaScript del plugin (modelo y editor de la extracción)              |
+| `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                                    |
+| `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                              |
+| `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                                |
+| `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                                   |
+| `pnpm mock:ai`                                   | API de IA simulada (puerto 3100) para probar la interfaz sin el LLM               |
+| `pnpm loadtest -- --scenario session`            | Prueba de carga básica del backend (también `--scenario chat`)                    |
+| `pnpm smoke:publicacion`                         | Verificación de punta a punta de CU-02 y CU-03 con Moodle real                    |
+| `pnpm smoke:asistente`                           | Verificación del chat y la analítica con la API real, Moodle y el curso de prueba |
+| `pnpm eval:extraction [dir] [--check]`           | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia    |
+| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`          |
+| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle                               |
 
 ### Producción local
 
@@ -474,8 +475,8 @@ están en [`CLAUDE.md`](CLAUDE.md).
 | Nombre            | Commits |
 | ----------------- | ------- |
 | kiramman-mp3      | 196     |
-| JoseM151          | 118     |
-| JuanCarlos        | 75      |
+| JoseM151          | 135     |
+| JuanCarlos        | 77      |
 | JuanCarlos Pashma | 2       |
 
 ---

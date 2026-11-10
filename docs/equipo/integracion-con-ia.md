@@ -7,7 +7,10 @@ pantalla de la API, y cómo comprobar la integración. Complementa [el reparto d
 
 1. El contrato es [`docs/api/openapi.yaml`](../api/openapi.yaml) más los esquemas de `packages/contracts`. Si algo
    debe cambiar, se cambia ahí primero y se avisa; las dos partes avanzan contra el mismo contrato.
-2. Mientras Pashma construye, la interfaz se prueba con la **API simulada**:
+2. Con la API real y el proveedor de demostración (`AI_PROVIDER=mock pnpm --filter @smart-lms/api dev`), el
+   curso de prueba `AN-401-PRUEBA` y el plugin apuntando a `http://localhost:3000/api/v1`, `pnpm smoke:publicacion` y
+   `pnpm smoke:asistente` verifican la integración. Antes, o para probar la interfaz sin la API real, se usa la
+   **API simulada**:
 
    ```bash
    pnpm --filter @smart-lms/contracts build     # una vez, para que el simulador use los esquemas
@@ -75,9 +78,15 @@ Además:
 - [ ] Las pruebas de `mock_api.test.mjs` describen lo que la API real cumple (formato SSE, códigos, esquema v1).
 - [ ] `pnpm --filter @smart-lms/plugin-js test` sigue en verde con los cambios de contrato.
 - [ ] En Moodle, con la API real: subir un sílabo → extraer → editar y guardar → generar propuesta → aprobar →
-      publicar (`pnpm smoke:publicacion` verifica desde la propuesta hasta Moodle).
-- [ ] Chat: una pregunta con herramienta, una con datos incompletos, el 429, el 503 y la interrupción.
-- [ ] Panel: indicadores con un valor nulo, señales con explicación, evidencias y recomendación con 422.
+      publicar. Hecho el tramo de la propuesta a Moodle (`pnpm smoke:publicacion`); falta la carga y la extracción
+      reales, que necesitan ClamAV y el worker documental.
+- [x] Chat con la API real (`pnpm smoke:asistente`): pregunta con herramienta (pendientes y notas coinciden con
+      Moodle, sin la nota oculta), `data.students` con seudónimos, historial sin nombres, 404 y 400.
+- [ ] Chat: una pregunta con datos incompletos, el 429, el 503 y la interrupción con la API real (están probados en la
+      pantalla con el simulador).
+- [ ] Panel: indicadores con un valor nulo, señales con explicación, evidencias y recomendación con 422. Hecho con la
+      API real: indicadores con definición, señales con explicación y evidencias separadas (`pnpm smoke:asistente`);
+      faltan el valor nulo y la recomendación con 422.
 - [ ] Medir RNF-01 y RNF-02 con `pnpm loadtest -- --scenario chat` y registrar los resultados.
 - [ ] Revisar con José los casos de seguridad SEC-06 y SEC-07 sobre la interfaz.
 
@@ -87,7 +96,9 @@ Además:
 | -------------------------------------- | ------ | -------------------------------------------------------------------- |
 | API de extracción real                 | Pashma | Hecha; con `AI_PROVIDER=mock` devuelve el sílabo de ejemplo          |
 | `POST /assistant/chat` con streaming   | Pashma | Hecha; con `AI_PROVIDER=mock` responde con datos de las herramientas |
-| `GET /analytics/...` y recomendaciones | Pashma | Hechas; con Moodle real esperan las funciones de lectura             |
+| `GET /analytics/...` y recomendaciones | Pashma | Hechas y verificadas con Moodle real y `AI_PROVIDER=mock`            |
+| Funciones de lectura de Moodle         | José   | Hechas ([detalle](../architecture/lecturas-moodle.md))               |
+| Curso de prueba `AN-401-PRUEBA`        | José   | Hecho (`seed_curso_prueba.php`)                                      |
 | Sílabos reales (D-03)                  | José   | Pendiente con la institución; hoy solo hay el sílabo de ejemplo      |
 | Tipos de actividad (D-05)              | José   | Provisional: `assign`, `forum`, `quiz`, `label`, `page`              |
 | Relación actividad ↔ unidad            | José   | Hecha: API, pantalla y registro automático al publicar               |
