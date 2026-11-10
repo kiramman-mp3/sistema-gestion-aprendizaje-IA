@@ -246,6 +246,11 @@ export class ProposalsService {
       include: {
         items: { orderBy: { position: "asc" } },
         extraction: { select: { version: true, documentId: true } },
+        publishOperations: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { id: true, status: true },
+        },
       },
     });
   }

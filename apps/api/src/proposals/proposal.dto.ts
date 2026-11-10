@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { CourseProposal, ProposalItem } from "../generated/prisma/client";
+import type { CourseProposal, ProposalItem, PublishOperation } from "../generated/prisma/client";
 import { ProposalItemType } from "../generated/prisma/enums";
 import type { ProposalIssue } from "./proposal-validation";
 
@@ -70,11 +70,15 @@ export interface ProposalDto {
   items: ProposalItemDto[];
   /** Errores y advertencias de la revisión; los errores impiden aprobar. */
   issues: ProposalIssue[];
+  /** Última publicación, para retomar su seguimiento al recargar la página; `null` si nunca se publicó. */
+  lastPublishOperation: { id: string; status: PublishOperation["status"] } | null;
 }
 
 export type ProposalWithItems = CourseProposal & {
   items: ProposalItem[];
   extraction: { version: number; documentId: string };
+  /** La más reciente primero; basta la primera. */
+  publishOperations: Pick<PublishOperation, "id" | "status">[];
 };
 
 export function toProposalItemDto(item: ProposalItem): ProposalItemDto {
@@ -106,5 +110,6 @@ export function toProposalDto(proposal: ProposalWithItems, issues: ProposalIssue
     approvedAt: proposal.approvedAt ? proposal.approvedAt.toISOString() : null,
     items: [...proposal.items].sort((a, b) => a.position - b.position).map(toProposalItemDto),
     issues,
+    lastPublishOperation: proposal.publishOperations[0] ?? null,
   };
 }

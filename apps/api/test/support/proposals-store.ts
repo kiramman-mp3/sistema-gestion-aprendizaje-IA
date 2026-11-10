@@ -201,6 +201,11 @@ export class ProposalsStore {
               .filter((item) => item.proposalId === proposal.id)
               .sort((a, b) => a.position - b.position),
             extraction: { version: extraction.version, documentId: extraction.documentId },
+            publishOperations: this.operations
+              .filter((operation) => operation.proposalId === proposal.id)
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+              .slice(0, 1)
+              .map((operation) => ({ id: operation.id, status: operation.status })),
           });
         },
       },
@@ -235,7 +240,8 @@ export class ProposalsStore {
             status: "RUNNING",
             createdCount: 0,
             failedCount: 0,
-            createdAt: new Date("2026-11-09T12:00:00Z"),
+            // Un segundo más por operación, para que "la más reciente" tenga sentido.
+            createdAt: new Date(Date.UTC(2026, 10, 9, 12, 0, this.operations.length)),
             finishedAt: null,
             ...data,
           } as StoredOperation;

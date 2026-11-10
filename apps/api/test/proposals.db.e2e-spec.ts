@@ -6,7 +6,11 @@ import request from "supertest";
 import { AccessService } from "../src/auth/access.service";
 import { InMemoryJtiStore, JtiStore } from "../src/auth/jti-store";
 import { PrismaService } from "../src/database/prisma.service";
+import { MoodleService } from "../src/integrations/moodle/moodle.service";
 import type { CourseAccess } from "../src/integrations/moodle/moodle.types";
+import { ProposalPublisher } from "../src/proposals/proposal-publisher";
+import { PublishDispatcher } from "../src/proposals/publish-dispatcher";
+import { FakeMoodle } from "./support/fake-moodle";
 import { signPluginToken, TEST_ISSUER, TEST_SECRET } from "./support/plugin-token";
 
 /**
@@ -37,6 +41,7 @@ describeWithDb("Propuestas contra PostgreSQL real", () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let documentId: string;
+  const moodle = new FakeMoodle();
 
   beforeAll(async () => {
     process.env.LOG_LEVEL = "fatal";
@@ -49,6 +54,15 @@ describeWithDb("Propuestas contra PostgreSQL real", () => {
       .useValue(new InMemoryJtiStore())
       .overrideProvider(AccessService)
       .useValue(fakeAccess)
+      .overrideProvider(MoodleService)
+      .useValue(moodle)
+      .overrideProvider(PublishDispatcher)
+      .useFactory({
+        inject: [ProposalPublisher],
+        factory: (publisher: ProposalPublisher) => ({
+          dispatch: (operationId: string) => publisher.run(operationId),
+        }),
+      })
       .compile();
     app = moduleRef.createNestApplication({ logger: false });
     configureApp(app);
@@ -87,6 +101,9 @@ describeWithDb("Propuestas contra PostgreSQL real", () => {
 
   afterAll(async () => {
     // Las propuestas y sus elementos se borran en cascada con la extracción y el documento.
+    await prisma.publishOperation.deleteMany({
+      where: { proposal: { moodleCourseId: COURSE_ID } },
+    });
     await prisma.courseProposal.deleteMany({ where: { moodleCourseId: COURSE_ID } });
     await prisma.syllabusDocument.deleteMany({ where: { moodleCourseId: COURSE_ID } });
     await prisma.auditEvent.deleteMany({ where: { moodleCourseId: COURSE_ID } });
@@ -158,6 +175,78 @@ describeWithDb("Propuestas contra PostgreSQL real", () => {
         .filter((res) => res.status === 409)
         .every((res) => ["INVALID_TRANSITION", "PROPOSAL_CHANGED"].includes(res.body.code)),
     ).toBe(true);
+  });
+
+  describe("publicación", () => {
+    beforeEach(() => moodle.reset());
+
+    const approved = async () => {
+      const created = await call("post", "/proposals", {
+        syllabusId: documentId,
+        extractionVersion: 1,
+        confirmDuplicate: true,
+      }).expect(201);
+      await call("post", `/proposals/${created.body.id}/approve`).expect(200);
+      return created.body as { id: string };
+    };
+
+    const publish = (proposalId: string, key: string) =>
+      request(app.getHttpServer())
+        .post(`/api/v1/proposals/${proposalId}/publish`)
+        .set("Authorization", `Bearer ${signPluginToken({ courseid: COURSE_ID })}`)
+        .set("Idempotency-Key", key)
+        .send({ confirm: true });
+
+    it("publica y guarda el id de Moodle de cada elemento", async () => {
+      const proposal = await approved();
+
+      const started = await publish(proposal.id, `clave-real-${randomUUID()}`).expect(202);
+
+      const stored = await prisma.courseProposal.findUniqueOrThrow({
+        where: { id: proposal.id },
+        include: { items: true, publishOperations: true },
+      });
+      expect(stored.status).toBe("PUBLISHED");
+      expect(stored.publishedAt).toBeInstanceOf(Date);
+      expect(
+        stored.items.every((item) => item.publishStatus === "CREATED" && item.moodleItemId),
+      ).toBe(true);
+      expect(stored.publishOperations).toMatchObject([
+        { id: started.body.id, status: "SUCCEEDED", createdCount: 4, failedCount: 0 },
+      ]);
+    });
+
+    it("tres peticiones simultáneas con la misma clave crean una sola operación (índice único real)", async () => {
+      const proposal = await approved();
+      const key = `clave-real-${randomUUID()}`;
+
+      const results = await Promise.all([
+        publish(proposal.id, key),
+        publish(proposal.id, key),
+        publish(proposal.id, key),
+      ]);
+
+      expect(results.map((res) => res.status)).toEqual([202, 202, 202]);
+      expect(new Set(results.map((res) => res.body.id)).size).toBe(1);
+      expect(await prisma.publishOperation.count({ where: { proposalId: proposal.id } })).toBe(1);
+      expect(moodle.createdCount).toBe(4);
+    });
+
+    it("si Moodle cae a mitad, se reanuda sin duplicar", async () => {
+      const proposal = await approved();
+      moodle.failAtCall = 3;
+      await publish(proposal.id, `clave-real-${randomUUID()}`).expect(202);
+      expect(
+        (await prisma.courseProposal.findUniqueOrThrow({ where: { id: proposal.id } })).status,
+      ).toBe("FAILED");
+
+      await publish(proposal.id, `clave-real-${randomUUID()}`).expect(202);
+
+      const stored = await prisma.courseProposal.findUniqueOrThrow({ where: { id: proposal.id } });
+      expect(stored.status).toBe("PUBLISHED");
+      expect(moodle.createdCount).toBe(4);
+      expect(await prisma.publishOperation.count({ where: { proposalId: proposal.id } })).toBe(2);
+    });
   });
 
   it("la edición reemplaza los elementos sin dejar huérfanos", async () => {
