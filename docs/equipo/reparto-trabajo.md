@@ -63,7 +63,7 @@ ese contrato con datos de prueba.
 
 ### Sprint 5 · Editor de la extracción
 
-- [ ] `feature/plugin-extraction-editor`: editor de unidades, temas, resultados, fechas y ponderaciones con indicador de confianza. Se puede empezar con las extracciones de ejemplo de `packages/contracts` antes de que exista la API.
+- [x] `feature/plugin-extraction-editor`: editor de unidades, temas, resultados, fechas y ponderaciones con indicador de confianza. Se puede empezar con las extracciones de ejemplo de `packages/contracts` antes de que exista la API.
 
 ### Sprint 6 · Propuestas
 
