@@ -58,7 +58,8 @@ interface GeminiResponse {
 
 /** Quita lo que el esquema JSON de Zod trae y Gemini no acepta como raíz. */
 function cleanSchema(schema: Record<string, unknown>): Record<string, unknown> {
-  const { $schema: _ignored, ...rest } = schema;
+  const rest = { ...schema };
+  delete rest.$schema;
   return rest;
 }
 
