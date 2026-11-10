@@ -105,10 +105,16 @@ tarea 3?_, _¿qué hay pendiente de calificar?_, _¿cómo van las notas de la un
 - Cada respuesta indica la **fecha de la consulta** y sus **fuentes** (con enlace a la actividad o a las
   calificaciones de Moodle). Si faltaron datos te lo dice: _«esta respuesta puede estar incompleta»_.
 - **No inventa**: si no hay datos para responder, lo dice. Los cálculos de notas los hace el sistema con reglas fijas, no el modelo de IA.
+- **Nombres.** Cuando la respuesta habla de estudiantes, verás sus nombres: el asistente trabaja con identificadores y tu
+  propia sesión de Moodle pone los nombres. Si un estudiante ya no está en el curso, aparece como «Estudiante 12».
 - **Nueva conversación** empieza de cero. Al recargar la página sigues en la conversación de esa pestaña.
 
-Si ves un error: _«Alcanzaste el límite de uso»_ (espera un momento) o _«El servicio de IA no está disponible»_
-(no se generó ninguna respuesta; inténtalo en unos minutos).
+Si ves un error:
+
+- _«Alcanzaste el límite de uso… inténtalo de nuevo en N segundos»_: espera ese tiempo y vuelve a preguntar.
+- _«El servicio de IA no está disponible»_: no se generó ninguna respuesta; inténtalo en unos minutos.
+- _«Esta conversación ya no existe»_: tu pregunta vuelve al cuadro de texto; al enviarla empieza una conversación nueva.
+- _«No se aceptó el mensaje»_: debajo se indica qué campo no cumple el formato.
 
 ## 5. Analítica del curso y de cada estudiante
 

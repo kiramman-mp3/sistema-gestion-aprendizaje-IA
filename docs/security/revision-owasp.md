@@ -33,14 +33,15 @@ corresponde, el hallazgo y su estado.
 
 ### A01 · Control de acceso roto
 
-| Control                                                                         | Evidencia                                                                                                           |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Cada petición verifica identidad, curso y capacidad en Moodle                   | `PluginAuthGuard` + `CourseAccessGuard` globales; pruebas e2e de SEC-01 y SEC-02                                    |
-| Un recurso de otro curso responde 404 (sin revelar que existe)                  | `proposals`, `syllabi` y publicación: pruebas "SEC-01" en `proposals.e2e-spec.ts` y `proposals-publish.e2e-spec.ts` |
-| Rutas con `:courseId` exigen que sea el del token                               | `CourseAccessGuard`; prueba en `mappings.e2e-spec.ts`                                                               |
-| Acciones que cambian algo exigen `publish`                                      | `@RequireCapability("publish")` en crear, editar, aprobar, publicar y relacionar                                    |
-| Las funciones de Moodle comprueban los permisos del **docente**, no del backend | `publisher.php` (`course_for_teacher`); PHPUnit con un docente sin edición y un usuario ajeno                       |
-| El usuario de integración solo puede lo que dice el servicio                    | `db/services.php`, rol `smartlmsintegration`, token restringido                                                     |
+| Control                                                                             | Evidencia                                                                                                                          |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Cada petición verifica identidad, curso y capacidad en Moodle                       | `PluginAuthGuard` + `CourseAccessGuard` globales; pruebas e2e de SEC-01 y SEC-02                                                   |
+| Un recurso de otro curso responde 404 (sin revelar que existe)                      | `proposals`, `syllabi` y publicación: pruebas "SEC-01" en `proposals.e2e-spec.ts` y `proposals-publish.e2e-spec.ts`                |
+| Rutas con `:courseId` exigen que sea el del token                                   | `CourseAccessGuard`; prueba en `mappings.e2e-spec.ts`                                                                              |
+| Acciones que cambian algo exigen `publish`                                          | `@RequireCapability("publish")` en crear, editar, aprobar, publicar y relacionar                                                   |
+| Las funciones de Moodle comprueban los permisos del **docente**, no del backend     | `publisher.php` (`course_for_teacher`); PHPUnit con un docente sin edición y un usuario ajeno                                      |
+| El usuario de integración solo puede lo que dice el servicio                        | `db/services.php`, rol `smartlmsintegration`, token restringido                                                                    |
+| Las lecturas de Moodle exigen `readdata` al integrador y `viewanalytics` al docente | `classes/external/read.php` y `reader::authorize()`; `read_test.php` con docente sin permiso y un llamador que no es el integrador |
 
 Pendiente (línea de IA): acceso a conversaciones ajenas (SEC-10) y herramientas del chat por curso.
 
@@ -75,7 +76,8 @@ Pendiente (línea de IA): acceso a conversaciones ajenas (SEC-10) y herramientas
 
 - H-3: cabeceras `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, `Referrer-Policy` y
   `Cache-Control: no-store`; se quitó `X-Powered-By` (`hardening.e2e-spec.ts`).
-- CORS explícito (`CORS_ORIGINS`), sin cookies.
+- CORS explícito (`CORS_ORIGINS`), sin cookies. Solo se expone `Retry-After` al navegador, para que el plugin pueda
+  decir cuánto esperar tras un 429 (prueba en `cors.e2e-spec.ts`).
 - Producción: red interna sin salida para la base, Redis y el worker; sin puertos publicados salvo el proxy; contenedores
   sin privilegios, con límites de memoria y procesos y sistema de archivos de solo lectura donde se puede
   (`docker-compose.prod.yml`). El estado de las dependencias no se publica (`/api/v1/health` responde 404 desde fuera).
@@ -117,16 +119,16 @@ Pendiente (línea de IA): acceso a conversaciones ajenas (SEC-10) y herramientas
 
 ## Riesgos de API (OWASP API Security)
 
-| Riesgo                                  | Estado                                                                                               |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| API1 Autorización a nivel de objeto     | Recursos acotados por curso en cada consulta; 404 en lugar de 403                                    |
-| API2 Autenticación rota                 | Ver A07                                                                                              |
-| API3 Exposición excesiva de datos       | Los DTO devuelven solo los campos del contrato; los estudiantes se identifican por id                |
-| API4 Consumo no restringido de recursos | Límite por usuario (H-2); cuerpo de 11 MB en el proxy y 10 MB por archivo; límite de IA: línea de IA |
-| API5 Autorización a nivel de función    | `@RequireCapability` por ruta; función de Moodle exige capacidades del docente                       |
-| API6 Flujos de negocio sensibles        | Confirmación explícita y aprobación previa para publicar                                             |
-| API8 Mala configuración                 | Ver A05                                                                                              |
-| API9 Gestión inadecuada del inventario  | Contrato único (`openapi.yaml`) validado con Redocly en CI                                           |
+| Riesgo                                  | Estado                                                                                                                                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API1 Autorización a nivel de objeto     | Recursos acotados por curso en cada consulta; 404 en lugar de 403                                                                                                                                    |
+| API2 Autenticación rota                 | Ver A07                                                                                                                                                                                              |
+| API3 Exposición excesiva de datos       | Los DTO devuelven solo los campos del contrato; los estudiantes se identifican por id; las lecturas de Moodle devuelven solo ids, sin notas ocultas ([lecturas](../architecture/lecturas-moodle.md)) |
+| API4 Consumo no restringido de recursos | Límite por usuario (H-2); cuerpo de 11 MB en el proxy y 10 MB por archivo; límite de IA: línea de IA                                                                                                 |
+| API5 Autorización a nivel de función    | `@RequireCapability` por ruta; función de Moodle exige capacidades del docente                                                                                                                       |
+| API6 Flujos de negocio sensibles        | Confirmación explícita y aprobación previa para publicar                                                                                                                                             |
+| API8 Mala configuración                 | Ver A05                                                                                                                                                                                              |
+| API9 Gestión inadecuada del inventario  | Contrato único (`openapi.yaml`) validado con Redocly en CI                                                                                                                                           |
 
 ## Prueba de carga
 
