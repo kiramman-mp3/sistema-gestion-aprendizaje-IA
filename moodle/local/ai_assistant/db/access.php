@@ -63,6 +63,15 @@ $capabilities = [
         ],
     ],
 
+    // Create sections and activities on behalf of a teacher who approved a proposal. Only for the backend
+    // integration user: it is the teacher's own capabilities that each call checks.
+    'local/ai_assistant:createcontent' => [
+        'riskbitmask' => RISK_XSS,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
+
     // Ask Moodle what another user may do with the assistant. Only for the backend integration user,
     // so no archetype receives it.
     'local/ai_assistant:checkaccess' => [
