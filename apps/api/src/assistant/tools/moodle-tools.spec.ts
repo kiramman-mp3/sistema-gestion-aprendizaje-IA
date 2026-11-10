@@ -1,3 +1,5 @@
+import { buildDataset } from "../../analytics/analytics.fixtures";
+import type { AnalyticsDataService } from "../../analytics/analytics-data.service";
 import { MoodleRead } from "../../integrations/moodle/moodle-read.service";
 import { Pseudonymizer } from "../../privacy/pseudonymizer";
 import type { ToolContext } from "./assistant-tool";
@@ -6,6 +8,7 @@ import {
   GetCourseActivitiesTool,
   GetGradeSummaryTool,
   GetPendingGradingTool,
+  GetUnitPerformanceTool,
 } from "./moodle-tools";
 
 const SECRET = "una-clave-de-prueba-de-al-menos-32-caracteres";
@@ -236,5 +239,63 @@ describe("GetGradeSummaryTool", () => {
 
     expect(tool.input.safeParse({ belowPercent: 120 }).success).toBe(false);
     expect((await tool.execute(context(), {})).incomplete).toBe(true);
+  });
+});
+
+describe("GetUnitPerformanceTool", () => {
+  const tool = (dataset = buildDataset()) =>
+    new GetUnitPerformanceTool({
+      load: jest.fn(async () => dataset),
+    } as unknown as AnalyticsDataService);
+
+  it("devuelve el rendimiento de cada unidad con los mismos cálculos del panel", async () => {
+    const output = await tool().execute(context());
+
+    expect(output.data).toEqual({
+      units: [
+        { unit: "Unidad 1", averagePercent: 70 },
+        { unit: "Unidad 2", averagePercent: null },
+      ],
+    });
+    expect(output.intent).toBe("unit_performance");
+    expect(output.incomplete).toBe(false);
+    expect(output.sources).toEqual([{ type: "moodle_gradebook", id: 7 }]);
+  });
+
+  it("no incluye ids de estudiantes ni de actividades", async () => {
+    const output = await tool().execute(context());
+
+    expect(JSON.stringify(output.data)).not.toMatch(/studentid|cmid|"1"|90|60/);
+  });
+
+  it("marca incompleto y lo explica si el curso no tiene sílabo revisado", async () => {
+    const output = await tool(buildDataset({ units: [], mappings: [] })).execute(context());
+
+    expect(output.incomplete).toBe(true);
+    expect(output.data).toMatchObject({ units: [], note: "El curso no tiene un sílabo revisado." });
+  });
+
+  it("explica cuando las actividades no están relacionadas con unidades", async () => {
+    const output = await tool(buildDataset({ mappings: [] })).execute(context());
+
+    expect(output.data).toMatchObject({
+      note: "Las actividades no están relacionadas con unidades.",
+    });
+    expect(
+      (output.data as { units: { averagePercent: number | null }[] }).units.every(
+        (u) => u.averagePercent === null,
+      ),
+    ).toBe(true);
+  });
+
+  it("marca incompleto si no se pudieron leer las notas, sin inventar un valor", async () => {
+    const output = await tool(buildDataset({ grades: null })).execute(context());
+
+    expect(output.incomplete).toBe(true);
+    expect(
+      (output.data as { units: { averagePercent: number | null }[] }).units.every(
+        (u) => u.averagePercent === null,
+      ),
+    ).toBe(true);
   });
 });

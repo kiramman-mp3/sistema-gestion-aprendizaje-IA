@@ -1,5 +1,7 @@
 import type { Grade, MoodleActivity, Submission } from "@smart-lms/contracts";
 import { z } from "zod";
+import { AnalyticsDataService } from "../../analytics/analytics-data.service";
+import { computeCourseIndicators } from "../../analytics/indicators";
 import { MoodleRead } from "../../integrations/moodle/moodle-read.service";
 import type { AssistantTool, ChatSource, ToolContext, ToolOutput } from "./assistant-tool";
 
@@ -195,6 +197,45 @@ export class GetGradeSummaryTool implements AssistantTool<z.infer<typeof gradeSu
       incomplete: result.truncated,
       data: { activities },
       sources: [gradebook(auth.courseId), ...activities.map((a) => activity(a.cmid))],
+    };
+  }
+}
+
+/**
+ * Rendimiento por unidad del sílabo revisado (RF-12), con la relación actividad ↔ unidad de
+ * `activity_unit_mappings`. Usa los mismos cálculos que el panel del docente: la respuesta del chat y la
+ * pantalla no pueden discrepar.
+ */
+export class GetUnitPerformanceTool implements AssistantTool<Record<string, never>> {
+  readonly name = "get_unit_performance";
+  readonly description =
+    "Indica el rendimiento (promedio de notas en porcentaje) de cada unidad del sílabo revisado, según las actividades relacionadas con cada unidad. Una unidad sin notas o sin actividades relacionadas no tiene valor.";
+  readonly kind = "read" as const;
+  readonly input = z.object({});
+
+  constructor(private readonly analytics: AnalyticsDataService) {}
+
+  async execute({ auth }: ToolContext): Promise<ToolOutput> {
+    const dataset = await this.analytics.load(auth);
+    const units = computeCourseIndicators(dataset)
+      .filter((indicator) => indicator.key.startsWith("unit_average:"))
+      .map((indicator) => ({
+        unit: indicator.label.replace(/^Rendimiento en /, ""),
+        averagePercent: indicator.value,
+      }));
+
+    return {
+      intent: "unit_performance",
+      // Sin sílabo revisado o sin notas legibles, la respuesta no puede ser completa.
+      incomplete: dataset.grades === null || dataset.units.length === 0,
+      data: {
+        units,
+        ...(dataset.units.length === 0 ? { note: "El curso no tiene un sílabo revisado." } : {}),
+        ...(dataset.units.length > 0 && dataset.mappings.length === 0
+          ? { note: "Las actividades no están relacionadas con unidades." }
+          : {}),
+      },
+      sources: [gradebook(auth.courseId)],
     };
   }
 }

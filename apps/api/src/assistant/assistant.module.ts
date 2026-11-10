@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { AnalyticsDataService } from "../analytics/analytics-data.service";
+import { AnalyticsModule } from "../analytics/analytics.module";
 import { MoodleModule } from "../integrations/moodle/moodle.module";
 import { MoodleRead } from "../integrations/moodle/moodle-read.service";
 import { PseudonymizerFactory } from "../privacy/pseudonymizer.factory";
@@ -11,21 +13,23 @@ import {
   GetCourseActivitiesTool,
   GetGradeSummaryTool,
   GetPendingGradingTool,
+  GetUnitPerformanceTool,
 } from "./tools/moodle-tools";
 import { UsageQuotaService } from "./usage-quota.service";
 
 @Module({
-  imports: [MoodleModule],
+  imports: [MoodleModule, AnalyticsModule],
   controllers: [AssistantController],
   providers: [
     {
       provide: ASSISTANT_TOOLS,
-      inject: [MoodleRead],
-      useFactory: (moodle: MoodleRead): AssistantTool[] => [
+      inject: [MoodleRead, AnalyticsDataService],
+      useFactory: (moodle: MoodleRead, analytics: AnalyticsDataService): AssistantTool[] => [
         new GetCourseActivitiesTool(moodle),
         new GetAssignmentSubmissionsTool(moodle),
         new GetPendingGradingTool(moodle),
         new GetGradeSummaryTool(moodle),
+        new GetUnitPerformanceTool(analytics),
       ],
     },
     {
