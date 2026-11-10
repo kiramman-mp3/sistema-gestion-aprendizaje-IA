@@ -59,7 +59,7 @@ de pantalla se toman al impartirla (ver «Material»).
 ## Material
 
 - Manual del docente impreso o en pantalla, y el guion de práctica de este documento.
-- Capturas de pantalla de cada paso (se toman con el entorno de pruebas y sin datos reales; van en `docs/capturas/`).
+- Capturas de pantalla de cada paso (se toman con el entorno de pruebas y sin datos reales; van en `docs/capturas/`). Ya hay capturas del chat, la analítica, la extracción, la propuesta, los avisos de error y la administración; faltan las de la publicación en Moodle y las de la capacitación misma.
 - Lista de asistencia y hoja de la encuesta SUS.
 
 ## Pendiente
