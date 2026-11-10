@@ -36,6 +36,15 @@ class publisher {
     /** @var string Kind stored in the mapping table for a course section. */
     public const TYPE_SECTION = 'section';
 
+    /** @var string Kind stored in the mapping table for an activity. */
+    public const TYPE_MODULE = 'module';
+
+    /** @var string[] Kinds of activity the plugin creates (D-05, provisional). */
+    public const MODULES = ['assign', 'forum', 'quiz', 'label', 'page'];
+
+    /** @var string Prefix of the idnumber that marks an activity as created for a proposal item. */
+    private const IDNUMBER_PREFIX = 'ai:';
+
     /** @var int Longest name Moodle stores for a section or activity. */
     private const MAX_NAME_LENGTH = 255;
 
@@ -72,16 +81,235 @@ class publisher {
         }
 
         $transaction = $DB->start_delegated_transaction();
-        $section = course_create_section($course);
-        course_update_section($course, $section, [
-            'name' => self::clean_name($name),
-            'summary' => self::as_html($summary),
-            'summaryformat' => FORMAT_HTML,
-        ]);
-        self::save_mapping($courseid, $itemuuid, self::TYPE_SECTION, (int) $section->id);
-        $transaction->allow_commit();
+        try {
+            $section = course_create_section($course);
+            course_update_section($course, $section, [
+                'name' => self::clean_name($name),
+                'summary' => self::as_html($summary),
+                'summaryformat' => FORMAT_HTML,
+            ]);
+            self::save_mapping($courseid, $itemuuid, self::TYPE_SECTION, (int) $section->id);
+            $transaction->allow_commit();
+        } catch (\Throwable $exception) {
+            $transaction->rollback($exception);
+        }
 
         return self::section_result($section, true);
+    }
+
+    /**
+     * Creates the activity of a proposal item, or returns the one created before for the same item.
+     *
+     * The activity is created with the teacher's own rights, so Moodle applies what that teacher may do (for
+     * example with the calendar), and it is created hidden: the teacher reviews it before students see it.
+     *
+     * @param int $userid Teacher on whose behalf the backend publishes.
+     * @param int $courseid
+     * @param string $itemuuid Id of the item in the backend.
+     * @param int $sectionid Section (course_sections.id) where the activity goes.
+     * @param string $modname One of self::MODULES.
+     * @param string $name Activity name.
+     * @param string $intro Activity description, plain text.
+     * @param string $duedate YYYY-MM-DD, or empty for none.
+     * @return array With cmid and created (false when it already existed).
+     */
+    public static function publish_module(
+        int $userid,
+        int $courseid,
+        string $itemuuid,
+        int $sectionid,
+        string $modname,
+        string $name,
+        string $intro,
+        string $duedate
+    ): array {
+        global $DB, $USER;
+
+        self::require_item_uuid($itemuuid);
+        if (!in_array($modname, self::MODULES, true)) {
+            throw new \invalid_parameter_exception('modname must be one of: ' . implode(', ', self::MODULES));
+        }
+        $date = self::parse_due_date($duedate);
+        $course = self::course_for_teacher(
+            $userid,
+            $courseid,
+            ['moodle/course:manageactivities', "mod/{$modname}:addinstance"]
+        );
+        $section = $DB->get_record('course_sections', ['id' => $sectionid, 'course' => $courseid]);
+        if (!$section) {
+            throw new \invalid_parameter_exception('sectionid does not belong to the course');
+        }
+
+        $existing = self::existing_module($courseid, $itemuuid);
+        if ($existing) {
+            return ['cmid' => $existing, 'created' => false];
+        }
+
+        $teacher = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
+        $info = self::module_info($course, $section, $teacher, $itemuuid, $modname, $name, $intro, $date);
+
+        $transaction = $DB->start_delegated_transaction();
+        $integration = $USER;
+        try {
+            \core\session\manager::set_user($teacher);
+            try {
+                $created = create_module($info);
+            } finally {
+                \core\session\manager::set_user($integration);
+            }
+            self::save_mapping($courseid, $itemuuid, self::TYPE_MODULE, (int) $created->coursemodule);
+            $transaction->allow_commit();
+        } catch (\Throwable $exception) {
+            $transaction->rollback($exception);
+        }
+
+        return ['cmid' => (int) $created->coursemodule, 'created' => true];
+    }
+
+    /**
+     * Finds the activity already created for an item, by the mapping or by its idnumber.
+     *
+     * The idnumber covers a lost mapping row: the activity still carries the id of its item.
+     *
+     * @param int $courseid
+     * @param string $itemuuid
+     * @return int Course module id, or 0 if there is none.
+     */
+    protected static function existing_module(int $courseid, string $itemuuid): int {
+        global $DB;
+
+        $alive = ['course' => $courseid, 'deletioninprogress' => 0];
+        $mapping = self::find_mapping($courseid, $itemuuid, self::TYPE_MODULE);
+        if ($mapping) {
+            if ($DB->record_exists('course_modules', ['id' => $mapping->moodleid] + $alive)) {
+                return (int) $mapping->moodleid;
+            }
+            // The teacher deleted the activity in Moodle: publish it again.
+            $DB->delete_records('local_ai_assistant_items', ['id' => $mapping->id]);
+        }
+
+        $idnumber = self::IDNUMBER_PREFIX . strtolower($itemuuid);
+        $cmid = $DB->get_field('course_modules', 'id', ['idnumber' => $idnumber] + $alive);
+        if ($cmid) {
+            self::save_mapping($courseid, $itemuuid, self::TYPE_MODULE, (int) $cmid);
+            return (int) $cmid;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Reads a YYYY-MM-DD date.
+     *
+     * @param string $duedate
+     * @return int[]|null Year, month and day, or null if there is no date.
+     * @throws \invalid_parameter_exception If it is not a real date.
+     */
+    protected static function parse_due_date(string $duedate): ?array {
+        if ($duedate === '') {
+            return null;
+        }
+        $valid = preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $duedate, $parts)
+            && checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
+        if (!$valid) {
+            throw new \invalid_parameter_exception('duedate must be a real date as YYYY-MM-DD');
+        }
+        return [(int) $parts[1], (int) $parts[2], (int) $parts[3]];
+    }
+
+    /**
+     * Builds the data Moodle needs to create the activity.
+     *
+     * @param \stdClass $course
+     * @param \stdClass $section Row of course_sections.
+     * @param \stdClass $teacher
+     * @param string $itemuuid
+     * @param string $modname
+     * @param string $name
+     * @param string $intro
+     * @param int[]|null $date Year, month and day of the due date.
+     * @return \stdClass
+     */
+    protected static function module_info(
+        \stdClass $course,
+        \stdClass $section,
+        \stdClass $teacher,
+        string $itemuuid,
+        string $modname,
+        string $name,
+        string $intro,
+        ?array $date
+    ): \stdClass {
+        global $DB;
+
+        $name = self::clean_name($name);
+        $html = self::as_html($intro);
+        // A label has no title of its own: what it shows is its description.
+        if ($modname === 'label') {
+            $html = '<p><strong>' . s($name) . '</strong></p>' . $html;
+        }
+        // The end of the due day in the teacher's time zone.
+        $due = $date ? make_timestamp($date[0], $date[1], $date[2], 23, 59, 0, \core_date::get_user_timezone($teacher)) : 0;
+
+        $info = new \stdClass();
+        $info->modulename = $modname;
+        $info->module = $DB->get_field('modules', 'id', ['name' => $modname, 'visible' => 1], MUST_EXIST);
+        $info->course = $course->id;
+        $info->section = (int) $section->section;
+        $info->visible = 0;
+        $info->name = $name;
+        $info->introeditor = ['text' => $html, 'format' => FORMAT_HTML, 'itemid' => 0];
+        $info->showdescription = 0;
+        $info->cmidnumber = self::IDNUMBER_PREFIX . strtolower($itemuuid);
+
+        switch ($modname) {
+            case 'assign':
+                $info->duedate = $due;
+                $info->grade = 100;
+                $info->assignsubmission_onlinetext_enabled = 1;
+                $info->assignsubmission_file_enabled = 1;
+                $info->assignsubmission_file_maxfiles = 1;
+                $info->assignsubmission_file_maxsizebytes = 0;
+                $info->assignfeedback_comments_enabled = 1;
+                foreach (
+                    [
+                        'submissiondrafts', 'requiresubmissionstatement', 'sendnotifications', 'sendlatenotifications',
+                        'allowsubmissionsfromdate', 'cutoffdate', 'gradingduedate', 'teamsubmission',
+                        'requireallteammemberssubmit', 'blindmarking', 'markingworkflow', 'markingallocation',
+                    ] as $setting
+                ) {
+                    $info->{$setting} = 0;
+                }
+                break;
+            case 'forum':
+                $info->type = 'general';
+                $info->duedate = $due;
+                $info->grade_forum = 0;
+                break;
+            case 'quiz':
+                // Created empty: the teacher adds the questions.
+                $info->timeopen = 0;
+                $info->timeclose = $due;
+                $info->grade = 10;
+                $info->decimalpoints = 2;
+                $info->questiondecimalpoints = -1;
+                $info->quizpassword = '';
+                break;
+            case 'page':
+                // Moodle only reads the editor field when a form submits it; without a form it needs content.
+                $info->page = ['text' => $html, 'format' => FORMAT_HTML, 'itemid' => 0];
+                $info->content = $html;
+                $info->contentformat = FORMAT_HTML;
+                $info->display = 5;
+                $info->printintro = 0;
+                $info->printlastmodified = 1;
+                break;
+            default:
+                // A label needs nothing more.
+                break;
+        }
+
+        return $info;
     }
 
     /**

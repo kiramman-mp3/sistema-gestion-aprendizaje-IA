@@ -55,6 +55,13 @@ $functions = [
         'ajax' => false,
         'capabilities' => 'local/ai_assistant:createcontent',
     ],
+    'local_ai_assistant_publish_module' => [
+        'classname' => \local_ai_assistant\external\publish_module::class,
+        'description' => 'Creates the activity of an approved proposal item, or returns the one already created for it.',
+        'type' => 'write',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:createcontent',
+    ],
 ];
 
 $services = [
@@ -64,6 +71,7 @@ $services = [
             'core_webservice_get_site_info',
             'local_ai_assistant_check_access',
             'local_ai_assistant_publish_section',
+            'local_ai_assistant_publish_module',
         ],
         'restrictedusers' => 1,
         'enabled' => 1,
