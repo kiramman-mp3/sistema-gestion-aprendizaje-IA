@@ -56,3 +56,6 @@ apps/api/src/generated/
 
 # Archivos subidos en desarrollo (STORAGE_DIR)
 apps/*/var/
+
+# Resultados locales de las mediciones con proveedores de IA reales
+/var/
