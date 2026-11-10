@@ -89,8 +89,9 @@ Además:
 - [ ] Panel: indicadores con un valor nulo, señales con explicación, evidencias y recomendación con 422. Hecho con la
       API real: indicadores con definición, señales con explicación y evidencias separadas (`pnpm smoke:asistente`);
       faltan el valor nulo y la recomendación con 422.
-- [ ] Medir RNF-01 y RNF-02 con `pnpm loadtest -- --scenario chat` y registrar los resultados. Hay una medición
-      orientativa con 6 muestras y el plan gratuito (RNF-02 dentro del objetivo, RNF-01 fuera); falta con más muestras.
+- [ ] Medir RNF-01 y RNF-02 con `pnpm loadtest -- --scenario chat` y registrar los resultados. **Bloqueado hasta tener
+      licencia de pago:** con el plan gratuito no se puede medir (cuota diaria y capacidad compartida); las cifras
+      orientativas de 6 muestras no valen como evidencia ([detalle](../resultados/ia-real-sintetica.md)).
 - [ ] Revisar con José los casos de seguridad SEC-06 y SEC-07 sobre la interfaz. Los dos casos se probaron con el modelo
       real a nivel de API (`pnpm smoke:ia`); falta la revisión sobre la interfaz.
 
