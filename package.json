@@ -20,7 +20,8 @@
     "eval:extraction": "node infra/scripts/evaluate-extraction.mjs",
     "mock:ai": "pnpm --filter @smart-lms/mocks ai",
     "loadtest": "node infra/loadtest/load.mjs",
-    "smoke:publicacion": "node infra/scripts/smoke-publicacion.mjs"
+    "smoke:publicacion": "node infra/scripts/smoke-publicacion.mjs",
+    "smoke:asistente": "node infra/scripts/smoke-asistente.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
