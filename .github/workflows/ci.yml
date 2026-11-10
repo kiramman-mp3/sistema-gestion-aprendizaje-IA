@@ -64,3 +64,50 @@ jobs:
 
       - name: phpcs con moodle-cs
         run: bash infra/scripts/phpcs.sh
+
+  phpunit:
+    name: Pruebas PHPUnit del plugin (Moodle 5.1)
+    runs-on: ubuntu-latest
+    # Se ejecuta con moodle-plugin-ci, que instala Moodle 5.1 y PostgreSQL. No se pudo probar fuera de GitHub:
+    # hasta que pase una vez en verde no bloquea la integracion (quitar `continue-on-error` entonces, H-7).
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      MOODLE_BRANCH: MOODLE_501_STABLE
+      DB: pgsql
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: plugin-source
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pgsql, zip, gd, intl, xml, mbstring, soap, sodium
+          ini-values: max_input_vars=5000
+          coverage: none
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Instalar moodle-plugin-ci
+        run: |
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
+          echo "$(cd ci/bin; pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ci/vendor/bin; pwd)" >> "$GITHUB_PATH"
+
+      - name: Instalar Moodle con el plugin
+        run: moodle-plugin-ci install --plugin ./plugin-source/moodle/local/ai_assistant --db-host=127.0.0.1
+
+      - name: PHPUnit
+        run: moodle-plugin-ci phpunit --fail-on-warning
