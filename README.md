@@ -495,7 +495,7 @@ están en [`CLAUDE.md`](CLAUDE.md).
 | Nombre            | Commits |
 | ----------------- | ------- |
 | kiramman-mp3      | 196     |
-| JoseM151          | 135     |
+| JoseM151          | 176     |
 | JuanCarlos        | 77      |
 | JuanCarlos Pashma | 2       |
 
