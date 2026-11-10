@@ -6,6 +6,8 @@ import { LlmProvider } from "./llm-provider";
 import { LlmUsageRecorder, LoggerLlmUsageRecorder } from "./llm-usage.recorder";
 import { LLM_LIMITS, LlmService, type LlmLimits } from "./llm.service";
 import { DemoLlmProvider } from "./providers/demo-llm.provider";
+import { GeminiEmbeddingProvider } from "./providers/gemini-embedding.provider";
+import { GeminiLlmProvider } from "./providers/gemini-llm.provider";
 import { HashingEmbeddingProvider } from "./providers/hashing-embedding.provider";
 import { UnavailableEmbeddingProvider } from "./providers/unavailable-embedding.provider";
 import { UnavailableLlmProvider } from "./providers/unavailable-llm.provider";
@@ -16,20 +18,33 @@ import { UnavailableLlmProvider } from "./providers/unavailable-llm.provider";
     {
       provide: LlmProvider,
       inject: [ConfigService],
-      // Cuando se decida D-07 se añade aquí el adaptador real con `AI_API_KEY`.
-      useFactory: (config: ConfigService<Env, true>): LlmProvider =>
-        config.get("AI_PROVIDER", { infer: true }) === "mock"
-          ? new DemoLlmProvider()
-          : new UnavailableLlmProvider(),
+      useFactory: (config: ConfigService<Env, true>): LlmProvider => {
+        const provider = config.get("AI_PROVIDER", { infer: true });
+        const apiKey = config.get("AI_API_KEY", { infer: true });
+        if (provider === "gemini" && apiKey) {
+          return new GeminiLlmProvider({ apiKey, model: config.get("AI_MODEL", { infer: true }) });
+        }
+        return provider === "mock" ? new DemoLlmProvider() : new UnavailableLlmProvider();
+      },
     },
     {
       provide: EmbeddingProvider,
       inject: [ConfigService],
-      // Con el modelo real (D-07) se añade aquí su adaptador; la dimensión debe coincidir con la de la base.
-      useFactory: (config: ConfigService<Env, true>): EmbeddingProvider =>
-        config.get("AI_PROVIDER", { infer: true }) === "mock"
+      // La dimensión del proveedor debe coincidir con la de la base (ADR-019).
+      useFactory: (config: ConfigService<Env, true>): EmbeddingProvider => {
+        const provider = config.get("AI_PROVIDER", { infer: true });
+        const apiKey = config.get("AI_API_KEY", { infer: true });
+        if (provider === "gemini" && apiKey) {
+          return new GeminiEmbeddingProvider({
+            apiKey,
+            model: config.get("AI_EMBEDDING_MODEL", { infer: true }),
+            minScore: config.get("AI_EMBEDDING_MIN_SCORE", { infer: true }),
+          });
+        }
+        return provider === "mock"
           ? new HashingEmbeddingProvider()
-          : new UnavailableEmbeddingProvider(),
+          : new UnavailableEmbeddingProvider();
+      },
     },
     { provide: LlmUsageRecorder, useClass: LoggerLlmUsageRecorder },
     {

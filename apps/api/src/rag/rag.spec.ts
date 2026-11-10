@@ -37,7 +37,7 @@ function setupIndex(document: object | null) {
   const record = jest.fn().mockResolvedValue(undefined);
   const service = new DocumentIndexService(
     prisma as unknown as PrismaService,
-    { embed } as unknown as LlmService,
+    { embed, embeddingModel: "demo-embed" } as unknown as LlmService,
     { record } as unknown as AuditService,
   );
   return { service, executeRaw, deleteMany, embed, record, queryRaw, prisma };
@@ -159,6 +159,26 @@ describe("DocumentIndexService.indexDocument", () => {
 
     expect(spy).toHaveBeenCalledWith(DOC);
   });
+
+  it("ensureIndexed reindexa lo que se indexó con otro modelo: pregunta por el modelo actual", async () => {
+    const { service, queryRaw } = setupIndex(document([paragraph(1, longText(50))]));
+    queryRaw.mockResolvedValueOnce([]);
+
+    await service.ensureIndexed(7);
+
+    const query = queryRaw.mock.calls[0]![0] as { strings: string[]; values: unknown[] };
+    expect(query.strings.join("?")).toMatch(/embedding_model\s*=\s*\?/);
+    expect(query.values).toContain("demo-embed");
+  });
+
+  it("sin proveedor de embeddings, ensureIndexed no hace nada", async () => {
+    const { service, queryRaw } = setupIndex(document([paragraph(1, longText(50))]));
+    (service as unknown as { llm: { embeddingModel: string | null } }).llm.embeddingModel = null;
+
+    await service.ensureIndexed(7);
+
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
 });
 
 describe("toVectorLiteral", () => {
@@ -176,7 +196,7 @@ function setupSearch(rows: object[]) {
   const ensureIndexed = jest.fn().mockResolvedValue(undefined);
   const service = new ChunkSearchService(
     prisma as unknown as PrismaService,
-    { embed } as unknown as LlmService,
+    { embed, embeddingModel: "demo-embed" } as unknown as LlmService,
     { ensureIndexed } as unknown as DocumentIndexService,
   );
   return { service, queryRaw, embed, ensureIndexed };
@@ -197,13 +217,28 @@ describe("ChunkSearchService.search", () => {
     expect(sql).not.toContain("bibliografía");
   });
 
+  it("solo compara con fragmentos calculados con el mismo modelo que la pregunta", async () => {
+    const { service, queryRaw, embed } = setupSearch([]);
+    embed.mockResolvedValue({ vectors: [unit(0)], model: "otro-modelo", dimensions: 4 });
+
+    await service.search(7, "metodología");
+
+    const query = queryRaw.mock.calls[0]![0] as { strings: string[]; values: unknown[] };
+    expect(query.strings.join("?")).toMatch(/embedding_model\s*=\s*\?/);
+    expect(query.values).toContain("otro-modelo");
+  });
+
   it("indexa lo pendiente del curso antes de buscar y calcula el embedding de la pregunta", async () => {
     const { service, ensureIndexed, embed } = setupSearch([]);
 
     await service.search(7, "metodología del curso");
 
     expect(ensureIndexed).toHaveBeenCalledWith(7);
-    expect(embed).toHaveBeenCalledWith({ purpose: "rag_query", texts: ["metodología del curso"] });
+    expect(embed).toHaveBeenCalledWith({
+      purpose: "rag_query",
+      texts: ["metodología del curso"],
+      kind: "query",
+    });
   });
 
   it("devuelve los fragmentos con su página y descarta los poco parecidos", async () => {

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import {
   documentTextSchema,
   findConsistencyIssues,
+  SYLLABUS_SCHEMA_VERSION,
   syllabusExtractionSchema,
   type ConsistencyIssue,
   type SyllabusExtraction,
@@ -43,13 +44,18 @@ export class SyllabusExtractorService {
       purpose: "syllabus_extraction",
       system: EXTRACTION_SYSTEM_PROMPT,
       prompt: buildExtractionPrompt(text.data),
-      schema: syllabusExtractionSchema,
+      // La versión del esquema la fija el sistema: un modelo pequeño puede equivocar la constante y rechazar toda la salida.
+      schema: syllabusExtractionSchema.omit({ schemaVersion: true }),
       schemaName: "syllabus_extraction_v1",
     });
+    const extraction: SyllabusExtraction = {
+      schemaVersion: SYLLABUS_SCHEMA_VERSION,
+      ...result.data,
+    };
 
     // Sin marcas de página: el "3" de "[p. 3]" no puede dar por buena una ponderación del 3 %.
     const grounded = groundExtraction(
-      result.data,
+      extraction,
       renderDocumentText(text.data, false),
       text.data.pageCount,
     );

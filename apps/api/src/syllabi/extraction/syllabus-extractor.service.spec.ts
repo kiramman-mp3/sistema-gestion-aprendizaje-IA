@@ -53,6 +53,22 @@ describe("SyllabusExtractorService", () => {
     expect(result.consistencyIssues).toEqual(expect.any(Array));
   });
 
+  it.each([undefined, "1", "1.0.0", 1, "otra"])(
+    "la versión del esquema la fija el sistema: si el modelo la omite o la equivoca (%j) no se rechaza la extracción",
+    async (version) => {
+      const output: Record<string, unknown> = { ...faithful() };
+      if (version === undefined) delete output.schemaVersion;
+      else output.schemaVersion = version;
+      const { service, provider } = setup(output);
+
+      const result = await service.extract(SOURCE);
+
+      expect(result.extraction.schemaVersion).toBe("1.0");
+      // El esquema que se le pide al modelo ya no incluye esa constante.
+      expect(JSON.stringify(provider.calls[0]!.jsonSchema)).not.toContain("schemaVersion");
+    },
+  );
+
   it("anula una fecha o ponderación que el documento no trae", async () => {
     const invented = faithful();
     const unit = invented.gradingPeriods[0]!.units[0]!;

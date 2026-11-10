@@ -40,7 +40,11 @@ export class ChunkSearchService {
     const take = Math.min(Math.max(Math.trunc(limit), 1), MAX_SEARCH_LIMIT);
     await this.index.ensureIndexed(courseId);
 
-    const { vectors } = await this.llm.embed({ purpose: "rag_query", texts: [query] });
+    const { vectors, model } = await this.llm.embed({
+      purpose: "rag_query",
+      texts: [query],
+      kind: "query",
+    });
     const literal = toVectorLiteral(vectors[0]!);
     const rows = await this.prisma.$queryRaw<
       { document_id: string; page: number | null; content: string; score: number }[]
@@ -49,6 +53,7 @@ export class ChunkSearchService {
         FROM document_chunks
        WHERE moodle_course_id = ${courseId}
          AND embedding IS NOT NULL
+         AND embedding_model = ${model}
        ORDER BY embedding <=> ${literal}::vector
        LIMIT ${take}`);
 

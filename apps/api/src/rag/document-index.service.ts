@@ -88,17 +88,23 @@ export class DocumentIndexService {
   }
 
   /**
-   * Indexa los documentos del curso que ya tienen texto y todavía no tienen fragmentos (por ejemplo, los que se
-   * cargaron antes de existir el índice o cuando el proveedor no respondía). Es barato si no hay nada pendiente.
+   * Indexa los documentos del curso que ya tienen texto y todavía no tienen fragmentos del modelo actual (por ejemplo,
+   * los que se cargaron antes de existir el índice, cuando el proveedor no respondía o con otro modelo). Es barato si no hay nada pendiente.
    */
   async ensureIndexed(courseId: number): Promise<void> {
+    // Un documento indexado con otro modelo de embeddings (por ejemplo, el de demostración) vuelve a indexarse: los
+    // vectores de modelos distintos no se pueden comparar.
+    const model = this.llm.embeddingModel;
+    if (!model) return;
     const pending = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
       SELECT d.id
         FROM syllabus_documents d
        WHERE d.moodle_course_id = ${courseId}
          AND d.extracted_text IS NOT NULL
          AND d.status IN ('TEXT_READY', 'EXTRACTED', 'REVIEWED')
-         AND NOT EXISTS (SELECT 1 FROM document_chunks c WHERE c.document_id = d.id)
+         AND NOT EXISTS (
+               SELECT 1 FROM document_chunks c WHERE c.document_id = d.id AND c.embedding_model = ${model}
+         )
        ORDER BY d.created_at DESC
        LIMIT ${ENSURE_LIMIT}`);
     for (const { id } of pending) await this.indexDocumentSafely(id);

@@ -38,8 +38,14 @@ export const envSchema = z.object({
   CLAMAV_URL: z.url({ protocol: /^tcp$/ }).optional(),
   CLAMAV_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   /** Proveedor de IA (ADR-009). Sin valor no hay IA y las llamadas responden AI_PROVIDER_UNAVAILABLE. */
-  AI_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["mock"]).optional()),
+  AI_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["mock", "gemini"]).optional()),
   AI_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  /** Modelo de chat y de salida estructurada del proveedor (Gemini: ver `models.list` con la clave). */
+  AI_MODEL: z.string().min(1).default("gemini-3.5-flash"),
+  /** Modelo de embeddings; debe poder devolver vectores de la dimensión de la base (1024). */
+  AI_EMBEDDING_MODEL: z.string().min(1).default("gemini-embedding-001"),
+  /** Similitud de coseno mínima de una coincidencia con los embeddings reales; se calibró con `gemini-embedding-001` y sílabos sintéticos (relevantes 0,64–0,74, sin relación 0,55–0,60): hay que volver a calibrarlo con documentos reales. */
+  AI_EMBEDDING_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.62),
   /** Tiempo máximo de una llamada al proveedor. */
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
   /** Tokens estimados de entrada a partir de los cuales no se llama al proveedor. */
@@ -74,6 +80,13 @@ const envRules = envSchema.superRefine((env, ctx) => {
       code: "custom",
       path: ["PSEUDONYM_SECRET"],
       message: "es obligatoria en producción con IA: sin ella los seudónimos serían predecibles",
+    });
+  }
+  if (env.AI_PROVIDER === "gemini" && !env.AI_API_KEY) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["AI_API_KEY"],
+      message: "es obligatoria con AI_PROVIDER=gemini",
     });
   }
   if (env.NODE_ENV === "production" && env.AI_PROVIDER === "mock") {

@@ -10,7 +10,7 @@
 // Imprime precisión, exhaustividad y F1 por categoría, con los conteos sumados de todos los sílabos (no el
 // promedio de F1 por documento). Con --check termina con código 1 si unidades < 0.85 o resultados < 0.80.
 // Requisito: `pnpm --filter @smart-lms/contracts build`.
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -54,30 +54,57 @@ if (files.length === 0) {
 }
 
 const evaluations = [];
+const withFailures = [];
+const failed = [];
 for (const expectedName of files.sort()) {
   const name = expectedName.replace(/\.expected\.json$/, "");
-  const evaluation = evaluateExtraction(
-    load(join(dir, expectedName)),
-    load(join(dir, `${name}.actual.json`)),
-  );
+  const expected = load(join(dir, expectedName));
+  if (!existsSync(join(dir, `${name}.actual.json`))) {
+    // El sistema no devolvió una extracción (fallo del proveedor, salida inválida…): no se evalúa, pero se cuenta aparte.
+    failed.push(name);
+    withFailures.push(
+      evaluateExtraction(expected, {
+        ...expected,
+        learningOutcomes: [],
+        gradingPeriods: expected.gradingPeriods.map((period) => ({ ...period, units: [] })),
+      }),
+    );
+    console.log(`${name}: SIN EXTRACCIÓN (el sistema no devolvió un resultado)`);
+    continue;
+  }
+  const evaluation = evaluateExtraction(expected, load(join(dir, `${name}.actual.json`)));
   evaluations.push(evaluation);
+  withFailures.push(evaluation);
   console.log(
     `${name}: unidades F1 ${pct(evaluation.units.f1)}, resultados F1 ${pct(evaluation.learningOutcomes.f1)}`,
   );
+}
+if (evaluations.length === 0) {
+  console.error("Ningún sílabo tiene extracción para evaluar.");
+  process.exit(2);
 }
 
 const total = aggregateEvaluations(evaluations);
 console.log(`\nSílabos evaluados: ${evaluations.length}\n`);
 console.log("Categoría                              VP   FP   FN   Precisión  Exhaustividad  F1");
-let failed = false;
+let missedTarget = false;
 for (const [kind, label] of Object.entries(LABELS)) {
   const m = total[kind];
   const target = EXTRACTION_TARGETS[kind];
   const missed = target !== undefined && (m.f1 === null || m.f1 < target);
-  failed ||= missed;
+  missedTarget ||= missed;
   console.log(
     `${label.padEnd(36)} ${String(m.tp).padStart(4)} ${String(m.fp).padStart(4)} ${String(m.fn).padStart(4)}   ${pct(m.precision)}     ${pct(m.recall)}      ${pct(m.f1)}` +
       (target === undefined ? "" : `  meta ≥ ${target * 100}% ${missed ? "NO CUMPLE" : "cumple"}`),
   );
 }
-process.exit(check && failed ? 1 : 0);
+if (failed.length > 0) {
+  const all = aggregateEvaluations(withFailures);
+  console.log(`
+Contando las ${failed.length} fallas como una extracción vacía (los ${withFailures.length} sílabos):`);
+  for (const [kind, label] of Object.entries(LABELS)) {
+    const m = all[kind];
+    console.log(`${label.padEnd(36)} F1 ${pct(m.f1)}`);
+  }
+}
+process.exit(check && missedTarget ? 1 : 0);

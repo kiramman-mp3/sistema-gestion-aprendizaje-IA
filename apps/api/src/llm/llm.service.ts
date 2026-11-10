@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { z } from "zod";
 import { EmbeddingProvider, type EmbeddingResult } from "./embedding-provider";
 import { LlmError } from "./llm.errors";
@@ -49,6 +49,8 @@ export interface EmbedRequest {
   /** Para qué se llama, por ejemplo `rag_indexing`; queda en el registro de consumo. */
   purpose: string;
   texts: string[];
+  /** Un fragmento de documento (por defecto) o una pregunta de búsqueda. */
+  kind?: "document" | "query";
   timeoutMs?: number;
 }
 
@@ -64,12 +66,19 @@ export interface StructuredResult<T> {
  */
 @Injectable()
 export class LlmService {
+  private readonly logger = new Logger(LlmService.name);
+
   constructor(
     private readonly provider: LlmProvider,
     private readonly usageRecorder: LlmUsageRecorder,
     @Inject(LLM_LIMITS) private readonly limits: LlmLimits,
     @Optional() private readonly embeddings?: EmbeddingProvider,
   ) {}
+
+  /** Modelo de embeddings en uso; los fragmentos guardan con cuál se calcularon. */
+  get embeddingModel(): string | null {
+    return this.embeddings?.model ?? null;
+  }
 
   /** Similitud mínima que el proveedor de embeddings considera una coincidencia. */
   get embeddingMinScore(): number | null {
@@ -114,7 +123,7 @@ export class LlmService {
         );
       }
       const result = await this.withTimeout(request.timeoutMs, (signal) =>
-        provider.embed(request.texts, signal),
+        provider.embed(request.texts, signal, request.kind ?? "document"),
       );
       if (
         result.vectors.length !== request.texts.length ||
@@ -177,6 +186,8 @@ export class LlmService {
       return { data: parsed.data, model: raw.model, usage: raw.usage };
     } catch (error) {
       const llmError = this.toLlmError(error);
+      // El mensaje de una salida inválida lista solo rutas del esquema, nunca valores: es seguro registrarlo.
+      if (llmError.code === "AI_INVALID_OUTPUT") this.logger.warn(llmError.message);
       record(llmError.code);
       throw llmError;
     }
@@ -276,6 +287,11 @@ export class LlmService {
 
   private toLlmError(error: unknown): LlmError {
     if (error instanceof LlmError) return error;
+    // Solo el tipo de error y, si el adaptador lo informa, su estado: el mensaje podría traer datos de la petición.
+    const status = (error as { status?: unknown } | null)?.status;
+    this.logger.warn(
+      `Fallo del proveedor de IA: ${(error as Error | null)?.name ?? "desconocido"}${typeof status === "number" ? ` (estado ${status})` : ""}.`,
+    );
     return new LlmError("AI_PROVIDER_UNAVAILABLE", "El proveedor de IA no respondió.", {
       cause: error,
     });

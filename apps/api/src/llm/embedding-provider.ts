@@ -23,6 +23,13 @@ export abstract class EmbeddingProvider {
    */
   abstract readonly minScore: number;
 
-  /** Lanza cualquier error del proveedor; `LlmService` lo convierte en `AI_PROVIDER_UNAVAILABLE`. */
-  abstract embed(texts: string[], signal: AbortSignal): Promise<EmbeddingResult>;
+  /**
+   * Lanza cualquier error del proveedor; `LlmService` lo convierte en `AI_PROVIDER_UNAVAILABLE`.
+   * `kind` distingue un fragmento de documento de una pregunta: algunos modelos calculan el vector de forma distinta.
+   */
+  abstract embed(
+    texts: string[],
+    signal: AbortSignal,
+    kind?: "document" | "query",
+  ): Promise<EmbeddingResult>;
 }
