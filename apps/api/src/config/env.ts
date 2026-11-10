@@ -44,8 +44,8 @@ export const envSchema = z.object({
   AI_MODEL: z.string().min(1).default("gemini-3.5-flash"),
   /** Modelo de embeddings; debe poder devolver vectores de la dimensión de la base (1024). */
   AI_EMBEDDING_MODEL: z.string().min(1).default("gemini-embedding-001"),
-  /** Similitud de coseno mínima de una coincidencia con los embeddings reales; se calibra con las pruebas de recuperación. */
-  AI_EMBEDDING_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.5),
+  /** Similitud de coseno mínima de una coincidencia con los embeddings reales; se calibró con `gemini-embedding-001` y sílabos sintéticos (relevantes 0,64–0,74, sin relación 0,55–0,60): hay que volver a calibrarlo con documentos reales. */
+  AI_EMBEDDING_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.62),
   /** Tiempo máximo de una llamada al proveedor. */
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
   /** Tokens estimados de entrada a partir de los cuales no se llama al proveedor. */
