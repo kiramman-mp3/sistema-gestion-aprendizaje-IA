@@ -84,7 +84,6 @@ pnpm smoke:ia                 # chat, RAG, ataques, recomendación y latencia
 
 ## Pendiente
 
-- Verificación en un navegador real de las pantallas del plugin y capturas para el README y la capacitación.
-- Escenarios de error de la API real en la pantalla: 429, 503 e interrupción (probados con el simulador).
+- Publicar la propuesta en el navegador y las pruebas de accesibilidad (las demás pantallas ya se verificaron: [pruebas de pantalla](pruebas-de-pantalla.md)).
 - Medición de RNF-01 a RNF-03 con más muestras y el plan definitivo.
 - Todo lo que depende de la institución: sílabos reales (D-03), proveedor y presupuesto (D-07), política de datos (D-08).

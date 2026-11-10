@@ -531,7 +531,7 @@ validados por el tutor y Moodle local de desarrollo.
 - [ ] Monitoreo: métricas, trazas, alertas de errores y de costo de IA. **Parcial:** hecho `check-health.sh` (backend, contenedores, antigüedad de la copia y disco) y la rotación de logs; faltan métricas, trazas y el costo de IA (dependen del proveedor).
 - [x] Procedimiento de incidentes y brechas de datos ([`docs/operacion/procedimiento-incidentes.md`](operacion/procedimiento-incidentes.md)).
 - [x] Manual de instalación y operación ([`docs/operacion/instalacion-y-operacion.md`](operacion/instalacion-y-operacion.md)).
-- [ ] Manual del docente y capacitación. **Parcial:** hechos el [manual del docente](user-manual/manual-docente.md), el [manual del administrador](user-manual/manual-administrador.md) y el [guion de capacitación](user-manual/capacitacion.md); falta impartirla (piloto) y tomar sus capturas.
+- [ ] Manual del docente y capacitación. **Parcial:** hechos el [manual del docente](user-manual/manual-docente.md), el [manual del administrador](user-manual/manual-administrador.md) y el [guion de capacitación](user-manual/capacitacion.md); falta impartirla (piloto). Las capturas del producto ya están en `docs/capturas/` ([pruebas de pantalla](resultados/pruebas-de-pantalla.md)).
 - [ ] README final según `CLAUDE.md`.
 - [x] Capítulos técnicos de la tesis (`docs/thesis/`): arquitectura, privacidad y seguridad, IA y evaluación, pruebas y resultados. Borradores que se completan con el levantamiento y el piloto.
 - [ ] Merge `develop` → `main` con `--no-ff` y etiqueta `v1.0.0`.

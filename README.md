@@ -65,6 +65,21 @@ gestionan la plataforma.
 | <img width="420" src="docs/capturas/asistente-conexion.jpg" alt="Página del asistente en Moodle conectada al backend"> | <img width="420" src="docs/capturas/carga-silabo.jpg" alt="Sílabo escaneado procesado con OCR en la página del asistente"> |
 | <sub>El docente del curso ve la conexión con el backend y sus permisos (Moodle local, datos sintéticos).</sub>         | <sub>Un sílabo escaneado sintético se procesó con OCR y quedó marcado para revisión.</sub>                                 |
 
+Capturas tomadas en un navegador real (Chromium) con Moodle 5.1 local, el modelo de IA real y datos sintéticos:
+
+| Pantalla                                                                                                                                            | Pantalla                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| <img width="420" src="docs/capturas/chat-pendientes.jpg" alt="Chat con respuesta del modelo real y fuentes">                                        | <img width="420" src="docs/capturas/analitica-curso.jpg" alt="Analítica del curso con indicadores y señales">                      |
+| <sub>Respuesta del asistente (Gemini, datos sintéticos): cuenta las entregas por calificar, nombra las actividades y cita fuentes y criterio.</sub> | <sub>Indicadores con su definición y señales para revisar; una señal no es un diagnóstico y muestra por qué aparece.</sub>         |
+| <img width="420" src="docs/capturas/editor-extraccion.jpg" alt="Editor de la estructura extraída del sílabo">                                       | <img width="420" src="docs/capturas/propuesta-curso.jpg" alt="Propuesta de curso editable antes de publicar">                      |
+| <sub>Estructura extraída de un sílabo ficticio, con la fuente de cada campo y los campos dudosos marcados.</sub>                                    | <sub>Propuesta de curso: nada se crea en Moodle hasta que el docente la aprueba y confirma la publicación.</sub>                   |
+| <img width="420" src="docs/capturas/actividades-y-unidades.jpg" alt="Relación entre actividades y unidades del sílabo">                             | <img width="420" src="docs/capturas/error-503-servicio-no-disponible.jpg" alt="Aviso cuando el servicio de IA no está disponible"> |
+| <sub>Relación de cada actividad del curso con su unidad y sus resultados de aprendizaje.</sub>                                                      | <sub>Si el proveedor de IA falla (503), el aviso lo dice y la pregunta vuelve al cuadro para reenviarla.</sub>                     |
+| <img width="420" src="docs/capturas/error-429-limite-de-uso.jpg" alt="Aviso de límite de uso alcanzado">                                            | <img width="420" src="docs/capturas/respuesta-interrumpida.jpg" alt="Respuesta interrumpida por el docente">                       |
+| <sub>Al alcanzar el límite de uso (429) se indica cuánto esperar, en horas o minutos.</sub>                                                         | <sub>Si el docente detiene la respuesta, se muestra como interrumpida y puede estar incompleta.</sub>                              |
+| <img width="420" src="docs/capturas/administracion-auditoria.jpg" alt="Pantalla de administración: auditoría">                                      | <img width="420" src="docs/capturas/administracion-reglas.jpg" alt="Pantalla de administración: reglas de dificultad">             |
+| <sub>Auditoría para administradores: acciones, usuarios y resultados, sin nombres, notas ni texto de mensajes.</sub>                                | <sub>Reglas de dificultad por institución o por curso, con su valor por defecto.</sub>                                             |
+
 ---
 
 ## ✨ Características
