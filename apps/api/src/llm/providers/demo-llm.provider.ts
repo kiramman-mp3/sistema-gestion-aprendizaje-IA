@@ -28,6 +28,9 @@ export class DemoLlmProvider extends LlmProvider {
   readonly name = "demo";
 
   async generateStructured(request: LlmProviderRequest): Promise<LlmProviderResponse> {
+    if (request.schemaName === "pedagogical_recommendation_v1") {
+      return this.demoRecommendation(request);
+    }
     if (request.schemaName !== "syllabus_extraction_v1") {
       throw new LlmError(
         "AI_PROVIDER_UNAVAILABLE",
@@ -35,6 +38,29 @@ export class DemoLlmProvider extends LlmProvider {
       );
     }
     const output = buildSyllabusExtraction();
+    return {
+      output,
+      model: "demo-1",
+      usage: {
+        inputTokens: estimateTokens(request.system) + estimateTokens(request.prompt),
+        outputTokens: estimateTokens(JSON.stringify(output)),
+      },
+    };
+  }
+
+  /** Recomendación de ejemplo, en lenguaje neutro: sirve para ver el flujo, no para decidir nada. */
+  private async demoRecommendation(request: LlmProviderRequest): Promise<LlmProviderResponse> {
+    const output = {
+      evidenceSummary: [`${DEMO_NOTICE} Resumen de ejemplo de las evidencias disponibles.`],
+      strengths: [],
+      difficulties: [],
+      missingInformation: [],
+      strategies: [
+        "Revisar con el estudiante las actividades pendientes y acordar una fecha de entrega.",
+      ],
+      reinforcementActivities: [],
+      followUpIndicators: ["Entregas de las próximas dos semanas."],
+    };
     return {
       output,
       model: "demo-1",
