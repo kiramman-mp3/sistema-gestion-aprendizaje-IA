@@ -5,6 +5,7 @@ on:
     branches: [main, develop, "feature/**", "fix/**", "refactor/**", "chore/**", "docs/**", "ci/**"]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
 permissions:
   contents: read
