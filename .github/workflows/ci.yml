@@ -100,6 +100,11 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Instalar la configuración regional que pide PHPUnit de Moodle
+        run: |
+          sudo locale-gen en_AU.UTF-8
+          sudo update-locale
+
       - name: Instalar moodle-plugin-ci
         run: |
           composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
