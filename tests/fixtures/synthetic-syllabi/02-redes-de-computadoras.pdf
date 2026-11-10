@@ -1,0 +1,116 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 576 >>
+stream
+BT /F1 16 Tf 72 720 Td (UNIVERSIDAD ANDINA FICTICIA) Tj ET
+BT /F1 10 Tf 72 696 Td (FACULTAD DE: CIENCIAS DE LA INGENIERIA \(INSTITUCION FICTICIA PARA PRUEBAS\)) Tj ET
+BT /F1 10 Tf 72 682 Td (CARRERA DE: Software MODALIDAD PRESENCIAL) Tj ET
+BT /F1 16 Tf 72 668 Td (PROGRAMA ANALITICO REDES DE COMPUTADORAS) Tj ET
+BT /F1 10 Tf 72 644 Td (NIVEL CUARTO ENERO 2027 - JUNIO 2027) Tj ET
+BT /F1 10 Tf 72 630 Td (RODRIGO VILLACÍS HEREDIA) Tj ET
+BT /F1 10 Tf 72 616 Td (Documento sintetico generado para pruebas. No describe un curso real.) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 1/3) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 3192 >>
+stream
+BT /F1 14 Tf 72 720 Td (I. INFORMACIÓN GENERAL) Tj ET
+BT /F1 10 Tf 72 698 Td (Nombre de la asignatura: REDES DE COMPUTADORAS) Tj ET
+BT /F1 10 Tf 72 684 Td (Código: UAF-FCI-SF-MP-UP-02-01) Tj ET
+BT /F1 10 Tf 72 670 Td (Nivel: CUARTO Créditos/Horas: 4) Tj ET
+BT /F1 10 Tf 72 656 Td (Total de horas de aprendizaje en el ciclo: 144) Tj ET
+BT /F1 14 Tf 72 642 Td (II. OBJETIVOS) Tj ET
+BT /F1 12 Tf 72 620 Td (Objetivo general de la asignatura) Tj ET
+BT /F1 10 Tf 72 601 Td (Comprender el funcionamiento de las redes de datos y configurar servicios básicos sobre) Tj ET
+BT /F1 10 Tf 72 587 Td (la pila TCP/IP.) Tj ET
+BT /F1 12 Tf 72 573 Td (Objetivos específicos de la asignatura) Tj ET
+BT /F1 10 Tf 72 554 Td (1.- Identifica las capas de una red y la función de cada una) Tj ET
+BT /F1 10 Tf 72 540 Td (2.- Diseña un plan de direccionamiento para una red local) Tj ET
+BT /F1 10 Tf 72 526 Td (3.- Configura el enrutamiento entre redes simples) Tj ET
+BT /F1 10 Tf 72 512 Td (4.- Despliega servicios de red básicos y verifica su funcionamiento) Tj ET
+BT /F1 10 Tf 72 498 Td (5.- Aplica medidas básicas de protección a una red) Tj ET
+BT /F1 14 Tf 72 484 Td (III. CONTENIDO) Tj ET
+BT /F1 12 Tf 72 462 Td (U.1 Fundamentos de redes \(29 horas\)) Tj ET
+BT /F1 10 Tf 72 443 Td (Contenidos mínimos: Modelo OSI y TCP/IP; Medios de transmisión; Topologías.) Tj ET
+BT /F1 10 Tf 72 429 Td (Resultado de aprendizaje: Identifica las capas de una red y la función de cada una.) Tj ET
+BT /F1 12 Tf 72 415 Td (U.2 Direccionamiento IP \(29 horas\)) Tj ET
+BT /F1 10 Tf 72 396 Td (Contenidos mínimos: Direcciones IPv4; Subredes; Introducción a IPv6.) Tj ET
+BT /F1 10 Tf 72 382 Td (Resultado de aprendizaje: Diseña un plan de direccionamiento para una red local.) Tj ET
+BT /F1 12 Tf 72 368 Td (U.3 Enrutamiento y conmutación \(29 horas\)) Tj ET
+BT /F1 10 Tf 72 349 Td (Contenidos mínimos: Tablas de enrutamiento; Protocolos de enrutamiento; VLAN.) Tj ET
+BT /F1 10 Tf 72 335 Td (Resultado de aprendizaje: Configura el enrutamiento entre redes simples.) Tj ET
+BT /F1 12 Tf 72 321 Td (U.4 Servicios de red \(29 horas\)) Tj ET
+BT /F1 10 Tf 72 302 Td (Contenidos mínimos: DNS; DHCP; HTTP y correo electrónico.) Tj ET
+BT /F1 10 Tf 72 288 Td (Resultado de aprendizaje: Despliega servicios de red básicos y verifica su) Tj ET
+BT /F1 10 Tf 72 274 Td (funcionamiento.) Tj ET
+BT /F1 12 Tf 72 260 Td (U.5 Seguridad básica \(29 horas\)) Tj ET
+BT /F1 10 Tf 72 241 Td (Contenidos mínimos: Cortafuegos; Listas de control de acceso; VPN.) Tj ET
+BT /F1 10 Tf 72 227 Td (Resultado de aprendizaje: Aplica medidas básicas de protección a una red.) Tj ET
+BT /F1 10 Tf 72 213 Td (Total de horas: 144) Tj ET
+BT /F1 14 Tf 72 199 Td (IV. METODOLOGÍA) Tj ET
+BT /F1 10 Tf 72 177 Td (Se aplicarán los métodos, técnicas y estrategias siguientes, con evaluación continua y) Tj ET
+BT /F1 10 Tf 72 163 Td (formativa:) Tj ET
+BT /F1 10 Tf 72 149 Td (- Aprendizaje Basado en Problemas) Tj ET
+BT /F1 10 Tf 72 135 Td (- Aprendizaje Basado en Proyectos) Tj ET
+BT /F1 10 Tf 72 121 Td (- Método de Caso) Tj ET
+BT /F1 10 Tf 72 107 Td (- Método Expositivo) Tj ET
+BT /F1 14 Tf 72 93 Td (V. PROCEDIMIENTOS DE EVALUACIÓN) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 2/3) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 1076 >>
+stream
+BT /F1 10 Tf 72 720 Td (APRENDIZAJE EN CONTACTO CON EL DOCENTE: 35%) Tj ET
+BT /F1 10 Tf 72 706 Td (APRENDIZAJE PRÁCTICO EXPERIMENTAL: 35%) Tj ET
+BT /F1 10 Tf 72 692 Td (APRENDIZAJE AUTÓNOMO: 30%) Tj ET
+BT /F1 14 Tf 72 678 Td (VI. BIBLIOGRAFÍA) Tj ET
+BT /F1 12 Tf 72 656 Td (BIBLIOGRAFÍA BÁSICA) Tj ET
+BT /F1 10 Tf 72 637 Td (Montalvo SuÃ¡rez, P. 2019 Guía de estudio aplicada Ediciones del Sur Ficticias Físico) Tj ET
+BT /F1 10 Tf 72 623 Td (Reinoso Cabrera, L. 2023 Casos y ejercicios resueltos Universidad Andina Ficticia) Tj ET
+BT /F1 10 Tf 72 609 Td (Virtual) Tj ET
+BT /F1 12 Tf 72 595 Td (BIBLIOGRAFÍA COMPLEMENTARIA) Tj ET
+BT /F1 10 Tf 72 576 Td (Paredes Ortiz, J. 2018 Manual de laboratorio Editorial Andina Ficticia Físico) Tj ET
+BT /F1 10 Tf 72 562 Td (Salazar Beltrán, M. 2022 Buenas prácticas en la industria Ediciones del Sur Ficticias) Tj ET
+BT /F1 10 Tf 72 548 Td (Virtual) Tj ET
+BT /F1 14 Tf 72 534 Td (VII. VALIDACIÓN DEL PROGRAMA ANALÍTICO) Tj ET
+BT /F1 10 Tf 72 512 Td (Fecha de elaboración: 31 de julio de 2026) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 3/3) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000851 00000 n 
+0000000977 00000 n 
+0000004221 00000 n 
+0000004347 00000 n 
+0000005475 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+5601
+%%EOF

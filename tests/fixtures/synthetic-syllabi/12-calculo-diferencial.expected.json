@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "CALCULO DIFERENCIAL",
+    "code": "UAF-FCI-SF-MP-UP-12-01",
+    "period": "ENERO 2027 - JUNIO 2027",
+    "teacher": "HERNÁN BASTIDAS POZO",
+    "generalObjective": "Resolver problemas de variación y optimización con los conceptos del cálculo diferencial."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Calcula límites y analiza la continuidad de funciones"
+    },
+    {
+      "id": "RA2",
+      "description": "Deriva funciones de una variable con las reglas básicas"
+    },
+    {
+      "id": "RA3",
+      "description": "Resuelve problemas de optimización y razones de cambio"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "ENERO 2027 - JUNIO 2027",
+      "weight": null,
+      "units": [
+        {
+          "title": "Límites y continuidad",
+          "topics": ["Noción de límite", "Propiedades", "Continuidad"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": "2027-01-03",
+          "endDate": "2027-01-27",
+          "activities": []
+        },
+        {
+          "title": "La derivada",
+          "topics": ["Definición", "Reglas de derivación", "Regla de la cadena"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": "2027-01-31",
+          "endDate": "2027-02-24",
+          "activities": []
+        },
+        {
+          "title": "Aplicaciones de la derivada",
+          "topics": ["Máximos y mínimos", "Razones de cambio", "Optimización"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": "2027-02-28",
+          "endDate": "2027-03-24",
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso",
+    "Método Expositivo",
+    "Aprendizaje Colaborativo"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 40
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 40
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 20
+    }
+  ],
+  "bibliography": [
+    "Cevallos Mena, R. (2020). Introducción a los fundamentos. Editorial Andina Ficticia.",
+    "Valdivieso Ramos, E. (2021). Fundamentos prácticos de la asignatura. Editorial Andina Ficticia.",
+    "Montalvo Suárez, P. (2019). Guía de estudio aplicada. Ediciones del Sur Ficticias.",
+    "Reinoso Cabrera, L. (2023). Casos y ejercicios resueltos. Universidad Andina Ficticia.",
+    "Paredes Ortiz, J. (2018). Manual de laboratorio. Editorial Andina Ficticia."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

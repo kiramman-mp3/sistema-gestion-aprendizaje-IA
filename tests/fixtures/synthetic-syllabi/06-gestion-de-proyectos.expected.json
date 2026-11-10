@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "GESTION DE PROYECTOS DE SOFTWARE",
+    "code": "UAF-FCI-SF-MP-UP-06-01",
+    "period": "ENERO 2027 - JUNIO 2027",
+    "teacher": "HERNÁN BASTIDAS POZO",
+    "generalObjective": "Planificar, ejecutar y controlar proyectos de software con herramientas de gestión reconocidas."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Define el alcance de un proyecto de software"
+    },
+    {
+      "id": "RA2",
+      "description": "Elabora el plan de un proyecto con cronograma y riesgos"
+    },
+    {
+      "id": "RA3",
+      "description": "Controla el avance de un proyecto con indicadores"
+    },
+    {
+      "id": "RA4",
+      "description": "Documenta las lecciones aprendidas de un proyecto"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "ENERO 2027 - JUNIO 2027",
+      "weight": null,
+      "units": [
+        {
+          "title": "Inicio y alcance",
+          "topics": ["Acta de constitución", "Interesados", "Estructura de desglose del trabajo"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": "2027-01-03",
+          "endDate": "2027-01-27",
+          "activities": []
+        },
+        {
+          "title": "Planificación",
+          "topics": ["Cronograma", "Estimación de esfuerzo", "Gestión de riesgos"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": "2027-01-31",
+          "endDate": "2027-02-24",
+          "activities": []
+        },
+        {
+          "title": "Ejecución y control",
+          "topics": ["Seguimiento del avance", "Gestión de cambios", "Indicadores de valor ganado"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": "2027-02-28",
+          "endDate": "2027-03-24",
+          "activities": []
+        },
+        {
+          "title": "Cierre y lecciones aprendidas",
+          "topics": ["Cierre administrativo", "Retrospectivas"],
+          "learningOutcomeIds": ["RA4"],
+          "startDate": "2027-03-28",
+          "endDate": "2027-04-21",
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso",
+    "Método Expositivo",
+    "Aprendizaje Colaborativo"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 40
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 40
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 20
+    }
+  ],
+  "bibliography": [
+    "Cevallos Mena, R. (2020). Introducción a los fundamentos. Editorial Andina Ficticia.",
+    "Valdivieso Ramos, E. (2021). Fundamentos prácticos de la asignatura. Editorial Andina Ficticia.",
+    "Montalvo Suárez, P. (2019). Guía de estudio aplicada. Ediciones del Sur Ficticias.",
+    "Reinoso Cabrera, L. (2023). Casos y ejercicios resueltos. Universidad Andina Ficticia.",
+    "Paredes Ortiz, J. (2018). Manual de laboratorio. Editorial Andina Ficticia."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

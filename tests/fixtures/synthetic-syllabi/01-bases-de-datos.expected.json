@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "BASES DE DATOS",
+    "code": "UAF-FCI-SF-MP-UP-01-01",
+    "period": "JULIO 2026 - DICIEMBRE 2026",
+    "teacher": "MARCELA QUISPE ANDRADE",
+    "generalObjective": "Diseñar, implementar y consultar bases de datos relacionales que den soporte a las necesidades de información de una organización."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Modela un problema de información con el modelo entidad-relación y lo normaliza"
+    },
+    {
+      "id": "RA2",
+      "description": "Escribe consultas SQL que responden preguntas de negocio"
+    },
+    {
+      "id": "RA3",
+      "description": "Explica cómo el motor garantiza la consistencia ante operaciones simultáneas"
+    },
+    {
+      "id": "RA4",
+      "description": "Mejora el rendimiento de una base de datos y define su plan de respaldo"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "JULIO 2026 - DICIEMBRE 2026",
+      "weight": null,
+      "units": [
+        {
+          "title": "Modelo relacional",
+          "topics": [
+            "Entidades y relaciones",
+            "Claves primarias y foráneas",
+            "Normalización hasta la tercera forma"
+          ],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Lenguaje SQL",
+          "topics": [
+            "Consultas con SELECT",
+            "Combinación de tablas",
+            "Funciones de agregación",
+            "Subconsultas"
+          ],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Transacciones y concurrencia",
+          "topics": ["Propiedades ACID", "Bloqueos", "Niveles de aislamiento"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Administración y rendimiento",
+          "topics": ["Índices", "Planes de ejecución", "Respaldo y recuperación"],
+          "learningOutcomeIds": ["RA4"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 40
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 30
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 30
+    }
+  ],
+  "bibliography": [
+    "Valdivieso Ramos, E. (2021). Fundamentos prácticos de la asignatura. Editorial Andina Ficticia.",
+    "Montalvo Suárez, P. (2019). Guía de estudio aplicada. Ediciones del Sur Ficticias.",
+    "Reinoso Cabrera, L. (2023). Casos y ejercicios resueltos. Universidad Andina Ficticia."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

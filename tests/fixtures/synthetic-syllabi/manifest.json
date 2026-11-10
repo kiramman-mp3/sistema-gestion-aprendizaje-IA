@@ -1,0 +1,137 @@
+{
+  "synthetic": true,
+  "syllabi": [
+    {
+      "slug": "01-bases-de-datos",
+      "file": "01-bases-de-datos.pdf",
+      "format": "pdf",
+      "units": 4,
+      "weights": [40, 30, 30],
+      "hasDates": false,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": true
+    },
+    {
+      "slug": "02-redes-de-computadoras",
+      "file": "02-redes-de-computadoras.pdf",
+      "format": "pdf",
+      "units": 5,
+      "weights": [35, 35, 30],
+      "hasDates": false,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": true,
+      "draft": false
+    },
+    {
+      "slug": "03-estadistica-aplicada",
+      "file": "03-estadistica-aplicada.pdf",
+      "format": "pdf",
+      "units": 4,
+      "weights": [30, 30, 40],
+      "hasDates": true,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": false
+    },
+    {
+      "slug": "04-programacion-web",
+      "file": "04-programacion-web.pdf",
+      "format": "pdf",
+      "units": 4,
+      "weights": [40, 30, 30],
+      "hasDates": false,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": true
+    },
+    {
+      "slug": "05-etica-profesional",
+      "file": "05-etica-profesional.pdf",
+      "format": "pdf",
+      "units": 3,
+      "weights": [50, 25, 25],
+      "hasDates": false,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": false
+    },
+    {
+      "slug": "06-gestion-de-proyectos",
+      "file": "06-gestion-de-proyectos.pdf",
+      "format": "pdf",
+      "units": 4,
+      "weights": [40, 40, 20],
+      "hasDates": true,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": false
+    },
+    {
+      "slug": "07-inteligencia-artificial",
+      "file": "07-inteligencia-artificial.pdf",
+      "format": "pdf",
+      "units": 5,
+      "weights": [40, 30, 30],
+      "hasDates": false,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": true,
+      "draft": true
+    },
+    {
+      "slug": "08-sistemas-operativos",
+      "file": "08-sistemas-operativos.pdf",
+      "format": "pdf",
+      "units": 3,
+      "weights": [35, 35, 30],
+      "hasDates": false,
+      "hasGeneralObjective": false,
+      "encodingErrorsInBibliography": false,
+      "draft": false
+    },
+    {
+      "slug": "09-seguridad-informatica",
+      "file": "09-seguridad-informatica.docx",
+      "format": "docx",
+      "units": 4,
+      "weights": [30, 30, 40],
+      "hasDates": true,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": false
+    },
+    {
+      "slug": "10-interaccion-humano-computador",
+      "file": "10-interaccion-humano-computador.docx",
+      "format": "docx",
+      "units": 3,
+      "weights": [40, 30, 30],
+      "hasDates": false,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": true
+    },
+    {
+      "slug": "11-arquitectura-de-software",
+      "file": "11-arquitectura-de-software.pdf",
+      "format": "scan",
+      "units": 4,
+      "weights": [50, 25, 25],
+      "hasDates": false,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": false
+    },
+    {
+      "slug": "12-calculo-diferencial",
+      "file": "12-calculo-diferencial.pdf",
+      "format": "scan",
+      "units": 3,
+      "weights": [40, 40, 20],
+      "hasDates": true,
+      "hasGeneralObjective": true,
+      "encodingErrorsInBibliography": false,
+      "draft": false
+    }
+  ]
+}

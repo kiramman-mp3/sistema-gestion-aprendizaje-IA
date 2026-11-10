@@ -1,0 +1,119 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 584 >>
+stream
+BT /F1 16 Tf 72 720 Td (UNIVERSIDAD ANDINA FICTICIA) Tj ET
+BT /F1 10 Tf 72 696 Td (FACULTAD DE: CIENCIAS DE LA INGENIERIA \(INSTITUCION FICTICIA PARA PRUEBAS\)) Tj ET
+BT /F1 10 Tf 72 682 Td (CARRERA DE: Software MODALIDAD PRESENCIAL) Tj ET
+BT /F1 16 Tf 72 668 Td (PROGRAMA ANALITICO GESTION DE PROYECTOS DE SOFTWARE) Tj ET
+BT /F1 10 Tf 72 644 Td (NIVEL SEPTIMO ENERO 2027 - JUNIO 2027) Tj ET
+BT /F1 10 Tf 72 630 Td (HERNÁN BASTIDAS POZO) Tj ET
+BT /F1 10 Tf 72 616 Td (Documento sintetico generado para pruebas. No describe un curso real.) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 1/3) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 3143 >>
+stream
+BT /F1 14 Tf 72 720 Td (I. INFORMACIÓN GENERAL) Tj ET
+BT /F1 10 Tf 72 698 Td (Nombre de la asignatura: GESTION DE PROYECTOS DE SOFTWARE) Tj ET
+BT /F1 10 Tf 72 684 Td (Código: UAF-FCI-SF-MP-UP-06-01) Tj ET
+BT /F1 10 Tf 72 670 Td (Nivel: SEPTIMO Créditos/Horas: 4) Tj ET
+BT /F1 10 Tf 72 656 Td (Total de horas de aprendizaje en el ciclo: 96) Tj ET
+BT /F1 14 Tf 72 642 Td (II. OBJETIVOS) Tj ET
+BT /F1 12 Tf 72 620 Td (Objetivo general de la asignatura) Tj ET
+BT /F1 10 Tf 72 601 Td (Planificar, ejecutar y controlar proyectos de software con herramientas de gestión) Tj ET
+BT /F1 10 Tf 72 587 Td (reconocidas.) Tj ET
+BT /F1 12 Tf 72 573 Td (Objetivos específicos de la asignatura) Tj ET
+BT /F1 10 Tf 72 554 Td (1.- Define el alcance de un proyecto de software) Tj ET
+BT /F1 10 Tf 72 540 Td (2.- Elabora el plan de un proyecto con cronograma y riesgos) Tj ET
+BT /F1 10 Tf 72 526 Td (3.- Controla el avance de un proyecto con indicadores) Tj ET
+BT /F1 10 Tf 72 512 Td (4.- Documenta las lecciones aprendidas de un proyecto) Tj ET
+BT /F1 14 Tf 72 498 Td (III. CONTENIDO) Tj ET
+BT /F1 12 Tf 72 476 Td (U.1 Inicio y alcance \(24 horas\)) Tj ET
+BT /F1 10 Tf 72 457 Td (Contenidos mínimos: Acta de constitución; Interesados; Estructura de desglose del) Tj ET
+BT /F1 10 Tf 72 443 Td (trabajo.) Tj ET
+BT /F1 10 Tf 72 429 Td (Resultado de aprendizaje: Define el alcance de un proyecto de software.) Tj ET
+BT /F1 10 Tf 72 415 Td (Periodo: del 03/01/2027 al 27/01/2027.) Tj ET
+BT /F1 12 Tf 72 401 Td (U.2 Planificación \(24 horas\)) Tj ET
+BT /F1 10 Tf 72 382 Td (Contenidos mínimos: Cronograma; Estimación de esfuerzo; Gestión de riesgos.) Tj ET
+BT /F1 10 Tf 72 368 Td (Resultado de aprendizaje: Elabora el plan de un proyecto con cronograma y riesgos.) Tj ET
+BT /F1 10 Tf 72 354 Td (Periodo: del 31/01/2027 al 24/02/2027.) Tj ET
+BT /F1 12 Tf 72 340 Td (U.3 Ejecución y control \(24 horas\)) Tj ET
+BT /F1 10 Tf 72 321 Td (Contenidos mínimos: Seguimiento del avance; Gestión de cambios; Indicadores de valor) Tj ET
+BT /F1 10 Tf 72 307 Td (ganado.) Tj ET
+BT /F1 10 Tf 72 293 Td (Resultado de aprendizaje: Controla el avance de un proyecto con indicadores.) Tj ET
+BT /F1 10 Tf 72 279 Td (Periodo: del 28/02/2027 al 24/03/2027.) Tj ET
+BT /F1 12 Tf 72 265 Td (U.4 Cierre y lecciones aprendidas \(24 horas\)) Tj ET
+BT /F1 10 Tf 72 246 Td (Contenidos mínimos: Cierre administrativo; Retrospectivas.) Tj ET
+BT /F1 10 Tf 72 232 Td (Resultado de aprendizaje: Documenta las lecciones aprendidas de un proyecto.) Tj ET
+BT /F1 10 Tf 72 218 Td (Periodo: del 28/03/2027 al 21/04/2027.) Tj ET
+BT /F1 10 Tf 72 204 Td (Total de horas: 96) Tj ET
+BT /F1 14 Tf 72 190 Td (IV. METODOLOGÍA) Tj ET
+BT /F1 10 Tf 72 168 Td (Se aplicarán los métodos, técnicas y estrategias siguientes, con evaluación continua y) Tj ET
+BT /F1 10 Tf 72 154 Td (formativa:) Tj ET
+BT /F1 10 Tf 72 140 Td (- Aprendizaje Basado en Problemas) Tj ET
+BT /F1 10 Tf 72 126 Td (- Aprendizaje Basado en Proyectos) Tj ET
+BT /F1 10 Tf 72 112 Td (- Método de Caso) Tj ET
+BT /F1 10 Tf 72 98 Td (- Método Expositivo) Tj ET
+BT /F1 10 Tf 72 84 Td (- Aprendizaje Colaborativo) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 2/3) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 1261 >>
+stream
+BT /F1 14 Tf 72 720 Td (V. PROCEDIMIENTOS DE EVALUACIÓN) Tj ET
+BT /F1 10 Tf 72 698 Td (APRENDIZAJE EN CONTACTO CON EL DOCENTE: 40%) Tj ET
+BT /F1 10 Tf 72 684 Td (APRENDIZAJE PRÁCTICO EXPERIMENTAL: 40%) Tj ET
+BT /F1 10 Tf 72 670 Td (APRENDIZAJE AUTÓNOMO: 20%) Tj ET
+BT /F1 14 Tf 72 656 Td (VI. BIBLIOGRAFÍA) Tj ET
+BT /F1 12 Tf 72 634 Td (BIBLIOGRAFÍA BÁSICA) Tj ET
+BT /F1 10 Tf 72 615 Td (Cevallos Mena, R. 2020 Introducción a los fundamentos Editorial Andina Ficticia Físico) Tj ET
+BT /F1 10 Tf 72 601 Td (Valdivieso Ramos, E. 2021 Fundamentos prácticos de la asignatura Editorial Andina) Tj ET
+BT /F1 10 Tf 72 587 Td (Ficticia Virtual) Tj ET
+BT /F1 12 Tf 72 573 Td (BIBLIOGRAFÍA COMPLEMENTARIA) Tj ET
+BT /F1 10 Tf 72 554 Td (Montalvo Suárez, P. 2019 Guía de estudio aplicada Ediciones del Sur Ficticias Físico) Tj ET
+BT /F1 10 Tf 72 540 Td (Reinoso Cabrera, L. 2023 Casos y ejercicios resueltos Universidad Andina Ficticia) Tj ET
+BT /F1 10 Tf 72 526 Td (Virtual) Tj ET
+BT /F1 10 Tf 72 512 Td (Paredes Ortiz, J. 2018 Manual de laboratorio Editorial Andina Ficticia Físico) Tj ET
+BT /F1 14 Tf 72 498 Td (VII. VALIDACIÓN DEL PROGRAMA ANALÍTICO) Tj ET
+BT /F1 10 Tf 72 476 Td (Fecha de elaboración: 31 de julio de 2026) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 3/3) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000859 00000 n 
+0000000985 00000 n 
+0000004180 00000 n 
+0000004306 00000 n 
+0000005619 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+5745
+%%EOF
