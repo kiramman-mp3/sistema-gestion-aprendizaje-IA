@@ -27,11 +27,9 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import { getStrings } from "core/str";
 import { callBackend } from "local_ai_assistant/assistant";
 import * as Model from "local_ai_assistant/extraction_model";
-
-const COMPONENT = "local_ai_assistant";
+import { createStrings, el, uniqueId } from "local_ai_assistant/ui";
 
 /** Strings without parameters. The key is `extraction_<name>`; the map is read as `t.<name>`. */
 const PLAIN_STRINGS = [
@@ -85,79 +83,7 @@ const TEXT_LISTS = [
   ["bibliography", "section_bibliography"],
 ];
 
-let strings = null;
-let nextId = 0;
-
-/**
- * Loads every string once.
- *
- * @returns {Promise<void>}
- */
-const loadStrings = async () => {
-  if (strings) {
-    return;
-  }
-  const requests = [];
-  for (const name of PLAIN_STRINGS) {
-    requests.push({ key: `extraction_${name}`, component: COMPONENT });
-  }
-  for (const [name, properties] of Object.entries(PARAM_STRINGS)) {
-    const param = properties ? Object.fromEntries(properties.map((property) => [property, `{${property}}`])) : "{a}";
-    requests.push({ key: `extraction_${name}`, component: COMPONENT, param });
-  }
-  const texts = await getStrings(requests);
-  strings = {};
-  requests.forEach((request, i) => {
-    strings[request.key.replace(/^extraction_/, "")] = texts[i];
-  });
-};
-
-/**
- * Returns a string with its parameters filled in.
- *
- * @param {string} name String name without the `extraction_` prefix.
- * @param {string|number|Object<string, string|number>} [values] One value for `{$a}`, or an object.
- * @returns {string}
- */
-const str = (name, values) => {
-  const text = strings[name];
-  if (values === undefined) {
-    return text;
-  }
-  if (typeof values === "object") {
-    return Object.entries(values).reduce((result, [key, value]) => result.replaceAll(`{${key}}`, String(value)), text);
-  }
-  return text.replaceAll("{a}", String(values));
-};
-
-/**
- * Creates an element.
- *
- * @param {string} tag
- * @param {Object<string, *>} [props] `class`, `text`, `on<event>` handlers and attributes. null, false or
- *     undefined attributes are skipped.
- * @param {...(Node|string|null|undefined|false)} children
- * @returns {HTMLElement}
- */
-const el = (tag, props = {}, ...children) => {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(props)) {
-    if (value === null || value === undefined || value === false) {
-      continue;
-    }
-    if (key === "class") {
-      node.className = value;
-    } else if (key === "text") {
-      node.textContent = value;
-    } else if (key.startsWith("on")) {
-      node.addEventListener(key.slice(2), value);
-    } else {
-      node.setAttribute(key, value === true ? "" : String(value));
-    }
-  }
-  node.append(...children.flat().filter((child) => child !== null && child !== undefined && child !== false));
-  return node;
-};
+const { load: loadStrings, str } = createStrings("extraction", PLAIN_STRINGS, PARAM_STRINGS);
 
 /**
  * Editor state and behaviour for one mounted syllabus.
@@ -214,8 +140,7 @@ class Editor {
   }
 
   uid(prefix) {
-    nextId += 1;
-    return `local_ai_assistant-${prefix}-${nextId}`;
+    return uniqueId(prefix);
   }
 
   // -------------------------------------------------------------------------------------------
