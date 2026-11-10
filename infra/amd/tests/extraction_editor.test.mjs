@@ -50,6 +50,7 @@ beforeEach(() => {
   document.body.innerHTML = `
     <div data-region="local_ai_assistant">
       <section class="d-none" data-region="extraction-editor"></section>
+      <section class="d-none" data-region="proposal-preview"></section>
     </div>`;
 });
 
@@ -273,5 +274,60 @@ describe("guardado", () => {
     click(buttons("Save review")[0]);
 
     expect(backend.calls.some((call) => call.method === "PUT")).toBe(false);
+  });
+});
+
+describe("generar la propuesta", () => {
+  const proposalButton = () => buttons("Generate the course proposal")[0];
+
+  it("solo se ofrece sobre una versión que el docente guardó, sin cambios pendientes", async () => {
+    await mount();
+    expect(proposalButton().classList.contains("d-none")).toBe(true);
+
+    type(field("course.name"), "Otro nombre");
+    click(buttons("Save review")[0]);
+    await vi.waitFor(() => expect(root().textContent).toContain("Review saved as version 2."));
+    expect(proposalButton().classList.contains("d-none")).toBe(false);
+
+    type(field("course.name"), "Otro nombre más");
+    expect(proposalButton().classList.contains("d-none")).toBe(true);
+  });
+
+  it("pide la propuesta con la versión guardada y la muestra", async () => {
+    await mount();
+    type(field("course.name"), "Otro nombre");
+    click(buttons("Save review")[0]);
+    await vi.waitFor(() => expect(root().textContent).toContain("Review saved as version 2."));
+    const previous = backend.handler;
+    backend.handler = async (call) => {
+      if (call.method === "POST" && call.path === "/proposals") {
+        return {
+          id: "11111111-1111-4111-8111-111111111111",
+          courseId: 2,
+          syllabusId: SYLLABUS_ID,
+          extractionVersion: 2,
+          status: "NEEDS_REVIEW",
+          approvedBy: null,
+          approvedAt: null,
+          items: [],
+          issues: [],
+        };
+      }
+      return previous(call);
+    };
+
+    click(proposalButton());
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-region="proposal-preview"]').textContent).toContain(
+        "Course proposal",
+      ),
+    );
+
+    expect(
+      backend.calls.find((call) => call.method === "POST" && call.path === "/proposals").json,
+    ).toEqual({
+      syllabusId: SYLLABUS_ID,
+      extractionVersion: 2,
+    });
   });
 });
