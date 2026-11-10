@@ -150,12 +150,39 @@ Los pasos deben seguir este orden.
 
 `docente3` no tiene acceso a `IS-501-DEMO`: sirve para la prueba SEC-01 (curso ajeno).
 
+### Curso de prueba del asistente
+
+`infra/moodle/cli/seed_curso_prueba.php` crea, aparte, un curso para probar el chat, la analítica y las funciones de
+lectura de punta a punta:
+
+```bash
+MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php /opt/smart-lms/cli/seed_curso_prueba.php
+```
+
+| Elemento      | Detalle                                                                                                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Curso         | `AN-401-PRUEBA`, con finalización habilitada y 5 secciones                                                                                                                                               |
+| Personas      | `prueba_docente` (edición), `prueba_ajeno` (sin matrícula: prueba el rechazo de permisos) y `prueba_est01` a `prueba_est12` con nombres ficticios reconocibles (Carla, Andrés…)                          |
+| Actividades   | 3 tareas, un foro, un cuestionario, una página y una etiqueta                                                                                                                                            |
+| Entregas      | Tarea 1: 9 a tiempo, 2 tardías y 1 sin entrega, todas calificadas. Tarea 2: 1 pendiente de calificar, 3 sin entrega y 8 calificadas. Tarea 3 (vence en 4 días): 3 enviadas, 3 borradores y 6 sin entrega |
+| Notas         | Perfiles alto, medio, con entregas tardías y en descenso; el cuestionario tiene 10 notas y la del estudiante 04 está oculta                                                                              |
+| Finalización  | 46 actividades completadas (seguimiento manual)                                                                                                                                                          |
+| Último acceso | 11 estudiantes con acceso (3 con más de 14 días) y el 11 nunca entró                                                                                                                                     |
+| Contraseña    | `Demo#2026` por defecto (`--password=...`)                                                                                                                                                               |
+
+Los plazos son relativos a hoy. Con `--recrear` se borra el curso y se vuelve a crear; los usuarios `prueba_*` se
+conservan. Sin esa opción, si el curso ya existe, el script se detiene.
+
+Con el backend en marcha (`AI_PROVIDER=mock pnpm --filter @smart-lms/api dev`), `pnpm smoke:asistente` comprueba el
+chat y la analítica contra este curso.
+
 ## Usuario de integración
 
 `infra/moodle/cli/setup_integration.php` aplica mínimo privilegio:
 
 - Usuario `ai_integration` con autenticación `webservice` (no puede entrar por la web).
-- Rol `smartlmsintegration` en contexto de sistema con solo `webservice/rest:use` y `local/ai_assistant:checkaccess` (para preguntar a Moodle qué puede hacer un docente en un curso).
+- Rol `smartlmsintegration` en contexto de sistema con solo `webservice/rest:use`, `local/ai_assistant:checkaccess` (preguntar a Moodle qué puede hacer un docente en un curso), `local/ai_assistant:createcontent` (publicar) y `local/ai_assistant:readdata` (las [lecturas de Moodle](../architecture/lecturas-moodle.md)).
+- Tras subir `$plugin->version` hay que ejecutar `upgrade.php` y luego `setup_integration.php`, para que el rol reciba las capacidades nuevas.
 - Autorizado únicamente en el servicio restringido `local_ai_assistant_integration`, cuyas funciones define `db/services.php` del plugin.
 
 Cada sprint que agregue funciones al servicio debe añadir también las capacidades que esas funciones
