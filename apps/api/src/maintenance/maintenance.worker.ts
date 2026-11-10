@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { Queue, Worker, type Job } from "bullmq";
 import type { Env } from "../config/env";
 import { bullConnection } from "../queue/queue.constants";
+import { ConversationMaintenanceService } from "./conversation-maintenance.service";
 import { SyllabusMaintenanceService } from "./syllabus-maintenance.service";
 
 export const MAINTENANCE_QUEUE = "maintenance";
@@ -19,6 +20,7 @@ export class MaintenanceWorker implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly maintenance: SyllabusMaintenanceService,
+    private readonly conversations: ConversationMaintenanceService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -31,11 +33,16 @@ export class MaintenanceWorker implements OnModuleInit, OnModuleDestroy {
     this.worker.on("error", (error) => this.logger.error(`Mantenimiento: ${error.message}`));
     try {
       const template = { opts: { removeOnComplete: 10, removeOnFail: 50 } };
-      // Todos los días a las 03:00 (hora del servidor) y cada 5 minutos, respectivamente.
+      // Los borrados, todos los días a las 03:00 y a las 03:10 (hora del servidor); el reintento, cada 5 minutos.
       await this.queue.upsertJobScheduler(
         "purge-expired-files",
         { pattern: "0 3 * * *" },
         { name: "purge-expired-files", ...template },
+      );
+      await this.queue.upsertJobScheduler(
+        "purge-expired-conversations",
+        { pattern: "10 3 * * *" },
+        { name: "purge-expired-conversations", ...template },
       );
       await this.queue.upsertJobScheduler(
         "requeue-stalled-uploads",
@@ -49,6 +56,9 @@ export class MaintenanceWorker implements OnModuleInit, OnModuleDestroy {
 
   private async run(name: string): Promise<number> {
     if (name === "purge-expired-files") return this.maintenance.purgeExpiredFiles();
+    if (name === "purge-expired-conversations") {
+      return this.conversations.purgeExpiredConversations();
+    }
     if (name === "requeue-stalled-uploads") return this.maintenance.requeueStalledUploads();
     throw new Error(`Tarea de mantenimiento desconocida: ${name}`);
   }
