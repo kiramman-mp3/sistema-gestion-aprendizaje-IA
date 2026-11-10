@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "ETICA PROFESIONAL",
+    "code": "UAF-FCI-SF-MP-UP-05-01",
+    "period": "JULIO 2026 - DICIEMBRE 2026",
+    "teacher": "DANIELA CÁRDENAS YÉPEZ",
+    "generalObjective": "Analizar los dilemas éticos de la profesión informática y fundamentar decisiones responsables."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Distingue los principios éticos que orientan el ejercicio profesional"
+    },
+    {
+      "id": "RA2",
+      "description": "Evalúa el tratamiento de datos personales en un sistema de información"
+    },
+    {
+      "id": "RA3",
+      "description": "Argumenta el impacto social de una decisión tecnológica"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "JULIO 2026 - DICIEMBRE 2026",
+      "weight": null,
+      "units": [
+        {
+          "title": "Ética y profesión",
+          "topics": ["Conceptos de ética y moral", "Códigos de conducta profesional"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Privacidad y datos personales",
+          "topics": ["Derechos de las personas", "Tratamiento de datos", "Marco legal vigente"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Responsabilidad social",
+          "topics": ["Impacto de la tecnología", "Propiedad intelectual", "Software libre"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso",
+    "Método Expositivo"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 50
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 25
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 25
+    }
+  ],
+  "bibliography": [
+    "Salazar Beltrán, M. (2022). Buenas prácticas en la industria. Ediciones del Sur Ficticias.",
+    "Cevallos Mena, R. (2020). Introducción a los fundamentos. Editorial Andina Ficticia.",
+    "Valdivieso Ramos, E. (2021). Fundamentos prácticos de la asignatura. Editorial Andina Ficticia.",
+    "Montalvo Suárez, P. (2019). Guía de estudio aplicada. Ediciones del Sur Ficticias."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

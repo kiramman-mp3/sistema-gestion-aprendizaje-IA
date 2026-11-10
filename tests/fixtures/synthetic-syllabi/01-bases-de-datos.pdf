@@ -1,0 +1,115 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 572 >>
+stream
+BT /F1 16 Tf 72 720 Td (UNIVERSIDAD ANDINA FICTICIA) Tj ET
+BT /F1 10 Tf 72 696 Td (FACULTAD DE: CIENCIAS DE LA INGENIERIA \(INSTITUCION FICTICIA PARA PRUEBAS\)) Tj ET
+BT /F1 10 Tf 72 682 Td (CARRERA DE: Software MODALIDAD PRESENCIAL) Tj ET
+BT /F1 16 Tf 72 668 Td (PROGRAMA ANALITICO BASES DE DATOS) Tj ET
+BT /F1 10 Tf 72 644 Td (NIVEL TERCERO JULIO 2026 - DICIEMBRE 2026) Tj ET
+BT /F1 10 Tf 72 630 Td (MARCELA QUISPE ANDRADE) Tj ET
+BT /F1 10 Tf 72 616 Td (Documento sintetico generado para pruebas. No describe un curso real.) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 1/3) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 3295 >>
+stream
+BT /F1 14 Tf 72 720 Td (I. INFORMACIÓN GENERAL) Tj ET
+BT /F1 10 Tf 72 698 Td (Nombre de la asignatura: BASES DE DATOS) Tj ET
+BT /F1 10 Tf 72 684 Td (Código: UAF-FCI-SF-MP-UP-01-01) Tj ET
+BT /F1 10 Tf 72 670 Td (Nivel: TERCERO Créditos/Horas: 4) Tj ET
+BT /F1 10 Tf 72 656 Td (Total de horas de aprendizaje en el ciclo: 192) Tj ET
+BT /F1 14 Tf 72 642 Td (II. OBJETIVOS) Tj ET
+BT /F1 12 Tf 72 620 Td (Objetivo general de la asignatura) Tj ET
+BT /F1 10 Tf 72 601 Td (Diseñar, implementar y consultar bases de datos relacionales que den soporte a las) Tj ET
+BT /F1 10 Tf 72 587 Td (necesidades de información de una organización.) Tj ET
+BT /F1 12 Tf 72 573 Td (Objetivos específicos de la asignatura) Tj ET
+BT /F1 10 Tf 72 554 Td (1.- Modela un problema de información con el modelo entidad-relación y lo normaliza) Tj ET
+BT /F1 10 Tf 72 540 Td (2.- Escribe consultas SQL que responden preguntas de negocio) Tj ET
+BT /F1 10 Tf 72 526 Td (3.- Explica cómo el motor garantiza la consistencia ante operaciones simultáneas) Tj ET
+BT /F1 10 Tf 72 512 Td (4.- Mejora el rendimiento de una base de datos y define su plan de respaldo) Tj ET
+BT /F1 14 Tf 72 498 Td (III. CONTENIDO) Tj ET
+BT /F1 12 Tf 72 476 Td (U.1 Modelo relacional \(48 horas\)) Tj ET
+BT /F1 10 Tf 72 457 Td (Contenidos mínimos: Entidades y relaciones; Claves primarias y foráneas; Normalización) Tj ET
+BT /F1 10 Tf 72 443 Td (hasta la tercera forma.) Tj ET
+BT /F1 10 Tf 72 429 Td (Resultado de aprendizaje: Modela un problema de información con el modelo) Tj ET
+BT /F1 10 Tf 72 415 Td (entidad-relación y lo normaliza.) Tj ET
+BT /F1 12 Tf 72 401 Td (U.2 Lenguaje SQL \(48 horas\)) Tj ET
+BT /F1 10 Tf 72 382 Td (Contenidos mínimos: Consultas con SELECT; Combinación de tablas; Funciones de) Tj ET
+BT /F1 10 Tf 72 368 Td (agregación; Subconsultas.) Tj ET
+BT /F1 10 Tf 72 354 Td (Resultado de aprendizaje: Escribe consultas SQL que responden preguntas de negocio.) Tj ET
+BT /F1 12 Tf 72 340 Td (U.3 Transacciones y concurrencia \(48 horas\)) Tj ET
+BT /F1 10 Tf 72 321 Td (Contenidos mínimos: Propiedades ACID; Bloqueos; Niveles de aislamiento.) Tj ET
+BT /F1 10 Tf 72 307 Td (Resultado de aprendizaje: Explica cómo el motor garantiza la consistencia ante) Tj ET
+BT /F1 10 Tf 72 293 Td (operaciones simultáneas.) Tj ET
+BT /F1 12 Tf 72 279 Td (U.4 Administración y rendimiento \(48 horas\)) Tj ET
+BT /F1 10 Tf 72 260 Td (Contenidos mínimos: Índices; Planes de ejecución; Respaldo y recuperación.) Tj ET
+BT /F1 10 Tf 72 246 Td (Resultado de aprendizaje: Mejora el rendimiento de una base de datos y define su plan de) Tj ET
+BT /F1 10 Tf 72 232 Td (respaldo.) Tj ET
+BT /F1 10 Tf 72 218 Td (Total de horas: 192) Tj ET
+BT /F1 14 Tf 72 204 Td (IV. METODOLOGÍA) Tj ET
+BT /F1 10 Tf 72 182 Td (Se aplicarán los métodos, técnicas y estrategias siguientes, con evaluación continua y) Tj ET
+BT /F1 10 Tf 72 168 Td (formativa:) Tj ET
+BT /F1 10 Tf 72 154 Td (- Aprendizaje Basado en Problemas) Tj ET
+BT /F1 10 Tf 72 140 Td (- Aprendizaje Basado en Proyectos) Tj ET
+BT /F1 10 Tf 72 126 Td (- Método de Caso) Tj ET
+BT /F1 14 Tf 72 112 Td (V. PROCEDIMIENTOS DE EVALUACIÓN) Tj ET
+BT /F1 10 Tf 72 90 Td (APRENDIZAJE EN CONTACTO CON EL DOCENTE: 40%) Tj ET
+BT /F1 10 Tf 72 76 Td (APRENDIZAJE PRÁCTICO EXPERIMENTAL: 30%) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 2/3) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 866 >>
+stream
+BT /F1 10 Tf 72 720 Td (APRENDIZAJE AUTÓNOMO: 30%) Tj ET
+BT /F1 14 Tf 72 706 Td (VI. BIBLIOGRAFÍA) Tj ET
+BT /F1 12 Tf 72 684 Td (BIBLIOGRAFÍA BÁSICA) Tj ET
+BT /F1 10 Tf 72 665 Td (Valdivieso Ramos, E. 2021 Fundamentos prácticos de la asignatura Editorial Andina) Tj ET
+BT /F1 10 Tf 72 651 Td (Ficticia Virtual) Tj ET
+BT /F1 10 Tf 72 637 Td (Montalvo Suárez, P. 2019 Guía de estudio aplicada Ediciones del Sur Ficticias Físico) Tj ET
+BT /F1 12 Tf 72 623 Td (BIBLIOGRAFÍA COMPLEMENTARIA) Tj ET
+BT /F1 10 Tf 72 604 Td (Reinoso Cabrera, L. 2023 Casos y ejercicios resueltos Universidad Andina Ficticia) Tj ET
+BT /F1 10 Tf 72 590 Td (Virtual) Tj ET
+BT /F1 14 Tf 72 576 Td (VII. VALIDACIÓN DEL PROGRAMA ANALÍTICO) Tj ET
+BT /F1 10 Tf 72 554 Td (Fecha de elaboración: 31 de julio de 2026) Tj ET
+BT /F1 10 Tf 72 540 Td (Borrador) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 3/3) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000847 00000 n 
+0000000973 00000 n 
+0000004320 00000 n 
+0000004446 00000 n 
+0000005363 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+5489
+%%EOF

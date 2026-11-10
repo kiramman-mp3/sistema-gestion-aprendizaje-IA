@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "INTERACCION HUMANO COMPUTADOR",
+    "code": "UAF-FCI-SF-MP-UP-10-01",
+    "period": "ENERO 2027 - JUNIO 2027",
+    "teacher": "ESTEBAN MORA CISNEROS",
+    "generalObjective": "Diseñar interfaces usables y accesibles a partir de las necesidades de las personas usuarias."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Evalúa la usabilidad de una interfaz con criterios reconocidos"
+    },
+    {
+      "id": "RA2",
+      "description": "Levanta necesidades de usuarios con técnicas de investigación"
+    },
+    {
+      "id": "RA3",
+      "description": "Prototipa una interfaz y la valida con usuarios"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "ENERO 2027 - JUNIO 2027",
+      "weight": null,
+      "units": [
+        {
+          "title": "Principios de usabilidad",
+          "topics": ["Heurísticas de Nielsen", "Modelos mentales"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Investigación con usuarios",
+          "topics": ["Entrevistas", "Personas", "Mapas de recorrido"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Prototipado y pruebas",
+          "topics": ["Prototipos de baja fidelidad", "Pruebas con usuarios", "Escala SUS"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 40
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 30
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 30
+    }
+  ],
+  "bibliography": [
+    "Paredes Ortiz, J. (2018). Manual de laboratorio. Editorial Andina Ficticia.",
+    "Salazar Beltrán, M. (2022). Buenas prácticas en la industria. Ediciones del Sur Ficticias.",
+    "Cevallos Mena, R. (2020). Introducción a los fundamentos. Editorial Andina Ficticia."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

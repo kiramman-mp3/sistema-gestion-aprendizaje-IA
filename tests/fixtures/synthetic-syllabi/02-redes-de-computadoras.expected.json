@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "REDES DE COMPUTADORAS",
+    "code": "UAF-FCI-SF-MP-UP-02-01",
+    "period": "ENERO 2027 - JUNIO 2027",
+    "teacher": "RODRIGO VILLACÍS HEREDIA",
+    "generalObjective": "Comprender el funcionamiento de las redes de datos y configurar servicios básicos sobre la pila TCP/IP."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Identifica las capas de una red y la función de cada una"
+    },
+    {
+      "id": "RA2",
+      "description": "Diseña un plan de direccionamiento para una red local"
+    },
+    {
+      "id": "RA3",
+      "description": "Configura el enrutamiento entre redes simples"
+    },
+    {
+      "id": "RA4",
+      "description": "Despliega servicios de red básicos y verifica su funcionamiento"
+    },
+    {
+      "id": "RA5",
+      "description": "Aplica medidas básicas de protección a una red"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "ENERO 2027 - JUNIO 2027",
+      "weight": null,
+      "units": [
+        {
+          "title": "Fundamentos de redes",
+          "topics": ["Modelo OSI y TCP/IP", "Medios de transmisión", "Topologías"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Direccionamiento IP",
+          "topics": ["Direcciones IPv4", "Subredes", "Introducción a IPv6"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Enrutamiento y conmutación",
+          "topics": ["Tablas de enrutamiento", "Protocolos de enrutamiento", "VLAN"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Servicios de red",
+          "topics": ["DNS", "DHCP", "HTTP y correo electrónico"],
+          "learningOutcomeIds": ["RA4"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Seguridad básica",
+          "topics": ["Cortafuegos", "Listas de control de acceso", "VPN"],
+          "learningOutcomeIds": ["RA5"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso",
+    "Método Expositivo"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 35
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 35
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 30
+    }
+  ],
+  "bibliography": [
+    "Montalvo SuÃ¡rez, P. (2019). Guía de estudio aplicada. Ediciones del Sur Ficticias.",
+    "Reinoso Cabrera, L. (2023). Casos y ejercicios resueltos. Universidad Andina Ficticia.",
+    "Paredes Ortiz, J. (2018). Manual de laboratorio. Editorial Andina Ficticia.",
+    "Salazar Beltrán, M. (2022). Buenas prácticas en la industria. Ediciones del Sur Ficticias."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}
