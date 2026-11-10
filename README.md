@@ -475,7 +475,7 @@ están en [`CLAUDE.md`](CLAUDE.md).
 | ----------------- | ------- |
 | kiramman-mp3      | 196     |
 | JoseM151          | 118     |
-| JuanCarlos        | 46      |
+| JuanCarlos        | 75      |
 | JuanCarlos Pashma | 2       |
 
 ---
