@@ -110,4 +110,13 @@ jobs:
         run: moodle-plugin-ci install --plugin ./plugin-source/moodle/local/ai_assistant --db-host=127.0.0.1 --db-user=postgres --db-pass=postgres
 
       - name: PHPUnit
-        run: moodle-plugin-ci phpunit --fail-on-warning
+        run: |
+          set +e
+          moodle-plugin-ci phpunit --fail-on-warning 2>&1 | tee phpunit.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # Deja el final del registro como anotacion para verlo sin abrir el registro completo.
+            msg=$(tail -n 70 phpunit.log | awk 'BEGIN { ORS = "%0A" } { gsub(/%/, "%25"); gsub(/[[:cntrl:]]/, ""); print }')
+            echo "::error title=Resultado de PHPUnit::${msg}"
+          fi
+          exit "$code"
