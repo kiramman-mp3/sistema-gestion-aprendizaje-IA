@@ -68,9 +68,7 @@ jobs:
   phpunit:
     name: Pruebas PHPUnit del plugin (Moodle 5.1)
     runs-on: ubuntu-latest
-    # Se ejecuta con moodle-plugin-ci, que instala Moodle 5.1 y PostgreSQL. No se pudo probar fuera de GitHub:
-    # hasta que pase una vez en verde no bloquea la integracion (quitar `continue-on-error` entonces, H-7).
-    continue-on-error: true
+    # Se ejecuta con moodle-plugin-ci, que instala Moodle 5.1 y PostgreSQL (H-7). Es bloqueante desde que pasó en verde.
     services:
       postgres:
         image: postgres:17
@@ -100,6 +98,11 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Instalar la configuración regional que pide PHPUnit de Moodle
+        run: |
+          sudo locale-gen en_AU.UTF-8
+          sudo update-locale
+
       - name: Instalar moodle-plugin-ci
         run: |
           composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
@@ -107,7 +110,16 @@ jobs:
           echo "$(cd ci/vendor/bin; pwd)" >> "$GITHUB_PATH"
 
       - name: Instalar Moodle con el plugin
-        run: moodle-plugin-ci install --plugin ./plugin-source/moodle/local/ai_assistant --db-host=127.0.0.1
+        run: moodle-plugin-ci install --plugin ./plugin-source/moodle/local/ai_assistant --db-host=127.0.0.1 --db-user=postgres --db-pass=postgres
 
       - name: PHPUnit
-        run: moodle-plugin-ci phpunit --fail-on-warning
+        run: |
+          set +e
+          moodle-plugin-ci phpunit --fail-on-warning 2>&1 | tee phpunit.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # Deja el final del registro como anotacion para verlo sin abrir el registro completo.
+            msg=$(tail -n 70 phpunit.log | awk 'BEGIN { ORS = "%0A" } { gsub(/%/, "%25"); gsub(/[[:cntrl:]]/, ""); print }')
+            echo "::error title=Resultado de PHPUnit::${msg}"
+          fi
+          exit "$code"
