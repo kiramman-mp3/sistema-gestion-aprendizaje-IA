@@ -1,5 +1,6 @@
 import type { AuditService } from "../audit/audit.service";
 import type { PrismaService } from "../database/prisma.service";
+import type { DocumentIndexService } from "../rag/document-index.service";
 import { DocumentTextResultsHandler, GENERIC_TEXT_ERROR } from "./document-text-results.handler";
 
 const DOCUMENT_ID = "0b6f3c8e-2a7d-4f43-9b1a-6f8e2d3c4b5a";
@@ -15,17 +16,46 @@ const validText = {
 function setup(updatedCount = 1) {
   const updateMany = jest.fn().mockResolvedValue({ count: updatedCount });
   const record = jest.fn();
+  const indexDocumentSafely = jest.fn().mockResolvedValue(undefined);
   const prisma = {
     syllabusDocument: {
       updateMany,
       findUnique: jest.fn().mockResolvedValue({ moodleCourseId: 2, uploadedBy: 4 }),
     },
   } as unknown as PrismaService;
-  const handler = new DocumentTextResultsHandler(prisma, { record } as unknown as AuditService);
-  return { handler, updateMany, record };
+  const handler = new DocumentTextResultsHandler(
+    prisma,
+    { record } as unknown as AuditService,
+    { indexDocumentSafely } as unknown as DocumentIndexService,
+  );
+  return { handler, updateMany, record, indexDocumentSafely };
 }
 
 describe("DocumentTextResultsHandler", () => {
+  it("al dejar el texto listo pide indexar el documento para la búsqueda", async () => {
+    const { handler, indexDocumentSafely } = setup();
+
+    await handler.handle(DOCUMENT_ID, { value: validText });
+
+    expect(indexDocumentSafely).toHaveBeenCalledWith(DOCUMENT_ID);
+  });
+
+  it("si el documento no estaba en proceso (trabajo repetido), no lo indexa de nuevo", async () => {
+    const { handler, indexDocumentSafely } = setup(0);
+
+    await handler.handle(DOCUMENT_ID, { value: validText });
+
+    expect(indexDocumentSafely).not.toHaveBeenCalled();
+  });
+
+  it("si el worker falla, no indexa nada", async () => {
+    const { handler, indexDocumentSafely } = setup();
+
+    await handler.handle(DOCUMENT_ID, { failedReason: "ENCRYPTED_DOCUMENT" });
+
+    expect(indexDocumentSafely).not.toHaveBeenCalled();
+  });
+
   it("guarda el texto válido y marca el documento TEXT_READY", async () => {
     const { handler, updateMany, record } = setup();
     await handler.handle(DOCUMENT_ID, { value: validText });
