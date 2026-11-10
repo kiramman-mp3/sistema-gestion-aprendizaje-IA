@@ -168,9 +168,10 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │       │   │   └── extraction/     # Extracción con IA: prompt, verificación contra el texto, versiones y rutas
 │       │   ├── proposals/          # Propuestas de curso: generador, validación, estados y API
 │       │   ├── assistant/          # Chat: POST /assistant/chat (SSE), orquestador, herramientas y límites de uso
-│       │   ├── llm/                # Interfaz del proveedor de IA, límites, registro de consumo y proveedor simulado
+│       │   ├── analytics/          # Indicadores, señales de dificultad, evidencias del estudiante y GET /analytics
+│       │   ├── llm/                # Interfaz del proveedor de IA, límites, consumo y proveedor de demostración
 │       │   ├── privacy/            # Seudonimización de estudiantes y datos personales
-│       │   ├── recommendations/    # Seguimiento docente y validador de lenguaje pedagógico
+│       │   ├── recommendations/    # Recomendaciones pedagógicas, seguimiento docente y validador de lenguaje
 │       │   ├── queue/              # Nombres de colas y conexión de BullMQ
 │       │   ├── maintenance/        # Retención de archivos y conversaciones, y reintento de cargas
 │       │   └── integrations/       # Cliente REST de Moodle, lecturas académicas y cuenta de integración
@@ -266,34 +267,35 @@ conocidos. En resumen:
    WORKER_STORAGE_SOURCE=./apps/api/var/storage docker compose --profile worker up -d --build document-worker
    ```
 
-| Variable                         | Uso                                                                                        |
-| -------------------------------- | ------------------------------------------------------------------------------------------ |
-| `PORT`                           | Puerto del backend en el host                                                              |
-| `APP_DB_PORT`                    | Puerto de la base auxiliar en el host (por defecto 5433)                                   |
-| `APP_DB_PASSWORD`                | Contraseña de la base auxiliar                                                             |
-| `DATABASE_URL`                   | Conexión a PostgreSQL                                                                      |
-| `REDIS_PORT`                     | Puerto de Redis en el host                                                                 |
-| `REDIS_URL`                      | Conexión a Redis                                                                           |
-| `MOODLE_BASE_URL`                | URL de Moodle                                                                              |
-| `MOODLE_TOKEN`                   | Token del usuario de integración de Moodle                                                 |
-| `MOODLE_ADMIN_PASSWORD`          | Contraseña del administrador de la instancia local                                         |
-| `PLUGIN_JWT_SECRET`              | Secreto compartido para firmar JWT plugin–backend (≥ 32 caracteres)                        |
-| `CORS_ORIGINS`                   | Orígenes del navegador permitidos (el `wwwroot` de Moodle)                                 |
-| `STORAGE_DIR`                    | Carpeta de los archivos subidos (relativa a `apps/api`)                                    |
-| `SYLLABUS_RETENTION_DAYS`        | Días que se conserva el archivo original (por defecto 30)                                  |
-| `RATE_LIMIT_PER_MINUTE`          | Peticiones por usuario y minuto antes de responder 429 (120; 0 lo desactiva)               |
-| `CLAMAV_PORT`                    | Puerto de ClamAV en el host (por defecto 3310)                                             |
-| `CLAMAV_URL`                     | clamd por TCP; obligatoria en producción                                                   |
-| `WORKER_STORAGE_SOURCE`          | Carpeta del host que el worker monta en solo lectura                                       |
-| `AI_PROVIDER`                    | Proveedor de IA (pendiente, decisión D-07)                                                 |
-| `AI_API_KEY`                     | Clave del proveedor de IA                                                                  |
-| `AI_TIMEOUT_MS`                  | Tiempo máximo de una llamada al proveedor (60000)                                          |
-| `AI_MAX_INPUT_TOKENS`            | Tokens estimados de entrada a partir de los cuales no se llama (32000)                     |
-| `AI_MAX_OUTPUT_TOKENS`           | Tope de tokens de salida (8192)                                                            |
-| `PSEUDONYM_SECRET`               | Clave de los seudónimos de estudiantes (≥ 32 caracteres); obligatoria en producción con IA |
-| `AI_CONVERSATION_RETENTION_DAYS` | Días que se conserva una conversación con el asistente (90, provisional)                   |
-| `AI_DAILY_MESSAGES_PER_TEACHER`  | Mensajes por docente en 24 horas antes de responder 429 (200)                              |
-| `AI_DAILY_TOKENS_PER_TEACHER`    | Tokens por docente en 24 horas antes de responder 429 (500000)                             |
+| Variable                               | Uso                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `PORT`                                 | Puerto del backend en el host                                                                   |
+| `APP_DB_PORT`                          | Puerto de la base auxiliar en el host (por defecto 5433)                                        |
+| `APP_DB_PASSWORD`                      | Contraseña de la base auxiliar                                                                  |
+| `DATABASE_URL`                         | Conexión a PostgreSQL                                                                           |
+| `REDIS_PORT`                           | Puerto de Redis en el host                                                                      |
+| `REDIS_URL`                            | Conexión a Redis                                                                                |
+| `MOODLE_BASE_URL`                      | URL de Moodle                                                                                   |
+| `MOODLE_TOKEN`                         | Token del usuario de integración de Moodle                                                      |
+| `MOODLE_ADMIN_PASSWORD`                | Contraseña del administrador de la instancia local                                              |
+| `PLUGIN_JWT_SECRET`                    | Secreto compartido para firmar JWT plugin–backend (≥ 32 caracteres)                             |
+| `CORS_ORIGINS`                         | Orígenes del navegador permitidos (el `wwwroot` de Moodle)                                      |
+| `STORAGE_DIR`                          | Carpeta de los archivos subidos (relativa a `apps/api`)                                         |
+| `SYLLABUS_RETENTION_DAYS`              | Días que se conserva el archivo original (por defecto 30)                                       |
+| `RATE_LIMIT_PER_MINUTE`                | Peticiones por usuario y minuto antes de responder 429 (120; 0 lo desactiva)                    |
+| `CLAMAV_PORT`                          | Puerto de ClamAV en el host (por defecto 3310)                                                  |
+| `CLAMAV_URL`                           | clamd por TCP; obligatoria en producción                                                        |
+| `WORKER_STORAGE_SOURCE`                | Carpeta del host que el worker monta en solo lectura                                            |
+| `AI_PROVIDER`                          | Proveedor de IA (pendiente, decisión D-07); `mock` es el de demostración, no vale en producción |
+| `AI_API_KEY`                           | Clave del proveedor de IA                                                                       |
+| `AI_TIMEOUT_MS`                        | Tiempo máximo de una llamada al proveedor (60000)                                               |
+| `AI_MAX_INPUT_TOKENS`                  | Tokens estimados de entrada a partir de los cuales no se llama (32000)                          |
+| `AI_MAX_OUTPUT_TOKENS`                 | Tope de tokens de salida (8192)                                                                 |
+| `PSEUDONYM_SECRET`                     | Clave de los seudónimos de estudiantes (≥ 32 caracteres); obligatoria en producción con IA      |
+| `AI_CONVERSATION_RETENTION_DAYS`       | Días que se conserva una conversación con el asistente (90, provisional)                        |
+| `AI_DAILY_MESSAGES_PER_TEACHER`        | Mensajes por docente en 24 horas antes de responder 429 (200)                                   |
+| `AI_DAILY_TOKENS_PER_TEACHER`          | Tokens por docente en 24 horas antes de responder 429 (500000)                                  |
+| `AI_DAILY_RECOMMENDATIONS_PER_TEACHER` | Recomendaciones pedagógicas por docente en 24 horas antes de responder 429 (50)                 |
 
 > [!WARNING]
 > Los secretos nunca se guardan en el repositorio. `.env` está en `.gitignore`.
@@ -368,33 +370,36 @@ monitoreo (`infra/monitoring/check-health.sh`) se programan con cron. Pasos comp
 Prefijo `/api/v1`. Todas las rutas salvo `/health` exigen el JWT del plugin. Contrato completo en
 [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
 
-| Método | Ruta                                             | Qué hace                                                                                                              |
-| ------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/health`                                        | Estado de la base, Redis, Moodle y el antivirus                                                                       |
-| GET    | `/session`                                       | Identidad, roles y capacidades del docente en el curso                                                                |
-| POST   | `/syllabi`                                       | Carga un sílabo (multipart) y encola la extracción de texto                                                           |
-| GET    | `/syllabi/:id`                                   | Estado, progreso, páginas y confianza de la extracción                                                                |
-| POST   | `/syllabi/:id/extract`                           | Inicia o reintenta la extracción con IA (202); el sílabo pasa a `EXTRACTED` o `FAILED`                                |
-| GET    | `/syllabi/:id/extraction`                        | Última versión de la extracción, o la de `?version=`                                                                  |
-| PUT    | `/syllabi/:id/extraction`                        | Guarda la revisión del docente como versión nueva y deja el sílabo en `REVIEWED`                                      |
-| POST   | `/proposals`                                     | Genera la propuesta de curso desde una extracción revisada (`publish`)                                                |
-| GET    | `/proposals/:id`                                 | Propuesta con sus elementos y la revisión (`issues`)                                                                  |
-| PATCH  | `/proposals/:id`                                 | Reemplaza los elementos; una propuesta aprobada vuelve a revisión (`publish`)                                         |
-| POST   | `/proposals/:id/approve`                         | Aprueba una propuesta en revisión y sin errores (`publish`)                                                           |
-| POST   | `/proposals/:id/publish`                         | Publica en Moodle una propuesta aprobada o reanuda una fallida; exige `Idempotency-Key` y `confirm: true` (`publish`) |
-| GET    | `/proposals/:id/publish-operations/:operationId` | Progreso y resultado de una publicación                                                                               |
-| GET    | `/courses/:courseId/activity-mappings`           | Unidades y resultados del sílabo revisado, y las actividades ya relacionadas                                          |
-| PUT    | `/courses/:courseId/activity-mappings/:cmId`     | Relaciona una actividad con una unidad y sus resultados (`publish`)                                                   |
-| DELETE | `/courses/:courseId/activity-mappings/:cmId`     | Quita la relación de una actividad (`publish`)                                                                        |
-| POST   | `/assistant/chat`                                | Mensaje al asistente; con `Accept: text/event-stream` responde por SSE (`tool`, `token`, `final`, `error`)            |
-| GET    | `/assistant/conversations/:id`                   | Historial de una conversación propia; una ajena responde 404                                                          |
-| POST   | `/recommendations/:id/followups`                 | Registra el seguimiento docente de una recomendación (`viewanalytics`)                                                |
+| Método | Ruta                                                               | Qué hace                                                                                                              |
+| ------ | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`                                                          | Estado de la base, Redis, Moodle y el antivirus                                                                       |
+| GET    | `/session`                                                         | Identidad, roles y capacidades del docente en el curso                                                                |
+| POST   | `/syllabi`                                                         | Carga un sílabo (multipart) y encola la extracción de texto                                                           |
+| GET    | `/syllabi/:id`                                                     | Estado, progreso, páginas y confianza de la extracción                                                                |
+| POST   | `/syllabi/:id/extract`                                             | Inicia o reintenta la extracción con IA (202); el sílabo pasa a `EXTRACTED` o `FAILED`                                |
+| GET    | `/syllabi/:id/extraction`                                          | Última versión de la extracción, o la de `?version=`                                                                  |
+| PUT    | `/syllabi/:id/extraction`                                          | Guarda la revisión del docente como versión nueva y deja el sílabo en `REVIEWED`                                      |
+| POST   | `/proposals`                                                       | Genera la propuesta de curso desde una extracción revisada (`publish`)                                                |
+| GET    | `/proposals/:id`                                                   | Propuesta con sus elementos y la revisión (`issues`)                                                                  |
+| PATCH  | `/proposals/:id`                                                   | Reemplaza los elementos; una propuesta aprobada vuelve a revisión (`publish`)                                         |
+| POST   | `/proposals/:id/approve`                                           | Aprueba una propuesta en revisión y sin errores (`publish`)                                                           |
+| POST   | `/proposals/:id/publish`                                           | Publica en Moodle una propuesta aprobada o reanuda una fallida; exige `Idempotency-Key` y `confirm: true` (`publish`) |
+| GET    | `/proposals/:id/publish-operations/:operationId`                   | Progreso y resultado de una publicación                                                                               |
+| GET    | `/courses/:courseId/activity-mappings`                             | Unidades y resultados del sílabo revisado, y las actividades ya relacionadas                                          |
+| PUT    | `/courses/:courseId/activity-mappings/:cmId`                       | Relaciona una actividad con una unidad y sus resultados (`publish`)                                                   |
+| DELETE | `/courses/:courseId/activity-mappings/:cmId`                       | Quita la relación de una actividad (`publish`)                                                                        |
+| POST   | `/assistant/chat`                                                  | Mensaje al asistente; con `Accept: text/event-stream` responde por SSE (`tool`, `token`, `final`, `error`)            |
+| GET    | `/assistant/conversations/:id`                                     | Historial de una conversación propia; una ajena responde 404                                                          |
+| GET    | `/analytics/courses/:courseId`                                     | Indicadores del curso y señales de dificultad con su explicación (`viewanalytics`)                                    |
+| GET    | `/analytics/courses/:courseId/students/:studentId`                 | Evidencias del estudiante: observado, calculado y desconocido (`viewanalytics`)                                       |
+| POST   | `/analytics/courses/:courseId/students/:studentId/recommendations` | Genera una recomendación pedagógica; `422` si faltan datos (`viewanalytics`)                                          |
+| POST   | `/recommendations/:id/followups`                                   | Registra el seguimiento docente de una recomendación (`viewanalytics`)                                                |
 
-Rutas de la línea de IA que faltan, ya fijadas en el contrato y con interfaz lista en el plugin (se prueban con `pnpm mock:ai`):
-`GET /analytics/...` y `POST .../recommendations`. Las herramientas del chat sobre Moodle esperan las funciones de lectura del plugin
-([pendiente de José](docs/equipo/pendiente-de-jose.md)).
+Las herramientas del chat y la analítica leen de Moodle con funciones que el plugin todavía no tiene: con Moodle real esas rutas responden
+`503 MOODLE_UNAVAILABLE` hasta que existan ([pendiente de José](docs/equipo/pendiente-de-jose.md)). Con `AI_PROVIDER=mock` la extracción, el chat
+y las recomendaciones responden con datos de demostración.
 
-El flujo de carga y extracción de texto está en [`docs/architecture/procesamiento-silabos.md`](docs/architecture/procesamiento-silabos.md); el de la extracción con IA, en [`docs/architecture/extraccion-ia.md`](docs/architecture/extraccion-ia.md); el del chat, en [`docs/architecture/asistente-chat.md`](docs/architecture/asistente-chat.md); el de propuestas, en [`docs/architecture/propuestas.md`](docs/architecture/propuestas.md); el de publicación, en [`docs/architecture/publicacion.md`](docs/architecture/publicacion.md); las pantallas del chat, la analítica y la relación de actividades, en [`docs/architecture/interfaces-plugin.md`](docs/architecture/interfaces-plugin.md); y lo que espera la interfaz de la línea de IA, en [`docs/equipo/integracion-con-ia.md`](docs/equipo/integracion-con-ia.md).
+El flujo de carga y extracción de texto está en [`docs/architecture/procesamiento-silabos.md`](docs/architecture/procesamiento-silabos.md); el de la extracción con IA, en [`docs/architecture/extraccion-ia.md`](docs/architecture/extraccion-ia.md); el del chat, en [`docs/architecture/asistente-chat.md`](docs/architecture/asistente-chat.md); el de la analítica y las recomendaciones, en [`docs/architecture/analitica.md`](docs/architecture/analitica.md); el de propuestas, en [`docs/architecture/propuestas.md`](docs/architecture/propuestas.md); el de publicación, en [`docs/architecture/publicacion.md`](docs/architecture/publicacion.md); las pantallas del chat, la analítica y la relación de actividades, en [`docs/architecture/interfaces-plugin.md`](docs/architecture/interfaces-plugin.md); y lo que espera la interfaz de la línea de IA, en [`docs/equipo/integracion-con-ia.md`](docs/equipo/integracion-con-ia.md).
 
 ### Migraciones
 
@@ -443,7 +448,7 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 - [x] Propuesta de curso: generador, validación, estados, API y vista previa (Sprint 6)
 - [x] Publicación idempotente en Moodle, con confirmación, resumen y reanudación (Sprint 7)
 - [ ] Asistente conversacional (Sprints 8–9; hechos el chat, el orquestador, la seudonimización y los límites de uso; faltan las funciones de lectura de Moodle y el RAG)
-- [ ] Analítica y asistente pedagógico (Sprints 10–11; hechos el panel del plugin, el seguimiento y el validador de lenguaje; falta la analítica y las recomendaciones)
+- [ ] Analítica y asistente pedagógico (Sprints 10–11; hechos el panel del plugin, los indicadores, las señales, las evidencias, las recomendaciones y el seguimiento; faltan los snapshots, las reglas por API y medir la pertinencia con un modelo real)
 - [ ] Evaluación con docentes (Sprint 12; hechas la revisión OWASP y la prueba de carga, faltan los casos de IA y el piloto)
 - [ ] Despliegue y documentación final (Sprint 13; hechos el entorno de producción, las copias, el monitoreo y los manuales, falta el despliegue real, la tesis y la versión 1.0)
 
