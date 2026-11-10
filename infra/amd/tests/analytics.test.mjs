@@ -358,3 +358,88 @@ describe("análisis del estudiante", () => {
     });
   });
 });
+
+describe("evolución en el panel (ADR-018)", () => {
+  const HISTORY = {
+    courseId: 7,
+    snapshots: [
+      {
+        takenAt: "2026-11-03T15:00:00Z",
+        signals: 4,
+        indicators: [{ key: "submission_rate", value: 70 }],
+      },
+      {
+        takenAt: "2026-11-10T15:00:00Z",
+        signals: 2,
+        indicators: [{ key: "submission_rate", value: 82.5 }],
+      },
+    ],
+  };
+
+  it("con dos o más visitas muestra la tabla de evolución con sus señales", async () => {
+    serve({ "GET /analytics/courses/7/history": async () => structuredClone(HISTORY) });
+
+    await init(7);
+
+    await vi.waitFor(() => expect(root().querySelector("table")).not.toBeNull());
+    const rows = [...root().querySelectorAll("tbody tr")].map((tr) => tr.textContent);
+    expect(text()).toContain("Evolution");
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toMatch(/82[.,]5%/);
+    expect(rows[1]).toContain("2");
+    expect(backend.calls.map((c) => c.path)).toContain("/analytics/courses/7/history");
+  });
+
+  it("con una sola visita no dibuja la tabla", async () => {
+    serve({
+      "GET /analytics/courses/7/history": async () => ({
+        ...HISTORY,
+        snapshots: HISTORY.snapshots.slice(0, 1),
+      }),
+    });
+
+    await init(7);
+    await vi.waitFor(() =>
+      expect(backend.calls.map((c) => c.path)).toContain("/analytics/courses/7/history"),
+    );
+
+    expect(root().querySelector("table")).toBeNull();
+    expect(text()).not.toContain("Evolution");
+  });
+
+  it("si el historial no carga, el panel queda igual y sin error", async () => {
+    serve({
+      "GET /analytics/courses/7/history": async () => {
+        throw Object.assign(new Error("x"), { status: 500 });
+      },
+    });
+
+    await init(7);
+    await vi.waitFor(() =>
+      expect(backend.calls.map((c) => c.path)).toContain("/analytics/courses/7/history"),
+    );
+
+    expect(root().querySelector('[role="alert"]')).toBeNull();
+    expect(text()).toContain("Tasa de entrega");
+  });
+
+  it("si el docente ya pasó a un estudiante, la tabla no se dibuja encima", async () => {
+    let release;
+    serve({
+      "GET /analytics/courses/7/history": () =>
+        new Promise((resolve) => {
+          release = () => resolve(structuredClone(HISTORY));
+        }),
+    });
+
+    const started = init(7);
+    await vi.waitFor(() => expect(buttons("View evidence").length).toBeGreaterThan(0));
+    click(buttons("View evidence")[0]);
+    await vi.waitFor(() => expect(text()).toContain("Observed in Moodle"));
+    release();
+    await started;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(root().querySelector("table.table-sm[aria-labelledby]")).toBeNull();
+  });
+});

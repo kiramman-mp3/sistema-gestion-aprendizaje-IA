@@ -3,6 +3,7 @@ import {
   analyticsErrorKind,
   canSaveFollowup,
   formatIndicator,
+  historyTable,
   groupSignals,
   MAX_FOLLOWUP_LENGTH,
   nameLookup,
@@ -143,5 +144,77 @@ describe("errores", () => {
     expect(analyticsErrorKind({ status: 503 })).toBe("unavailable");
     expect(analyticsErrorKind({ code: "AI_PROVIDER_UNAVAILABLE" })).toBe("unavailable");
     expect(analyticsErrorKind({ status: 500, code: "X" })).toBe("other");
+  });
+});
+
+describe("evolución de los indicadores (ADR-018)", () => {
+  const indicators = [
+    { key: "submission_rate", label: "Tasa de entrega", unit: "%" },
+    { key: "average_grade", label: "Promedio", unit: null },
+  ];
+  const snapshot = (takenAt, values, signals = 1) => ({
+    takenAt,
+    signals,
+    indicators: Object.entries(values).map(([key, value]) => ({ key, value })),
+  });
+
+  it("arma una fila por visita con una columna por indicador del panel, en el mismo orden", () => {
+    const table = historyTable(
+      {
+        snapshots: [
+          snapshot("2026-11-03T15:00:00Z", { average_grade: 6, submission_rate: 60 }, 4),
+          snapshot("2026-11-10T15:00:00Z", { submission_rate: 70.5, average_grade: 6.4 }, 2),
+        ],
+      },
+      indicators,
+      "en",
+    );
+
+    expect(table.columns.map((c) => c.label)).toEqual(["Tasa de entrega", "Promedio"]);
+    expect(table.rows.map((r) => [r.cells, r.signals])).toEqual([
+      [["60%", "6"], 4],
+      [["70.5%", "6.4"], 2],
+    ]);
+  });
+
+  it("un indicador sin dato en esa visita se muestra como guion, no como cero", () => {
+    const table = historyTable(
+      {
+        snapshots: [
+          snapshot("2026-11-03T15:00:00Z", { submission_rate: 60, average_grade: null }),
+          snapshot("2026-11-10T15:00:00Z", { submission_rate: 70 }),
+        ],
+      },
+      indicators,
+      "en",
+    );
+
+    expect(table.rows[0].cells[1]).toBe("—");
+    expect(table.rows[1].cells[1]).toBe("—");
+  });
+
+  it("un indicador que ya no está en el panel no tiene columna", () => {
+    const table = historyTable(
+      {
+        snapshots: [
+          snapshot("2026-11-03T15:00:00Z", { submission_rate: 60, viejo: 1 }),
+          snapshot("2026-11-10T15:00:00Z", { submission_rate: 70, viejo: 2 }),
+        ],
+      },
+      [indicators[0]],
+      "en",
+    );
+
+    expect(table.columns.map((c) => c.key)).toEqual(["submission_rate"]);
+    expect(table.rows[0].cells).toEqual(["60%"]);
+  });
+
+  it("con menos de dos visitas, o sin indicadores, no hay evolución que mostrar", () => {
+    const one = { snapshots: [snapshot("2026-11-10T15:00:00Z", { submission_rate: 70 })] };
+
+    expect(historyTable(one, indicators)).toBeNull();
+    expect(historyTable({ snapshots: [] }, indicators)).toBeNull();
+    expect(historyTable(undefined, indicators)).toBeNull();
+    expect(historyTable({ snapshots: [one.snapshots[0], one.snapshots[0]] }, [])).toBeNull();
   });
 });

@@ -313,18 +313,24 @@ model ActivityUnitMapping {
 }
 
 model AnalyticsSnapshot {
-  id                   String   @id @default(uuid()) @db.Uuid
-  integrationAccountId String   @map("integration_account_id") @db.Uuid
-  moodleCourseId       Int      @map("moodle_course_id")
+  id                   String    @id @default(uuid()) @db.Uuid
+  integrationAccountId String    @map("integration_account_id") @db.Uuid
+  moodleCourseId       Int       @map("moodle_course_id")
   /// Nulo para indicadores del curso completo.
-  moodleUserId         Int?     @map("moodle_user_id")
-  takenAt              DateTime @map("taken_at")
+  moodleUserId         Int?      @map("moodle_user_id")
+  /// Docente que abrió el panel: con grupos separados cada docente ve solo a los suyos, así que los valores
+  /// de un docente no se mezclan con los de otro (ADR-018).
+  takenBy              Int?      @map("taken_by")
+  /// Día (UTC) del snapshot: con `taken_by` y el curso, garantiza uno por día aunque dos peticiones lleguen juntas.
+  takenOn              DateTime? @map("taken_on") @db.Date
+  takenAt              DateTime  @map("taken_at")
   /// Valores calculados y versión de la fórmula.
   indicators           Json
-  createdAt            DateTime @default(now()) @map("created_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
 
   integrationAccount IntegrationAccount @relation(fields: [integrationAccountId], references: [id])
 
+  @@unique([integrationAccountId, moodleCourseId, takenBy, takenOn], map: "analytics_snapshots_day_key")
   @@index([moodleCourseId, moodleUserId, takenAt])
   @@map("analytics_snapshots")
 }

@@ -1,6 +1,7 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Queue, Worker, type Job } from "bullmq";
+import { SnapshotsService } from "../analytics/snapshots.service";
 import type { Env } from "../config/env";
 import { bullConnection } from "../queue/queue.constants";
 import { ConversationMaintenanceService } from "./conversation-maintenance.service";
@@ -21,6 +22,7 @@ export class MaintenanceWorker implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly maintenance: SyllabusMaintenanceService,
     private readonly conversations: ConversationMaintenanceService,
+    private readonly snapshots: SnapshotsService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -45,6 +47,11 @@ export class MaintenanceWorker implements OnModuleInit, OnModuleDestroy {
         { name: "purge-expired-conversations", ...template },
       );
       await this.queue.upsertJobScheduler(
+        "purge-expired-snapshots",
+        { pattern: "20 3 * * *" },
+        { name: "purge-expired-snapshots", ...template },
+      );
+      await this.queue.upsertJobScheduler(
         "requeue-stalled-uploads",
         { every: 5 * 60 * 1000 },
         { name: "requeue-stalled-uploads", ...template },
@@ -59,6 +66,7 @@ export class MaintenanceWorker implements OnModuleInit, OnModuleDestroy {
     if (name === "purge-expired-conversations") {
       return this.conversations.purgeExpiredConversations();
     }
+    if (name === "purge-expired-snapshots") return this.snapshots.purgeExpired();
     if (name === "requeue-stalled-uploads") return this.maintenance.requeueStalledUploads();
     throw new Error(`Tarea de mantenimiento desconocida: ${name}`);
   }

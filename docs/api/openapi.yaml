@@ -647,6 +647,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /analytics/courses/{courseId}/history:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsHistory
+      summary: Evolución de los indicadores del curso
+      description: |
+        Requiere `viewanalytics`. Devuelve los snapshots que dejó el propio docente al abrir el panel: como mucho uno
+        por día, curso y docente, del más antiguo al más reciente, con solo los valores de los indicadores y la
+        cantidad de señales (ADR-018). Un día sin visita es un hueco. Cada docente ve únicamente los suyos, porque con
+        grupos separados los valores pueden diferir. Se conservan `ANALYTICS_SNAPSHOT_RETENTION_DAYS` días.
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+        - name: days
+          in: query
+          description: Cuántos días hacia atrás se consultan
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 90
+      responses:
+        "200":
+          description: Historial
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsHistory"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /analytics/courses/{courseId}/students/{studentId}:
     get:
       tags: [analytics]
@@ -1632,6 +1666,35 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ActivityMapping"
+
+    AnalyticsHistory:
+      type: object
+      required: [courseId, snapshots]
+      properties:
+        courseId:
+          type: integer
+        snapshots:
+          type: array
+          items:
+            type: object
+            required: [takenAt, signals, indicators]
+            properties:
+              takenAt:
+                type: string
+                format: date-time
+              signals:
+                type: integer
+                description: Cantidad de señales de dificultad ese día
+              indicators:
+                type: array
+                items:
+                  type: object
+                  required: [key, value]
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: [number, "null"]
 
     DifficultyRuleType:
       type: string

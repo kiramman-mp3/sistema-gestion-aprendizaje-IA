@@ -70,6 +70,39 @@ export const formatIndicator = (indicator, locale) => {
   return indicator.unit ? `${number}${indicator.unit === "%" ? "" : " "}${indicator.unit}` : number;
 };
 
+/** Snapshots needed before a table of evolution makes sense. */
+export const MIN_HISTORY_POINTS = 2;
+
+/**
+ * The table of how the indicators of the course changed between visits to the panel (ADR-018).
+ *
+ * Only the indicators the panel shows today get a column, in the same order and with the same label. A visit
+ * where an indicator had no data shows a dash. Days without a visit are simply absent: nothing is filled in.
+ *
+ * @param {{snapshots: Array<{takenAt: string, signals: number, indicators: Array<{key: string, value: number|null}>}>}} history
+ * @param {Array<{key: string, label: string, unit?: string|null}>} indicators Indicators of the current panel.
+ * @param {string} [locale]
+ * @returns {{columns: Array<{key: string, label: string}>, rows: Array<{takenAt: string, signals: number, cells: string[]}>}|null}
+ *     Null when there are fewer than `MIN_HISTORY_POINTS` snapshots or no indicator in common.
+ */
+export const historyTable = (history, indicators, locale) => {
+  const snapshots = history?.snapshots ?? [];
+  const columns = indicators.map(({ key, label }) => ({ key, label }));
+  if (snapshots.length < MIN_HISTORY_POINTS || columns.length === 0) {
+    return null;
+  }
+  const units = new Map(indicators.map((indicator) => [indicator.key, indicator.unit ?? null]));
+  const rows = snapshots.map((snapshot) => {
+    const values = new Map(snapshot.indicators.map((item) => [item.key, item.value]));
+    return {
+      takenAt: snapshot.takenAt,
+      signals: snapshot.signals,
+      cells: columns.map(({ key }) => formatIndicator({ value: values.get(key) ?? null, unit: units.get(key) }, locale)),
+    };
+  });
+  return { columns, rows };
+};
+
 /**
  * Names by student id.
  *

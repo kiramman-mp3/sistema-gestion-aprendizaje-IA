@@ -61,6 +61,7 @@ if (!courseId) {
 const teacherId = userId("prueba_docente");
 const outsiderId = userId("prueba_ajeno");
 const adminId = userId("prueba_admin");
+const teacher2Id = userId("prueba_docente2");
 const studentIds = new Set(
   JSON.parse(
     php(
@@ -279,6 +280,43 @@ if (!adminId) {
     (json(trail).items ?? []).some((e) => e.action === "rules.update") &&
       (json(trail).items ?? []).some((e) => e.action === "rules.reset"),
   );
+}
+
+console.log("\n7. Historial de indicadores (snapshots bajo demanda)");
+if (!teacher2Id) {
+  console.log("  se omite: falta prueba_docente2 (seed_docentes_prueba.php)");
+} else {
+  const history = async (as) =>
+    json(await call("GET", "/analytics/courses/" + courseId + "/history", undefined, { as }));
+  await call("GET", `/analytics/courses/${courseId}`);
+  const first = await history(teacherId);
+  check(
+    "al abrir el panel queda un snapshot del día con los indicadores",
+    first.snapshots?.length >= 1 && first.snapshots.at(-1).indicators.length > 0,
+    `${first.snapshots?.length ?? 0} snapshots`,
+  );
+  await call("GET", `/analytics/courses/${courseId}`);
+  await call("GET", `/analytics/courses/${courseId}`);
+  const again = await history(teacherId);
+  check(
+    "abrir el panel varias veces el mismo día no crea más snapshots",
+    again.snapshots.length === first.snapshots.length,
+    `${first.snapshots.length} → ${again.snapshots.length}`,
+  );
+  const before = (await history(teacher2Id)).snapshots?.length ?? 0;
+  await call("GET", `/analytics/courses/${courseId}`, undefined, { as: teacher2Id });
+  const other = await history(teacher2Id);
+  check(
+    "cada docente tiene los suyos",
+    other.snapshots.length === before + 1 && again.snapshots.length === first.snapshots.length,
+    `docente 2: ${before} → ${other.snapshots.length}`,
+  );
+  check(
+    "el historial no trae ids de estudiantes ni nombres",
+    !/studentId/.test(JSON.stringify(again)) && noNames(again),
+  );
+  const invalid = await call("GET", `/analytics/courses/${courseId}/history?days=0`);
+  check("days inválido responde 400", invalid.status === 400, `HTTP ${invalid.status}`);
 }
 
 console.log(

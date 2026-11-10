@@ -266,6 +266,22 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
     response.end();
   }
 
+  /** Cuatro visitas al panel, una por semana, con valores que mejoran y un día sin dato. */
+  function history(courseId) {
+    const weeks = [3, 2, 1, 0];
+    return {
+      courseId,
+      snapshots: weeks.map((ago, i) => ({
+        takenAt: new Date(Date.UTC(2026, 10, 10, 15, 0, 0) - ago * 7 * 86_400_000).toISOString(),
+        signals: 4 - i,
+        indicators: [
+          { key: "submission_rate", value: 60 + i * 8 },
+          { key: "average_grade", value: i === 0 ? null : 6 + i * 0.4 },
+        ],
+      })),
+    };
+  }
+
   function auditPage(response, query) {
     const limit = Number(query.get("limit") ?? 50);
     if (!Number.isInteger(limit) || limit < 1 || limit > 200)
@@ -438,6 +454,8 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
         : error(response, 404, "CONVERSATION_NOT_FOUND");
     }
 
+    if ((match = /^\/analytics\/courses\/(\d+)\/history$/.exec(path)) && method === "GET")
+      return json(response, 200, history(Number(match[1])));
     if (path === "/audit" && method === "GET") return auditPage(response, url.searchParams);
     if (path === "/admin/difficulty-rules" && method === "GET")
       return json(response, 200, rulesFor(url.searchParams.get("courseId")));
