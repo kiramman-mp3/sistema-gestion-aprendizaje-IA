@@ -8,7 +8,7 @@
 #   docker compose --profile api up -d    # además, el backend y el worker en contenedores (incluye ClamAV)
 services:
   app-db:
-    image: pgvector/pgvector:0.8.6-pg17
+    image: pgvector/pgvector:0.8.6-pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
     environment:
       POSTGRES_DB: ai_assistant
       POSTGRES_USER: app
@@ -25,7 +25,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:8.8.4-alpine
+    image: redis:8.8.4-alpine@sha256:c027ae0f677dcf73d74038256f5b88c9ba7b11ccbfae97e96a9f091208d36125
     command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
@@ -40,7 +40,7 @@ services:
   # Antivirus de los archivos subidos (RF-03). La imagen trae firmas y freshclam las actualiza; el
   # primer arranque tarda unos minutos y usa alrededor de 1,5 GB de memoria.
   clamav:
-    image: clamav/clamav:1.5.4
+    image: clamav/clamav:1.5.4@sha256:45fe5149fbee5a46509c9848ef20d0c354b7b2323c9369f285939a37cf33422a
     profiles: ["antivirus", "api"]
     ports:
       - "127.0.0.1:${CLAMAV_PORT:-3310}:3310"

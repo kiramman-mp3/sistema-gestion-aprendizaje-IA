@@ -1,6 +1,6 @@
 # Imagen del backend. Se construye desde la raíz del monorepo:
 #   docker build -f apps/api/Dockerfile .
-FROM node:26.13.0-alpine AS base
+FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN npm install -g pnpm@12.18.0
 WORKDIR /repo
@@ -21,7 +21,7 @@ FROM build AS migrate
 WORKDIR /repo/apps/api
 CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
 
-FROM node:26.13.0-alpine AS runtime
+FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /out/node_modules ./node_modules
