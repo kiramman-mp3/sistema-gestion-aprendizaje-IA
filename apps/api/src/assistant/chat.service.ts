@@ -17,7 +17,11 @@ import { IntegrationAccountService } from "../integrations/integration-account.s
 import type { LlmChatMessage } from "../llm/llm-provider";
 import { LlmError } from "../llm/llm.errors";
 import { PseudonymizerFactory } from "../privacy/pseudonymizer.factory";
-import { AiOrchestratorService, type AssistantEvent } from "./ai-orchestrator.service";
+import {
+  AiOrchestratorService,
+  CLARIFICATION_INTENT,
+  type AssistantEvent,
+} from "./ai-orchestrator.service";
 import type { ChatSource } from "./tools/assistant-tool";
 import { UsageQuotaService } from "./usage-quota.service";
 
@@ -38,6 +42,8 @@ export interface ChatResponseDto {
   data: Record<string, unknown> | null;
   generatedAt: string;
   sources: ChatSource[];
+  /** Reglas con las que se calcularon los datos de la respuesta; vacío si no se consultó nada. */
+  criteria: string[];
   incompleteData: boolean;
 }
 
@@ -81,7 +87,9 @@ export class ChatService {
     await this.quota.assertWithinLimits(auth.moodleUserId);
 
     const existing = body.conversationId ? await this.findOwn(auth, body.conversationId) : null;
-    const history = existing ? await this.loadHistory(existing.id) : [];
+    const { messages: history, lastIntent } = existing
+      ? await this.loadHistory(existing.id)
+      : { messages: [], lastIntent: null };
     const pseudonymizer = this.pseudonymizers.create(auth.courseId);
     const message = pseudonymizer.pseudonymize(body.message);
 
@@ -91,6 +99,8 @@ export class ChatService {
         auth,
         history,
         message,
+        // Una aclaración se pide una sola vez: si lo último fue una aclaración, ahora toca responder.
+        canAskClarification: lastIntent !== CLARIFICATION_INTENT,
         pseudonymizer,
         emit,
       });
@@ -132,6 +142,7 @@ export class ChatService {
       data,
       generatedAt: generatedAt.toISOString(),
       sources: result.sources,
+      criteria: result.criteria,
       incompleteData: result.incompleteData,
     };
   }
@@ -175,17 +186,24 @@ export class ChatService {
     return conversation;
   }
 
-  private async loadHistory(conversationId: string): Promise<LlmChatMessage[]> {
+  private async loadHistory(
+    conversationId: string,
+  ): Promise<{ messages: LlmChatMessage[]; lastIntent: string | null }> {
     const rows = await this.prisma.aiMessage.findMany({
       where: { conversationId, role: { in: ["USER", "ASSISTANT"] } },
       orderBy: { createdAt: "desc" },
       take: HISTORY_MESSAGES,
-      select: { role: true, content: true },
+      select: { role: true, content: true, intent: true },
     });
-    return rows.reverse().map((row) => ({
-      role: row.role === "USER" ? ("user" as const) : ("assistant" as const),
-      content: row.content,
-    }));
+    // `rows` viene del más nuevo al más viejo: el primer mensaje del asistente es el último que dijo.
+    const lastIntent = rows.find((row) => row.role === "ASSISTANT")?.intent ?? null;
+    return {
+      lastIntent,
+      messages: rows.reverse().map((row) => ({
+        role: row.role === "USER" ? ("user" as const) : ("assistant" as const),
+        content: row.content,
+      })),
+    };
   }
 
   private async save(

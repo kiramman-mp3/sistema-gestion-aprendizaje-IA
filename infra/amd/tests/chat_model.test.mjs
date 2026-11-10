@@ -406,3 +406,45 @@ describe("errores del chat: 429, 404 y 400", () => {
     expect(forgetConversation({ conversationId: "c", messages: [] }).conversationId).toBeNull();
   });
 });
+
+describe("criterio aplicado y aclaración", () => {
+  it("el evento final guarda los criterios y descarta los que no son texto", () => {
+    const done = applyEvent(
+      asked(),
+      ev("final", {
+        conversationId: "c",
+        answer: "Hay 2.",
+        criteria: [
+          "Un borrador no cuenta como entrega.",
+          "",
+          7,
+          null,
+          "Tarde es después del plazo.",
+        ],
+      }),
+    );
+
+    expect(last(done).criteria).toEqual([
+      "Un borrador no cuenta como entrega.",
+      "Tarde es después del plazo.",
+    ]);
+  });
+
+  it("una respuesta sin criterios (por ejemplo, una aclaración) deja la lista vacía", () => {
+    const done = applyEvent(
+      asked(),
+      ev("final", { conversationId: "c", answer: "¿De qué tarea hablas?" }),
+    );
+
+    expect(last(done).criteria).toEqual([]);
+  });
+
+  it("un valor que no es una lista no rompe nada", () => {
+    const done = applyEvent(
+      asked(),
+      ev("final", { conversationId: "c", answer: "x", criteria: "no" }),
+    );
+
+    expect(last(done).criteria).toEqual([]);
+  });
+});

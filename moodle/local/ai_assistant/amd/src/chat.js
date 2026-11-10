@@ -32,7 +32,7 @@ import { createStrings, el, uniqueId } from "local_ai_assistant/ui";
 
 const PLAIN_STRINGS = [
   "title", "intro", "messagelabel", "placeholder", "send", "stop", "new", "empty", "you", "assistant", "thinking",
-  "incomplete", "sources", "source_gradebook", "source_document",
+  "incomplete", "criteria", "sources", "source_gradebook", "source_document",
   "error_ratelimited", "error_unavailable", "error_forbidden", "error_interrupted", "error_notfound", "error_validation",
   "historyerror",
 ];
@@ -230,6 +230,16 @@ class Chat {
     }
     if (message.incompleteData) {
       extras.push(el("div", { class: "small text-warning-emphasis", role: "note" }, str("incomplete")));
+    }
+    if (message.criteria?.length > 0) {
+      extras.push(
+        el(
+          "details",
+          { class: "small mt-1" },
+          el("summary", { class: "text-muted" }, str("criteria")),
+          el("ul", { class: "mb-0" }, ...message.criteria.map((rule) => el("li", {}, rule))),
+        ),
+      );
     }
     if (message.sources.length > 0) {
       extras.push(

@@ -15,6 +15,7 @@
 // Convenciones para probar errores en el chat: un mensaje con «límite» responde 429 (con Retry-After); con
 // «caído», 503; un `conversationId` que el simulador no conoce, 404 CONVERSATION_NOT_FOUND; un mensaje vacío, 400
 // con `details`. La respuesta nombra a los estudiantes con seudónimos y trae `data.students`, como el backend real.
+// Un mensaje con «ambigua» recibe una pregunta de aclaración (una sola vez por pregunta, intent `clarification`).
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -233,30 +234,43 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
     const students = studentIds
       .slice(0, 3)
       .map((studentId) => ({ alias: aliasOf(studentId), studentId }));
-    const answer = `${students.length} estudiantes no entregaron la Tarea 3: ${students.map((s) => s.alias).join(", ")}. Se calculó con los estados de entrega de Moodle.`;
+    const history = conversations.get(conversationId) ?? { courseId: body.courseId, messages: [] };
+    // Aclaración única: un mensaje con «ambigua» recibe una pregunta; si lo último fue una aclaración, ya se responde.
+    const askClarification =
+      /ambigu/i.test(message) && history.messages.at(-1)?.intent !== "clarification";
+    const answer = askClarification
+      ? "¿De qué tarea hablas? Dime su número o su nombre."
+      : `${students.length} estudiantes no entregaron la Tarea 3: ${students.map((s) => s.alias).join(", ")}. Se calculó con los estados de entrega de Moodle.`;
     const final = {
       conversationId,
-      intent: "submissions",
+      intent: askClarification ? "clarification" : "submissions",
       answer,
-      data: { students },
+      data: askClarification ? null : { students },
       generatedAt: new Date().toISOString(),
-      sources: [
-        { type: "moodle_activity", id: 21, page: null, url: null },
-        { type: "moodle_gradebook", id: body.courseId, page: null, url: null },
-      ],
-      incompleteData: /incompleto/i.test(message),
+      sources: askClarification
+        ? []
+        : [
+            { type: "moodle_activity", id: 21, page: null, url: null },
+            { type: "moodle_gradebook", id: body.courseId, page: null, url: null },
+          ],
+      criteria: askClarification
+        ? []
+        : [
+            "Entregó quien envió la tarea (enviada o calificada); un borrador no cuenta como entrega.",
+            "Tarde es una entrega enviada después de la fecha límite de la tarea.",
+          ],
+      incompleteData: !askClarification && /incompleto/i.test(message),
     };
-    const history = conversations.get(conversationId) ?? { courseId: body.courseId, messages: [] };
     history.messages.push(
       { role: "user", content: message, createdAt: new Date().toISOString() },
-      { role: "assistant", content: answer, createdAt: final.generatedAt },
+      { role: "assistant", content: answer, createdAt: final.generatedAt, intent: final.intent },
     );
     conversations.set(conversationId, history);
 
     if (!String(request.headers.accept).includes("text/event-stream"))
       return json(response, 200, final);
     response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
-    sse(response, "tool", { name: "get_assignment_submissions" });
+    if (!askClarification) sse(response, "tool", { name: "get_assignment_submissions" });
     await wait(delayMs);
     for (const word of answer.split(" ")) {
       sse(response, "token", { text: `${word} ` });
@@ -449,7 +463,12 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
         ? json(response, 200, {
             id: match[1],
             courseId: conversation.courseId,
-            messages: conversation.messages,
+            // La intención es interna del simulador: el contrato del historial no la incluye.
+            messages: conversation.messages.map(({ role, content, createdAt }) => ({
+              role,
+              content,
+              createdAt,
+            })),
           })
         : error(response, 404, "CONVERSATION_NOT_FOUND");
     }

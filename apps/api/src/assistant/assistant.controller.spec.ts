@@ -13,6 +13,7 @@ const FINAL: ChatResponseDto = {
   data: null,
   generatedAt: "2026-11-10T12:00:00.000Z",
   sources: [],
+  criteria: [],
   incompleteData: false,
 };
 

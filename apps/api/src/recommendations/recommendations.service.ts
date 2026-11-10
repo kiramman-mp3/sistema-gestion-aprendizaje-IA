@@ -1,6 +1,7 @@
 import {
   Injectable,
   Logger,
+  Optional,
   ServiceUnavailableException,
   UnprocessableEntityException,
 } from "@nestjs/common";
@@ -20,9 +21,18 @@ import {
   validateRecommendationLanguage,
   type RecommendationContent,
 } from "./pedagogical-language";
-import { buildRecommendationPrompt, RECOMMENDATION_SYSTEM_PROMPT } from "./recommendation-prompt";
+import { ChunkSearchService } from "../rag/chunk-search.service";
+import {
+  buildRecommendationPrompt,
+  RECOMMENDATION_SYSTEM_PROMPT,
+  type CoursePassage,
+} from "./recommendation-prompt";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Qué se busca en los documentos del curso para alinear las estrategias con su metodología y evaluación. */
+const DOCUMENT_QUERY =
+  "metodologia estrategias de ensenanza actividades evaluacion resultados de aprendizaje";
 
 /** `components/schemas/Recommendation` del contrato OpenAPI. */
 export interface RecommendationDto extends RecommendationContent {
@@ -46,6 +56,7 @@ export class RecommendationsService {
     private readonly accounts: IntegrationAccountService,
     private readonly audit: AuditService,
     private readonly config: ConfigService<Env, true>,
+    @Optional() private readonly documents?: ChunkSearchService,
   ) {}
 
   async generate(
@@ -57,7 +68,8 @@ export class RecommendationsService {
     const evidence = await this.analytics.studentEvidence(auth, studentId, now);
     assertEnoughData(evidence);
 
-    const content = await this.writeSafely(auth, evidence);
+    const passages = await this.coursePassages(auth.courseId);
+    const content = await this.writeSafely(auth, evidence, passages);
     const final: RecommendationContent = {
       ...content,
       // Lo desconocido se declara siempre, aunque el modelo no lo mencione.
@@ -91,6 +103,7 @@ export class RecommendationsService {
   private async writeSafely(
     auth: AuthContext,
     evidence: StudentEvidenceDto,
+    passages: CoursePassage[],
   ): Promise<RecommendationContent> {
     let violations: ReturnType<typeof validateRecommendationLanguage> = [];
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -99,7 +112,7 @@ export class RecommendationsService {
         ({ data: content } = await this.llm.generateStructured({
           purpose: "pedagogical_recommendation",
           system: RECOMMENDATION_SYSTEM_PROMPT,
-          prompt: buildRecommendationPrompt(evidence, violations),
+          prompt: buildRecommendationPrompt(evidence, violations, passages),
           schema: recommendationContentSchema,
           schemaName: "pedagogical_recommendation_v1",
         }));
@@ -121,6 +134,22 @@ export class RecommendationsService {
       violations: violations.length,
     });
     throw this.unavailable();
+  }
+
+  /**
+   * Pasajes de los documentos del curso sobre la metodología, la evaluación y los resultados de aprendizaje, para que
+   * las estrategias sean coherentes con el sílabo (RF-14, RF-18). La búsqueda es solo del curso del token. Es un
+   * complemento: si falla o no hay documentos, la recomendación se genera igual con las evidencias.
+   */
+  private async coursePassages(courseId: number): Promise<CoursePassage[]> {
+    if (!this.documents) return [];
+    try {
+      const found = await this.documents.search(courseId, DOCUMENT_QUERY, 3);
+      return found.map(({ page, content }) => ({ page, text: content }));
+    } catch (error) {
+      this.logger.warn(`Sin pasajes del sílabo para la recomendación: ${String(error)}`);
+      return [];
+    }
   }
 
   private unavailable(): ServiceUnavailableException {

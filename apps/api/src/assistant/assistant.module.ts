@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AnalyticsDataService } from "../analytics/analytics-data.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import { AnalyticsModule } from "../analytics/analytics.module";
 import { MoodleModule } from "../integrations/moodle/moodle.module";
 import { MoodleRead } from "../integrations/moodle/moodle-read.service";
@@ -11,6 +12,7 @@ import { AssistantController } from "./assistant.controller";
 import { ChatService } from "./chat.service";
 import { ASSISTANT_TOOLS, ToolRegistry, type AssistantTool } from "./tools/assistant-tool";
 import { SearchCourseDocumentsTool } from "./tools/document-tools";
+import { GetStudentLearningEvidenceTool } from "./tools/student-tools";
 import {
   GetAssignmentSubmissionsTool,
   GetCourseActivitiesTool,
@@ -26,11 +28,12 @@ import { UsageQuotaService } from "./usage-quota.service";
   providers: [
     {
       provide: ASSISTANT_TOOLS,
-      inject: [MoodleRead, AnalyticsDataService, ChunkSearchService],
+      inject: [MoodleRead, AnalyticsDataService, ChunkSearchService, AnalyticsService],
       useFactory: (
         moodle: MoodleRead,
         analytics: AnalyticsDataService,
         search: ChunkSearchService,
+        analyticsService: AnalyticsService,
       ): AssistantTool[] => [
         new GetCourseActivitiesTool(moodle),
         new GetAssignmentSubmissionsTool(moodle),
@@ -38,6 +41,7 @@ import { UsageQuotaService } from "./usage-quota.service";
         new GetGradeSummaryTool(moodle),
         new GetUnitPerformanceTool(analytics),
         new SearchCourseDocumentsTool(search),
+        new GetStudentLearningEvidenceTool(moodle, analyticsService),
       ],
     },
     {

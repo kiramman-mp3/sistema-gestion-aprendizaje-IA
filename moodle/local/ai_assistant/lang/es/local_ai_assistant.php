@@ -140,6 +140,7 @@ $string['capviewanalytics'] = 'Ver analítica';
 $string['chat_assistant'] = 'Asistente';
 $string['chat_consulted'] = 'Consultado el {$a}';
 $string['chat_consulting'] = 'Consultando: {$a}';
+$string['chat_criteria'] = 'Criterio aplicado';
 $string['chat_empty'] = 'Haz tu primera pregunta.';
 $string['chat_error_forbidden'] = 'No tienes permiso para usar el asistente en este curso.';
 $string['chat_error_interrupted'] = 'La respuesta se interrumpió y puede estar incompleta.';

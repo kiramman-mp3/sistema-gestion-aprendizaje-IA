@@ -510,3 +510,69 @@ describe("errores con datos: 429, 404 y 400", () => {
     expect(text()).toContain("message: Demasiado largo");
   });
 });
+
+describe("criterio aplicado y aclaración", () => {
+  it("muestra el criterio aplicado como una lista desplegable bajo la respuesta", async () => {
+    answerWith([
+      ev("final", {
+        ...FINAL,
+        criteria: ["Un borrador no cuenta como entrega.", "Tarde es después del plazo."],
+      }),
+    ]);
+    await init(7);
+    type("pregunta");
+    submit();
+
+    await vi.waitFor(() => expect(log().querySelector("details")).not.toBeNull());
+
+    const details = log().querySelector("details");
+    expect(details.querySelector("summary").textContent).toBe("Criteria applied");
+    expect([...details.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+      "Un borrador no cuenta como entrega.",
+      "Tarde es después del plazo.",
+    ]);
+  });
+
+  it("sin criterios no dibuja nada", async () => {
+    answerWith([ev("final", { ...FINAL, criteria: [] })]);
+    await init(7);
+    type("pregunta");
+    submit();
+
+    await vi.waitFor(() => expect(text()).toContain("Tres estudiantes no entregaron"));
+
+    expect(log().querySelector("details")).toBeNull();
+  });
+
+  it("una pregunta de aclaración se muestra como una respuesta más, sin fuentes ni criterio", async () => {
+    answerWith([
+      ev("final", {
+        ...FINAL,
+        intent: "clarification",
+        answer: "¿De qué tarea hablas? Dime su número o su nombre.",
+        sources: [],
+        criteria: [],
+      }),
+    ]);
+    await init(7);
+    type("¿quién no entregó la tarea?");
+    submit();
+
+    await vi.waitFor(() => expect(text()).toContain("¿De qué tarea hablas?"));
+
+    expect(log().querySelector("details")).toBeNull();
+    expect(text()).not.toContain("Sources:");
+  });
+
+  it("el criterio no se interpreta como HTML", async () => {
+    answerWith([ev("final", { ...FINAL, criteria: ["<img src=x onerror=alert(1)>"] })]);
+    await init(7);
+    type("pregunta");
+    submit();
+
+    await vi.waitFor(() => expect(log().querySelector("details")).not.toBeNull());
+
+    expect(log().querySelector("details img")).toBeNull();
+    expect(log().querySelector("details").textContent).toContain("<img src=x");
+  });
+});

@@ -303,3 +303,79 @@ describe("ChatService", () => {
     });
   });
 });
+
+describe("ChatService · aclaración única y criterio aplicado", () => {
+  const clarify = () => ({
+    kind: "tool_calls" as const,
+    calls: [
+      { id: "c1", name: "ask_clarification", arguments: { question: "¿De qué tarea hablas?" } },
+    ],
+  });
+  const names = (provider: MockLlmProvider, call: number) =>
+    provider.chatCalls[call]!.tools.map((t) => t.name);
+
+  it("guarda la aclaración con su intención y la devuelve como respuesta", async () => {
+    const { service, provider, messages } = setup();
+    provider.respondToChatWith(clarify);
+
+    const result = await service.chat(AUTH, body({ message: "¿Quién no entregó la tarea?" }));
+
+    expect(result).toMatchObject({
+      answer: "¿De qué tarea hablas?",
+      intent: "clarification",
+      data: null,
+    });
+    expect(messages.at(-1)).toMatchObject({ role: "ASSISTANT", intent: "clarification" });
+  });
+
+  it("después de una aclaración ya no se le ofrece al modelo; con una respuesta normal, vuelve a ofrecerse", async () => {
+    const { service, provider } = setup();
+    provider.respondToChatWith(clarify);
+    const first = await service.chat(AUTH, body({ message: "¿Quién no entregó la tarea?" }));
+    provider.respondToChatWith(() => ({ kind: "text", text: "Con la tarea 3: nadie." }));
+
+    const second = await service.chat(
+      AUTH,
+      body({ conversationId: first.conversationId, message: "La tarea 3" }),
+    );
+    await service.chat(
+      AUTH,
+      body({ conversationId: first.conversationId, message: "Y la tarea 4" }),
+    );
+
+    expect(second.intent).not.toBe("clarification");
+    expect(names(provider, 0)).toContain("ask_clarification");
+    expect(names(provider, 1)).not.toContain("ask_clarification");
+    expect(names(provider, 2)).toContain("ask_clarification");
+  });
+
+  it("devuelve el criterio aplicado de las herramientas usadas", async () => {
+    const tool: AssistantTool<Record<string, never>> = {
+      name: "get_pending_grading",
+      description: "Pendientes",
+      kind: "read",
+      input: z.object({}),
+      execute: async () => ({
+        data: { totalPending: 1 },
+        sources: [],
+        criteria: ["Pendiente de calificar es una entrega enviada sin nota."],
+      }),
+    };
+    const { service, provider } = setup({ tools: [tool] });
+    provider.respondToChatWith((_request, turn) =>
+      turn === 0
+        ? { kind: "tool_calls", calls: [{ id: "1", name: "get_pending_grading", arguments: {} }] }
+        : { kind: "text", text: "Hay 1 pendiente." },
+    );
+
+    const result = await service.chat(AUTH, body({ message: "¿Qué hay pendiente?" }));
+
+    expect(result.criteria).toEqual(["Pendiente de calificar es una entrega enviada sin nota."]);
+  });
+
+  it("una respuesta sin herramientas no trae criterio", async () => {
+    const { service } = setup();
+
+    expect((await service.chat(AUTH, body())).criteria).toEqual([]);
+  });
+});
