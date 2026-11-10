@@ -30,7 +30,7 @@ import * as Model from "local_ai_assistant/analytics_model";
 import { createStrings, el, uniqueId } from "local_ai_assistant/ui";
 
 const PLAIN_STRINGS = [
-  "title", "intro", "loading", "indicators", "noindicators", "signals", "nosignals", "viewevidence", "back",
+  "title", "intro", "loading", "indicators", "history", "historydate", "historysignals", "historynote", "noindicators", "signals", "nosignals", "viewevidence", "back",
   "observed", "noobserved", "computedheading", "unknown", "unknownnote", "recommend", "recommending",
   "recommendations", "recnote", "followup", "followup_action", "followup_result", "followup_save", "followup_saved",
   "error_forbidden", "error_insufficient", "error_unavailable", "namesunavailable",
@@ -101,6 +101,9 @@ class Analytics {
       this.namesFailed = students === null;
       this.names = Model.nameLookup(students ?? []);
       this.drawDashboard(analytics);
+      // The history is a bonus: if it cannot be read, the panel stays as it is. It is asked after the panel so the
+      // snapshot of today (saved when the panel is calculated) is already there.
+      await this.showHistory(analytics.indicators, this.root.firstElementChild);
     } catch (error) {
       this.show(this.alert("danger", this.errorText(error)));
     }
@@ -119,6 +122,46 @@ class Analytics {
         : el("div", { class: "row g-2 mb-3" }, analytics.indicators.map((indicator) => this.indicatorCard(indicator))),
       el("h4", { class: "h6" }, str("signals")),
       groups.length === 0 ? this.alert("success", str("nosignals")) : el("ul", { class: "list-unstyled" }, groups.map((group) => this.signalGroup(group))),
+    );
+  }
+
+  /** Evolution of the indicators between the visits of this teacher to the panel. */
+  async showHistory(indicators, shown) {
+    let history;
+    try {
+      history = await callBackend(this.courseId, `/analytics/courses/${this.courseId}/history`);
+    } catch {
+      return;
+    }
+    const table = Model.historyTable(history, indicators);
+    // The teacher may have gone to a student while the history was loading: do not draw it over another screen.
+    if (!table || this.root.firstElementChild !== shown) {
+      return;
+    }
+    const caption = uniqueId("history");
+    this.root.append(
+      el("h4", { class: "h6 mt-3", id: caption }, str("history")),
+      el("p", { class: "small text-muted" }, str("historynote")),
+      el(
+        "div",
+        { class: "table-responsive" },
+        el(
+          "table",
+          { class: "table table-sm", "aria-labelledby": caption },
+          el(
+            "thead",
+            {},
+            el("tr", {}, el("th", { scope: "col" }, str("historydate")), ...table.columns.map((column) => el("th", { scope: "col" }, column.label)), el("th", { scope: "col" }, str("historysignals"))),
+          ),
+          el(
+            "tbody",
+            {},
+            ...table.rows.map((row) =>
+              el("tr", {}, el("th", { scope: "row" }, new Date(row.takenAt).toLocaleDateString()), ...row.cells.map((cell) => el("td", {}, cell)), el("td", {}, String(row.signals))),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
