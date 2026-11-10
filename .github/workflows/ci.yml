@@ -68,9 +68,7 @@ jobs:
   phpunit:
     name: Pruebas PHPUnit del plugin (Moodle 5.1)
     runs-on: ubuntu-latest
-    # Se ejecuta con moodle-plugin-ci, que instala Moodle 5.1 y PostgreSQL. No se pudo probar fuera de GitHub:
-    # hasta que pase una vez en verde no bloquea la integracion (quitar `continue-on-error` entonces, H-7).
-    continue-on-error: true
+    # Se ejecuta con moodle-plugin-ci, que instala Moodle 5.1 y PostgreSQL (H-7). Es bloqueante desde que pasó en verde.
     services:
       postgres:
         image: postgres:17
