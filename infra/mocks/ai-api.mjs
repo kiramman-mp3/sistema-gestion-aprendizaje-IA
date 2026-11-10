@@ -11,7 +11,9 @@
 //          --component=local_ai_assistant --name=backendurl --set=http://localhost:3100/api/v1
 // Las propuestas, la publicación y el mapeo de actividades NO están aquí: son del backend real.
 //
-// Convenciones para probar errores en el chat: un mensaje con «límite» responde 429; con «caído», 503.
+// Convenciones para probar errores en el chat: un mensaje con «límite» responde 429 (con Retry-After); con
+// «caído», 503; un `conversationId` que el simulador no conoce, 404 CONVERSATION_NOT_FOUND; un mensaje vacío, 400
+// con `details`. La respuesta nombra a los estudiantes con seudónimos y trae `data.students`, como el backend real.
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -40,7 +42,11 @@ const json = (response, status, body) => {
   response.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   response.end(JSON.stringify(body));
 };
-const error = (response, status, code, message = code) => json(response, status, { code, message });
+const error = (response, status, code, message = code, extra = {}) =>
+  json(response, status, { code, message, ...extra });
+
+/** Seudónimo de un estudiante, con el formato del backend real (`Estudiante#` y 8 dígitos). */
+export const aliasOf = (studentId) => `Estudiante#${String(studentId).padStart(8, "0")}`;
 
 async function readBody(request) {
   const chunks = [];
@@ -181,20 +187,36 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
 
   async function chat(request, response, body) {
     const message = String(body.message ?? "");
-    if (!message.trim()) return error(response, 400, "VALIDATION_ERROR");
-    if (/límite|limite/i.test(message))
+    if (!message.trim())
+      return error(
+        response,
+        400,
+        "VALIDATION_ERROR",
+        "La petición no cumple el formato esperado.",
+        {
+          details: [{ path: "message", message: "El mensaje no puede estar vacío." }],
+        },
+      );
+    if (body.conversationId && !conversations.has(body.conversationId))
+      return error(response, 404, "CONVERSATION_NOT_FOUND", "La conversación no existe.");
+    if (/límite|limite/i.test(message)) {
+      response.setHeader("Retry-After", "30");
       return error(response, 429, "RATE_LIMITED", "Límite de uso alcanzado.");
+    }
     if (/caído|caido/i.test(message))
       return error(response, 503, "AI_PROVIDER_UNAVAILABLE", "Proveedor de IA no disponible.");
 
     const conversationId = body.conversationId ?? randomUUID();
-    const answer =
-      "Tres estudiantes no entregaron la Tarea 3. Se calculó con los estados de entrega de Moodle.";
+    // Los ids de Moodle de quienes no entregaron; el texto lleva seudónimos y `data.students` dice a quién es cada uno.
+    const students = studentIds
+      .slice(0, 3)
+      .map((studentId) => ({ alias: aliasOf(studentId), studentId }));
+    const answer = `${students.length} estudiantes no entregaron la Tarea 3: ${students.map((s) => s.alias).join(", ")}. Se calculó con los estados de entrega de Moodle.`;
     const final = {
       conversationId,
       intent: "submissions",
       answer,
-      data: null,
+      data: { students },
       generatedAt: new Date().toISOString(),
       sources: [
         { type: "moodle_activity", id: 21, page: null, url: null },
@@ -334,6 +356,7 @@ export function createMockApi({ studentIds = [3, 5, 6], delayMs = 400 } = {}) {
       "Authorization, Content-Type, Idempotency-Key, Accept",
     );
     response.setHeader("access-control-allow-methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    response.setHeader("access-control-expose-headers", "Retry-After");
     route(request, response).catch(() => {
       if (!response.headersSent) error(response, 500, "INTERNAL_ERROR");
       else response.end();
