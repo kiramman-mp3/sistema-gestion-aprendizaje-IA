@@ -161,4 +161,59 @@ describe("LlmService", () => {
     expect(JSON.stringify(entries[0])).not.toContain("datos del sílabo");
     expect(JSON.stringify(entries[0])).not.toContain("texto del docente");
   });
+
+  describe("chat", () => {
+    const chat = (overrides = {}) => ({
+      purpose: "assistant_chat",
+      system: "Eres un asistente.",
+      messages: [{ role: "user" as const, content: "Hola" }],
+      tools: [],
+      ...overrides,
+    });
+
+    it("devuelve el turno del modelo, entrega los trozos en orden y registra el consumo", async () => {
+      const provider = new MockLlmProvider();
+      provider.respondToChatWith(() => ({ kind: "text", text: "uno dos tres" }));
+      const { service, entries } = setup(provider, { ...LIMITS, maxInputTokens: 1_000 });
+      const pieces: string[] = [];
+
+      const result = await service.chat(chat({ onToken: (text: string) => pieces.push(text) }));
+
+      expect(result).toMatchObject({ kind: "text", text: "uno dos tres", model: "mock-1" });
+      expect(pieces.join("")).toBe("uno dos tres");
+      expect(entries[0]).toMatchObject({ purpose: "assistant_chat", outcome: "ok" });
+    });
+
+    it("rechaza la entrada que supera el tope sin llamar al proveedor", async () => {
+      const provider = new MockLlmProvider();
+      provider.respondToChatWith(() => ({ kind: "text", text: "x" }));
+      const { service, entries } = setup(provider);
+
+      await expect(
+        service.chat(chat({ messages: [{ role: "user", content: "a".repeat(2_000) }] })),
+      ).rejects.toMatchObject({ code: "AI_LIMIT_EXCEEDED" });
+      expect(provider.chatCalls).toHaveLength(0);
+      expect(entries[0]).toMatchObject({ outcome: "AI_LIMIT_EXCEEDED" });
+    });
+
+    it("convierte el fallo del proveedor en AI_PROVIDER_UNAVAILABLE", async () => {
+      const provider = new MockLlmProvider();
+      provider.respondToChatWith(() => {
+        throw new Error("caído");
+      });
+      const { service } = setup(provider, { ...LIMITS, maxInputTokens: 1_000 });
+
+      await expect(service.chat(chat())).rejects.toMatchObject({
+        code: "AI_PROVIDER_UNAVAILABLE",
+      });
+    });
+
+    it("sin proveedor configurado no inventa una respuesta", async () => {
+      const { service } = setup(new UnavailableLlmProvider(), { ...LIMITS, maxInputTokens: 1_000 });
+
+      await expect(service.chat(chat())).rejects.toMatchObject({
+        code: "AI_PROVIDER_UNAVAILABLE",
+      });
+    });
+  });
 });
