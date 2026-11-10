@@ -14,6 +14,13 @@ export default defineConfig({
       "local_ai_assistant/extraction_model": path(
         "../../moodle/local/ai_assistant/amd/src/extraction_model.js",
       ),
+      "local_ai_assistant/ui": path("../../moodle/local/ai_assistant/amd/src/ui.js"),
+      "local_ai_assistant/proposal_model": path(
+        "../../moodle/local/ai_assistant/amd/src/proposal_model.js",
+      ),
+      "local_ai_assistant/proposal_preview": path(
+        "../../moodle/local/ai_assistant/amd/src/proposal_preview.js",
+      ),
       "local_ai_assistant/extraction_editor": path(
         "../../moodle/local/ai_assistant/amd/src/extraction_editor.js",
       ),
