@@ -17,7 +17,9 @@
     "typecheck": "pnpm -r --if-present run typecheck",
     "build:amd": "rollup -c infra/amd/rollup.config.mjs",
     "check:amd": "pnpm build:amd && git diff --exit-code -- moodle",
-    "mock:ai": "pnpm --filter @smart-lms/mocks ai"
+    "mock:ai": "pnpm --filter @smart-lms/mocks ai",
+    "loadtest": "node infra/loadtest/load.mjs",
+    "smoke:publicacion": "node infra/scripts/smoke-publicacion.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
