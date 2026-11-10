@@ -1,7 +1,19 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from "@nestjs/common";
 import { Auth, type AuthContext } from "../auth/auth-context";
 import { RequireCapability } from "../auth/require-capability.decorator";
+import { ProposalPublishService } from "./proposal-publish.service";
 import type { ProposalDto } from "./proposal.dto";
+import type { PublishOperationDto } from "./publish.dto";
 import { ProposalsService } from "./proposals.service";
 
 /**
@@ -10,7 +22,10 @@ import { ProposalsService } from "./proposals.service";
  */
 @Controller("proposals")
 export class ProposalsController {
-  constructor(private readonly proposals: ProposalsService) {}
+  constructor(
+    private readonly proposals: ProposalsService,
+    private readonly publishing: ProposalPublishService,
+  ) {}
 
   /** Genera una propuesta a partir de una versión de la extracción. */
   @Post()
@@ -40,5 +55,31 @@ export class ProposalsController {
   @RequireCapability("publish")
   approve(@Auth() auth: AuthContext, @Param("proposalId") id: string): Promise<ProposalDto> {
     return this.proposals.approve(auth, id);
+  }
+
+  /**
+   * Publica en Moodle una propuesta aprobada (RF-09). Exige `Idempotency-Key` y `{ "confirm": true }`.
+   * Responde 202: la publicación sigue en segundo plano y se consulta con la operación devuelta.
+   */
+  @Post(":proposalId/publish")
+  @HttpCode(HttpStatus.ACCEPTED)
+  @RequireCapability("publish")
+  publish(
+    @Auth() auth: AuthContext,
+    @Param("proposalId") id: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
+    @Body() body: unknown,
+  ): Promise<PublishOperationDto> {
+    return this.publishing.start(auth, id, idempotencyKey, body);
+  }
+
+  /** Progreso y resultado de una publicación. */
+  @Get(":proposalId/publish-operations/:operationId")
+  publishOperation(
+    @Auth() auth: AuthContext,
+    @Param("proposalId") id: string,
+    @Param("operationId") operationId: string,
+  ): Promise<PublishOperationDto> {
+    return this.publishing.getOperation(auth, id, operationId);
   }
 }
