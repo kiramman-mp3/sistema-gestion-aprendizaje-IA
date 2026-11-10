@@ -23,7 +23,7 @@ import {
   type AssistantEvent,
 } from "./ai-orchestrator.service";
 import type { ChatSource } from "./tools/assistant-tool";
-import { UsageQuotaService } from "./usage-quota.service";
+import { UsageLimitExceededError, UsageQuotaService } from "./usage-quota.service";
 
 /** Mensajes previos que se entregan al modelo como contexto. */
 export const HISTORY_MESSAGES = 20;
@@ -84,7 +84,15 @@ export class ChatService {
         message: "El token no corresponde a este curso.",
       });
     }
-    await this.quota.assertWithinLimits(auth.moodleUserId);
+    try {
+      await this.quota.assertWithinLimits(auth.moodleUserId);
+    } catch (error) {
+      // El rechazo por tope diario se audita: sirve a la alerta de consumo de IA (check-ai-usage.sh).
+      if (error instanceof UsageLimitExceededError) {
+        await this.record(auth, "DENIED", {}, "assistant.quota_exceeded");
+      }
+      throw error;
+    }
 
     const existing = body.conversationId ? await this.findOwn(auth, body.conversationId) : null;
     const { messages: history, lastIntent } = existing
@@ -264,12 +272,13 @@ export class ChatService {
 
   private async record(
     auth: AuthContext,
-    outcome: "SUCCESS" | "ERROR",
+    outcome: "SUCCESS" | "ERROR" | "DENIED",
     metadata: Record<string, string | number>,
+    action = "assistant.chat",
   ): Promise<void> {
     await this.audit
       .record({
-        action: "assistant.chat",
+        action,
         outcome,
         actorMoodleId: auth.moodleUserId,
         courseId: auth.courseId,
