@@ -61,6 +61,11 @@ describe("aclaración única", () => {
     expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/UNA sola vez/);
   });
 
+  it("pide texto plano (la pantalla no interpreta Markdown) y nombrar las actividades por su título", () => {
+    expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/texto plano.*Markdown/);
+    expect(ASSISTANT_SYSTEM_PROMPT).toMatch(/por su título.*cmid/);
+  });
+
   it("al pedirla, el turno termina con la pregunta, sin datos ni fuentes, y queda marcado como aclaración", async () => {
     const { provider, run } = setup([]);
     provider.respondToChatWith(() => ask("¿De qué tarea hablas? Dime su número o su nombre."));
