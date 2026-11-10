@@ -22,6 +22,8 @@ import {
   parsePath,
   parseWeight,
   removeItem,
+  removeLearningOutcome,
+  renameLearningOutcome,
   setAt,
   summarize,
 } from "../../../moodle/local/ai_assistant/amd/src/extraction_model.js";
@@ -89,6 +91,35 @@ describe("agregar y quitar elementos", () => {
       { path: "learningOutcomes[0]", page: 3, excerpt: null },
     ]);
     expect(outcomes.uncertainFields.at(-1).path).toBe("learningOutcomes[0].description");
+  });
+});
+
+describe("resultados de aprendizaje", () => {
+  it("al renombrar un resultado actualiza las referencias", () => {
+    const renamed = renameLearningOutcome(sample(), 0, "RA-A");
+
+    expect(renamed.learningOutcomes[0].id).toBe("RA-A");
+    expect(renamed.gradingPeriods[0].units[0].learningOutcomeIds).toEqual(["RA-A"]);
+    expect(renamed.gradingPeriods[0].units[0].activities[0].learningOutcomeIds).toEqual(["RA-A"]);
+    expect(renamed.gradingPeriods[1].units[0].learningOutcomeIds).toEqual(["RA2"]);
+    expect(findConsistencyIssues(renamed)).toEqual([]);
+  });
+
+  it("al quitar un resultado quita sus referencias y recorre las notas", () => {
+    const removed = removeLearningOutcome(sample(), 0);
+
+    expect(removed.learningOutcomes.map((outcome) => outcome.id)).toEqual(["RA2"]);
+    expect(removed.gradingPeriods[0].units[0].learningOutcomeIds).toEqual([]);
+    expect(removed.sourceReferences).toEqual([]);
+  });
+
+  it("si otro resultado tiene el mismo id, conserva las referencias", () => {
+    const extraction = sample();
+    extraction.learningOutcomes.push({ id: "RA1", description: "Repetido" });
+
+    const removed = removeLearningOutcome(extraction, 2);
+
+    expect(removed.gradingPeriods[0].units[0].learningOutcomeIds).toEqual(["RA1"]);
   });
 });
 

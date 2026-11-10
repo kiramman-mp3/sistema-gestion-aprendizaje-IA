@@ -151,6 +151,58 @@ export const addItem = (extraction, arrayPath, item) => {
   return copy;
 };
 
+/**
+ * Applies a function to every list of learning outcome ids (units and activities).
+ *
+ * @param {object} extraction Modified in place; pass a copy.
+ * @param {function(string[]): string[]} change
+ */
+const mapOutcomeReferences = (extraction, change) => {
+  for (const period of extraction.gradingPeriods) {
+    for (const unit of period.units) {
+      unit.learningOutcomeIds = change(unit.learningOutcomeIds);
+      for (const activity of unit.activities) {
+        activity.learningOutcomeIds = change(activity.learningOutcomeIds);
+      }
+    }
+  }
+};
+
+/**
+ * Changes the id of a learning outcome and the references to it, so renaming does not break links.
+ *
+ * @param {object} extraction
+ * @param {number} index Position of the outcome.
+ * @param {string} newId
+ * @returns {object}
+ */
+export const renameLearningOutcome = (extraction, index, newId) => {
+  const copy = structuredClone(extraction);
+  const oldId = copy.learningOutcomes[index].id;
+  copy.learningOutcomes[index].id = newId;
+  const shared = copy.learningOutcomes.some((outcome, i) => i !== index && outcome.id === oldId);
+  if (!shared && oldId !== newId) {
+    mapOutcomeReferences(copy, (ids) => ids.map((id) => (id === oldId ? newId : id)));
+  }
+  return copy;
+};
+
+/**
+ * Removes a learning outcome and, unless another outcome has the same id, the references to it.
+ *
+ * @param {object} extraction
+ * @param {number} index
+ * @returns {object}
+ */
+export const removeLearningOutcome = (extraction, index) => {
+  const oldId = extraction.learningOutcomes[index].id;
+  const copy = removeItem(extraction, "learningOutcomes", index);
+  if (!copy.learningOutcomes.some((outcome) => outcome.id === oldId)) {
+    mapOutcomeReferences(copy, (ids) => ids.filter((id) => id !== oldId));
+  }
+  return copy;
+};
+
 /** @returns {object} A new learning outcome with the next free id (`RA1`, `RA2`...). */
 export const newLearningOutcome = (extraction) => {
   const used = new Set(extraction.learningOutcomes.map((outcome) => outcome.id));
