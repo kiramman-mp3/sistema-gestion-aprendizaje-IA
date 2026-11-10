@@ -67,10 +67,10 @@ ese contrato con datos de prueba.
 
 ### Sprint 6 · Propuestas
 
-- [ ] `feature/proposal-generator`: unidades a secciones y actividades a tipos de Moodle según D-05, vinculadas a unidades y resultados.
-- [ ] Validación de ponderaciones contra la configuración institucional (D-04).
-- [ ] `feature/proposal-state-machine` y `feature/proposal-api` (`POST /proposals`, `GET`, `PATCH`, `POST /proposals/:id/approve`).
-- [ ] `feature/plugin-proposal-preview`: vista previa editable.
+- [x] `feature/proposal-generator`: unidades a secciones y actividades a tipos de Moodle según D-05, vinculadas a unidades y resultados.
+- [x] Validación de ponderaciones contra la configuración institucional (D-04), con política provisional.
+- [x] `feature/proposal-state-machine` y `feature/proposal-api` (`POST /proposals`, `GET`, `PATCH`, `POST /proposals/:id/approve`).
+- [x] `feature/plugin-proposal-preview`: vista previa editable.
 
 ### Sprint 7 · Publicación en Moodle (hito H3)
 
