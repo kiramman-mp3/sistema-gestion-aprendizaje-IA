@@ -90,7 +90,7 @@ describe("Propuestas (e2e)", () => {
     });
 
   describe("POST /proposals", () => {
-    it("FUN-04: genera la propuesta de una extracción revisada, lista para revisión", async () => {
+    it("RF-07: genera la propuesta de una extracción revisada, lista para revisión", async () => {
       const res = await create();
 
       expect(res.status).toBe(201);
