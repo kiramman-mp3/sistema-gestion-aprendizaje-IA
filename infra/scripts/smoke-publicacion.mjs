@@ -94,7 +94,7 @@ async function call(method, path, body, headers = {}) {
 }
 
 const documentId = randomUUID();
-let proposalId = null;
+let proposalId;
 try {
   console.log("\n1. Siembra de un sílabo revisado");
   const content = JSON.stringify(buildSyllabusExtraction()).replaceAll("'", "''");
