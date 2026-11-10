@@ -24,7 +24,8 @@
     "mock:ai": "pnpm --filter @smart-lms/mocks ai",
     "loadtest": "node infra/loadtest/load.mjs",
     "smoke:publicacion": "node infra/scripts/smoke-publicacion.mjs",
-    "smoke:asistente": "node infra/scripts/smoke-asistente.mjs"
+    "smoke:asistente": "node infra/scripts/smoke-asistente.mjs",
+    "smoke:silabos": "node infra/scripts/smoke-silabos.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
