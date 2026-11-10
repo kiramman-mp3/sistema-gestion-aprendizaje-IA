@@ -400,6 +400,16 @@ paths:
       tags: [proposals]
       operationId: publishProposal
       summary: Publicar en Moodle una propuesta aprobada (RF-09)
+      description: |
+        Requiere la capacidad `publish`. Solo se publica una propuesta `APPROVED`, o una `FAILED` para
+        reanudarla. Exige `Idempotency-Key` y `{ "confirm": true }`: sin confirmación explícita no se crea
+        nada.
+
+        Responde 202 y la publicación sigue en segundo plano, un elemento a la vez, con la identidad y los
+        permisos del docente. Repetir la petición con la misma clave devuelve la misma operación y no
+        publica de nuevo; otra clave sobre una propuesta que ya se está publicando o se publicó responde 409.
+        Moodle reconoce cada elemento por su id, así que reanudar tras un fallo no duplica lo creado. Las
+        actividades se crean ocultas.
       parameters:
         - $ref: "#/components/parameters/ProposalId"
         - name: Idempotency-Key
@@ -428,18 +438,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublishOperation"
+        "400":
+          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
-          $ref: "#/components/responses/InvalidTransition"
+          description: |
+            `INVALID_TRANSITION` (la propuesta no está aprobada ni fallida), `PROPOSAL_HAS_ERRORS`,
+            `IDEMPOTENCY_KEY_REUSED` (la clave ya se usó en otra propuesta) o `PROPOSAL_CHANGED`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: |
+            `PUBLISH_QUEUE_UNAVAILABLE`: no se pudo encolar. La propuesta queda `FAILED` y se puede reanudar.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /proposals/{proposalId}/publish-operations/{operationId}:
     get:
       tags: [proposals]
       operationId: getPublishOperation
       summary: Progreso y resultado de una publicación
+      description: |
+        Una operación solo se consulta con su propuesta y en su curso; en otro caso responde 404
+        (`PUBLISH_OPERATION_NOT_FOUND` o `PROPOSAL_NOT_FOUND`).
       parameters:
         - $ref: "#/components/parameters/ProposalId"
         - name: operationId
@@ -1031,6 +1061,20 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProposalItem"
+        lastPublishOperation:
+          readOnly: true
+          description: Última publicación, para retomar su seguimiento al recargar la página
+          oneOf:
+            - type: "null"
+            - type: object
+              required: [id, status]
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+                  enum: [RUNNING, SUCCEEDED, FAILED]
         issues:
           type: array
           readOnly: true
@@ -1064,28 +1108,46 @@ components:
 
     PublishOperation:
       type: object
-      required: [id, status, createdCount, failedCount]
+      required: [id, proposalId, status, totalCount, createdCount, failedCount, failures, createdAt]
       properties:
         id:
+          type: string
+          format: uuid
+        proposalId:
           type: string
           format: uuid
         status:
           type: string
           enum: [RUNNING, SUCCEEDED, FAILED]
+        totalCount:
+          type: integer
+          description: Elementos de la propuesta
         createdCount:
           type: integer
+          description: Elementos creados en esta operación
         failedCount:
           type: integer
         failures:
           type: array
+          description: Elementos que no se crearon. La publicación se detiene en el primer fallo.
           items:
             type: object
+            required: [itemId, error]
             properties:
               itemId:
                 type: string
                 format: uuid
               error:
                 type: string
+                description: |
+                  `MOODLE_PERMISSION`, `MOODLE_UNAVAILABLE`, `MOODLE_BAD_RESPONSE`,
+                  `MOODLE_ERROR:<código de Moodle>` o `PUBLISH_ERROR`
+        createdAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: [string, "null"]
+          format: date-time
 
     ChatResponse:
       type: object
