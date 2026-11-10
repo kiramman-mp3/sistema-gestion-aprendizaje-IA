@@ -174,11 +174,11 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 ├── packages/
 │   └── contracts/                  # Esquema del sílabo v1, contratos de la cola de texto y JSON Schema
 ├── moodle/local/ai_assistant/      # Plugin de Moodle
-│   ├── classes/external/           # get_backend_token (AJAX) y check_access (integración)
-│   ├── classes/local/              # Emisor de tokens para el backend
+│   ├── classes/external/           # get_backend_token (AJAX), check_access, publish_section y publish_module (integración)
+│   ├── classes/local/              # Emisor de tokens, publicador de secciones y actividades, observador
 │   ├── amd/src/ y amd/build/       # Módulos de la página (conexión, carga del sílabo y editor de la extracción) y su build
 │   ├── templates/                  # Plantilla Mustache de la página
-│   ├── db/                         # Capacidades y servicios web
+│   ├── db/                         # Capacidades, servicios web, tabla de mapeo (install.xml, upgrade.php) y eventos
 │   └── index.php, lib.php          # Página del asistente y enlace en el curso
 ├── infra/
 │   ├── docker/                     # Init de PostgreSQL e imagen de phpcs
@@ -327,18 +327,20 @@ Pendiente. El entorno de producción se define en el Sprint 13 (ver [roadmap](do
 Prefijo `/api/v1`. Todas las rutas salvo `/health` exigen el JWT del plugin. Contrato completo en
 [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
 
-| Método | Ruta                     | Qué hace                                                                      |
-| ------ | ------------------------ | ----------------------------------------------------------------------------- |
-| GET    | `/health`                | Estado de la base, Redis, Moodle y el antivirus                               |
-| GET    | `/session`               | Identidad, roles y capacidades del docente en el curso                        |
-| POST   | `/syllabi`               | Carga un sílabo (multipart) y encola la extracción de texto                   |
-| GET    | `/syllabi/:id`           | Estado, progreso, páginas y confianza de la extracción                        |
-| POST   | `/proposals`             | Genera la propuesta de curso desde una extracción revisada (`publish`)        |
-| GET    | `/proposals/:id`         | Propuesta con sus elementos y la revisión (`issues`)                          |
-| PATCH  | `/proposals/:id`         | Reemplaza los elementos; una propuesta aprobada vuelve a revisión (`publish`) |
-| POST   | `/proposals/:id/approve` | Aprueba una propuesta en revisión y sin errores (`publish`)                   |
+| Método | Ruta                                             | Qué hace                                                                                                              |
+| ------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`                                        | Estado de la base, Redis, Moodle y el antivirus                                                                       |
+| GET    | `/session`                                       | Identidad, roles y capacidades del docente en el curso                                                                |
+| POST   | `/syllabi`                                       | Carga un sílabo (multipart) y encola la extracción de texto                                                           |
+| GET    | `/syllabi/:id`                                   | Estado, progreso, páginas y confianza de la extracción                                                                |
+| POST   | `/proposals`                                     | Genera la propuesta de curso desde una extracción revisada (`publish`)                                                |
+| GET    | `/proposals/:id`                                 | Propuesta con sus elementos y la revisión (`issues`)                                                                  |
+| PATCH  | `/proposals/:id`                                 | Reemplaza los elementos; una propuesta aprobada vuelve a revisión (`publish`)                                         |
+| POST   | `/proposals/:id/approve`                         | Aprueba una propuesta en revisión y sin errores (`publish`)                                                           |
+| POST   | `/proposals/:id/publish`                         | Publica en Moodle una propuesta aprobada o reanuda una fallida; exige `Idempotency-Key` y `confirm: true` (`publish`) |
+| GET    | `/proposals/:id/publish-operations/:operationId` | Progreso y resultado de una publicación                                                                               |
 
-El flujo de carga y extracción está en [`docs/architecture/procesamiento-silabos.md`](docs/architecture/procesamiento-silabos.md); el de propuestas, en [`docs/architecture/propuestas.md`](docs/architecture/propuestas.md).
+El flujo de carga y extracción está en [`docs/architecture/procesamiento-silabos.md`](docs/architecture/procesamiento-silabos.md); el de propuestas, en [`docs/architecture/propuestas.md`](docs/architecture/propuestas.md); el de publicación, en [`docs/architecture/publicacion.md`](docs/architecture/publicacion.md).
 
 ### Migraciones
 
@@ -347,6 +349,8 @@ El flujo de carga y extracción está en [`docs/architecture/procesamiento-silab
 | `20261109163904_init`                           | Esquema inicial de 15 tablas y extensiones `vector` y `pgcrypto` |
 | `20261109200000_integration_account_unique_url` | Una cuenta de integración por sitio Moodle                       |
 | `20261110090000_document_text`                  | Estado `TEXT_READY` y texto extraído del sílabo                  |
+
+El plugin de Moodle tiene su propia tabla, `local_ai_assistant_items` (relaciona cada elemento publicado con su sección o actividad), creada por `db/install.xml` y `db/upgrade.php`; tras actualizar el plugin se aplica con `admin/cli/upgrade.php`.
 
 ---
 
@@ -383,7 +387,7 @@ El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprin
 - [x] Carga segura de sílabos, cola, extracción de texto y OCR (Sprint 4)
 - [ ] Extracción estructurada con IA y revisión del docente (Sprint 5; el editor del plugin ya está, falta la extracción con IA)
 - [x] Propuesta de curso: generador, validación, estados, API y vista previa (Sprint 6)
-- [ ] Publicación en Moodle (Sprint 7)
+- [x] Publicación idempotente en Moodle, con confirmación, resumen y reanudación (Sprint 7)
 - [ ] Asistente conversacional (Sprints 8–9)
 - [ ] Analítica y asistente pedagógico (Sprints 10–11)
 - [ ] Evaluación con docentes (Sprint 12)

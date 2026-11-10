@@ -37,17 +37,17 @@ antes de llamar al proveedor LLM.
 
 ## 🧭 Vista general
 
-| Fase | Nombre                        | Sprints | Semanas | Hito al cerrar                                            |
-| ---- | ----------------------------- | ------- | ------- | --------------------------------------------------------- |
-| 0    | Decisiones y arranque         | S0      | 1–2     | Decisiones cerradas, repo y CI base                       |
-| 1    | Levantamiento y diseño        | S1      | 3–4     | Requisitos numerados, prototipos, ADRs                    |
-| 2    | Infraestructura e integración | S2–S3   | 5–8     | **H1:** plugin ↔ backend ↔ Moodle autenticado (alcanzado) |
-| 3    | Procesamiento de sílabos      | S4–S5   | 9–12    | **H2:** sílabo convertido en extracción editable          |
-| 4    | Generación y publicación      | S6–S7   | 13–16   | **H3:** estructura publicada en Moodle sin duplicados     |
-| 5    | Asistente conversacional      | S8–S9   | 17–20   | **H4:** chat que consulta datos reales del curso          |
-| 6    | Analítica y recomendaciones   | S10–S11 | 21–24   | **H5:** panel analítico y asistente pedagógico            |
-| 7    | Pruebas y evaluación          | S12     | 25–26   | **H6:** informe de evaluación con docentes                |
-| 8    | Despliegue y documentación    | S13     | 27–28   | **H7:** versión 1.0 en `main`, manuales y tesis           |
+| Fase | Nombre                        | Sprints | Semanas | Hito al cerrar                                                    |
+| ---- | ----------------------------- | ------- | ------- | ----------------------------------------------------------------- |
+| 0    | Decisiones y arranque         | S0      | 1–2     | Decisiones cerradas, repo y CI base                               |
+| 1    | Levantamiento y diseño        | S1      | 3–4     | Requisitos numerados, prototipos, ADRs                            |
+| 2    | Infraestructura e integración | S2–S3   | 5–8     | **H1:** plugin ↔ backend ↔ Moodle autenticado (alcanzado)         |
+| 3    | Procesamiento de sílabos      | S4–S5   | 9–12    | **H2:** sílabo convertido en extracción editable                  |
+| 4    | Generación y publicación      | S6–S7   | 13–16   | **H3:** estructura publicada en Moodle sin duplicados (alcanzado) |
+| 5    | Asistente conversacional      | S8–S9   | 17–20   | **H4:** chat que consulta datos reales del curso                  |
+| 6    | Analítica y recomendaciones   | S10–S11 | 21–24   | **H5:** panel analítico y asistente pedagógico                    |
+| 7    | Pruebas y evaluación          | S12     | 25–26   | **H6:** informe de evaluación con docentes                        |
+| 8    | Despliegue y documentación    | S13     | 27–28   | **H7:** versión 1.0 en `main`, manuales y tesis                   |
 
 ```mermaid
 gantt
@@ -387,17 +387,27 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** crear en Moodle solo los elementos aprobados, sin duplicados.
 
-- [ ] `feature/moodle-create-section`: función externa del plugin para crear y actualizar secciones.
-- [ ] `feature/moodle-create-module`: funciones externas con `create_module()` para los tipos de D-05, con validación de parámetros y capacidades.
-- [ ] `feature/publish-job`: `POST /proposals/:id/publish` con clave de idempotencia; ejecución en cola, ítem por ítem, registrando `moodleItemId`.
-- [ ] Manejo de fallos parciales: reanudar desde el último ítem publicado; informe de creados y fallidos.
-- [ ] Confirmación explícita del docente antes de publicar.
-- [ ] `feature/plugin-publish-summary`: resumen de elementos creados y errores con enlaces a Moodle.
-- [ ] Pruebas: publicación repetida, caída de Moodle a mitad de publicación, permisos insuficientes.
+- [x] `feature/moodle-create-section`: función externa del plugin para crear secciones (`local_ai_assistant_publish_section`); una sección ya creada para el mismo elemento se devuelve, no se actualiza.
+- [x] `feature/moodle-create-module`: función externa con `create_module()` para `assign`, `forum`, `quiz`, `label` y `page` (D-05 provisional), con validación de parámetros y de los permisos del docente.
+- [x] `feature/publish-job`: `POST /proposals/:id/publish` con clave de idempotencia; ejecución en cola, ítem por ítem, registrando `moodleItemId`.
+- [x] Manejo de fallos parciales: reanudar desde el último ítem publicado; informe de creados y fallidos.
+- [x] Confirmación explícita del docente antes de publicar (`confirm: true` en la API y casilla en el plugin).
+- [x] `feature/plugin-publish-summary`: resumen de elementos creados y errores con enlaces a Moodle.
+- [x] Pruebas: publicación repetida, caída de Moodle a mitad de publicación, permisos insuficientes.
 
 **Entregables (H3):** creación controlada de estructura y actividades en Moodle.
 
 **Criterio de aceptación:** repetir la publicación no crea duplicados; se crean únicamente los elementos aprobados.
+**Resultado:** cumplido (FUN-06, SEC-04). Hito H3 alcanzado; resultados de la fase en [`docs/resultados/fase-4.md`](resultados/fase-4.md) y diseño en [`docs/architecture/publicacion.md`](architecture/publicacion.md).
+
+**Desvíos:**
+
+- El plugin guarda una tabla propia (`local_ai_assistant_items`) para reconocer lo ya creado; añade `db/install.xml`, `db/upgrade.php` y un observador de borrado de curso. Las actividades llevan además el id del elemento en su `idnumber`.
+- Se publica con la identidad del docente (no la del usuario de integración): el usuario técnico solo recibe la capacidad `local/ai_assistant:createcontent` y Moodle exige los permisos del docente ([ADR-015](architecture/adr/0015-publicacion-idempotente-identidad-docente.md)).
+- Las actividades se crean ocultas y el cuestionario vacío; el docente las revisa y las muestra.
+- Se añadió `lastPublishOperation` a la propuesta para retomar el seguimiento al recargar la página.
+- La verificación de punta a punta con Moodle real encontró un error que PHPUnit y CLI no mostraban (Moodle no carga `course/lib.php` en una petición de servicio web); corregido.
+- Las pruebas PHPUnit del plugin no corren en CI (solo `phpcs`).
 
 ---
 
@@ -564,7 +574,7 @@ de modelos propios y publicación masiva sin revisión.
 | S4     | Terminado | 2026-11-09 | 2026-11-09 | Carga segura, cola, worker PDF/DOCX con OCR, estado y pantalla de carga; faltan sílabos reales (D-03) |
 | S5     | En curso  | 2026-11-09 |            | Editor de la extracción terminado (plugin); pendientes proveedor LLM, extracción con IA, API y F1     |
 | S6     | Terminado | 2026-11-09 | 2026-11-09 | Generador, validación, máquina de estados, API y vista previa; D-04 y D-05 provisionales              |
-| S7     | Pendiente |            |            |                                                                                                       |
+| S7     | Terminado | 2026-11-09 | 2026-11-09 | Funciones del plugin, publicación idempotente en cola, panel con confirmación y resumen; H3 alcanzado |
 | S8     | Pendiente |            |            |                                                                                                       |
 | S9     | Pendiente |            |            |                                                                                                       |
 | S10    | Pendiente |            |            |                                                                                                       |
