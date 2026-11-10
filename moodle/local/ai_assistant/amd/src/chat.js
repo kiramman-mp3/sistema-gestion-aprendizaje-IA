@@ -45,6 +45,8 @@ const PARAM_STRINGS = {
   student: null,
   error_other: null,
   error_ratelimited_wait: null,
+  error_ratelimited_wait_minutes: null,
+  error_ratelimited_wait_hours: null,
 };
 
 const { load: loadStrings, str } = createStrings("chat", PLAIN_STRINGS, PARAM_STRINGS);
@@ -263,7 +265,8 @@ class Chat {
     if (kind === "other") {
       text = str("error_other", message.errorCode);
     } else if (kind === "ratelimited" && message.retryAfter) {
-      text = str("error_ratelimited_wait", message.retryAfter);
+      const wait = Model.waitInUnits(message.retryAfter);
+      text = str(wait.unit === "seconds" ? "error_ratelimited_wait" : `error_ratelimited_wait_${wait.unit}`, wait.value);
     } else {
       text = str(`error_${kind}`);
     }
@@ -328,6 +331,10 @@ class Chat {
         // The backend no longer has the conversation: the next message starts a new one, and the question
         // that was lost goes back to the box so it can be sent again.
         this.conversation = Model.forgetConversation(this.conversation);
+        this.input.value = text;
+      } else if (error.status && ["unavailable", "ratelimited"].includes(Model.errorKind(code, error.status))) {
+        // The service refused before answering: the question goes back to the box so it can be sent again
+        // later without typing it again.
         this.input.value = text;
       }
     } finally {

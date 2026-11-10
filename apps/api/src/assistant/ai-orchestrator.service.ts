@@ -46,6 +46,8 @@ export const ASSISTANT_SYSTEM_PROMPT = [
   "5. No hagas diagnósticos ni etiquetes a estudiantes: describe hechos observables.",
   "6. No cambias nada en Moodle: solo consultas.",
   `7. Si la pregunta es ambigua y no puedes responder sin saber más (por ejemplo, «la tarea» cuando hay varias), llama a ${CLARIFICATION_TOOL} UNA sola vez con una pregunta corta. Cuando el docente responda a una aclaración, responde ya con lo que tengas y no vuelvas a preguntar.`,
+  "8. Escribe texto plano: la pantalla no interpreta Markdown, así que no uses asteriscos, almohadillas ni comillas invertidas. Para listar, usa guiones al inicio de la línea.",
+  "9. Nombra las actividades por su título, no por su número interno (cmid). Si una herramienta solo devolvió el cmid, consulta get_course_activities para obtener el título.",
 ].join("\n");
 
 export type AssistantEvent = { type: "tool"; name: string } | { type: "token"; text: string };

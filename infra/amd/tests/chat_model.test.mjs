@@ -9,6 +9,7 @@ import {
   emptyConversation,
   errorExtras,
   errorKind,
+  waitInUnits,
   failTurn,
   forgetConversation,
   fromHistory,
@@ -446,5 +447,16 @@ describe("criterio aplicado y aclaración", () => {
     );
 
     expect(last(done).criteria).toEqual([]);
+  });
+});
+
+describe("espera tras un límite de uso", () => {
+  it("usa segundos, minutos u horas según lo largo que sea", () => {
+    expect(waitInUnits(45)).toEqual({ unit: "seconds", value: 45 });
+    expect(waitInUnits(120)).toEqual({ unit: "seconds", value: 120 });
+    expect(waitInUnits(121)).toEqual({ unit: "minutes", value: 3 });
+    expect(waitInUnits(1800)).toEqual({ unit: "minutes", value: 30 });
+    expect(waitInUnits(7201)).toEqual({ unit: "hours", value: 3 });
+    expect(waitInUnits(64541)).toEqual({ unit: "hours", value: 18 });
   });
 });
