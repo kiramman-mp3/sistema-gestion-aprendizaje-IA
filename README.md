@@ -533,8 +533,8 @@ están en [`CLAUDE.md`](CLAUDE.md).
 
 | Nombre            | Commits |
 | ----------------- | ------- |
-| JoseM151          | 276     |
-| kiramman-mp3      | 196     |
+| JoseM151          | 278     |
+| kiramman-mp3      | 197     |
 | JuanCarlos        | 77      |
 | JuanCarlos Pashma | 2       |
 
