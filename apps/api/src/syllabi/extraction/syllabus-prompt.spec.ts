@@ -10,8 +10,9 @@ describe("EXTRACTION_SYSTEM_PROMPT", () => {
     expect(EXTRACTION_SYSTEM_PROMPT).toMatch(/único periodo.*weight null.*todas las unidades/s);
   });
 
-  it("pide un tema por unidad temática cuando el documento las agrupa", () => {
-    expect(EXTRACTION_SYSTEM_PROMPT).toMatch(/un tema por unidad temática/);
+  it("pide un tema por grupo solo cuando el documento agrupa los contenidos con un nombre propio", () => {
+    expect(EXTRACTION_SYSTEM_PROMPT).toMatch(/un tema por grupo/);
+    expect(EXTRACTION_SYSTEM_PROMPT).toMatch(/nunca inventes un nombre de grupo/);
   });
 
   it("la última regla sigue siendo responder solo con el JSON", () => {

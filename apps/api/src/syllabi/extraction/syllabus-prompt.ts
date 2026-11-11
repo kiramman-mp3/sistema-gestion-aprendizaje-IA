@@ -23,7 +23,7 @@ export const EXTRACTION_SYSTEM_PROMPT = [
   "7. El título de una unidad va sin su numeración: «U.1 Modelo relacional» o «Unidad 2: Redes» se extraen como «Modelo relacional» y «Redes».",
   "8. Los componentes de evaluación con su porcentaje (por ejemplo «Aprendizaje en contacto con el docente 40 %», «Aprendizaje práctico experimental 30 %», «Aprendizaje autónomo 30 %») van en assessmentInstruments, con el nombre del documento y su ponderación. NO son periodos de calificación.",
   "9. gradingPeriods son solo los periodos o parciales que el documento nombra, cada uno con sus unidades. Si el documento no define periodos, usa un único periodo con el nombre del periodo académico (por ejemplo «JULIO 2026 - DICIEMBRE 2026»), weight null, y pon dentro todas las unidades del documento.",
-  "10. Una unidad curricular («U.1 …», «Unidad 2 …») es una unidad del esquema. Si el documento agrupa sus contenidos mínimos bajo unidades temáticas, escribe un tema por unidad temática con el formato «Unidad temática: contenido; contenido; contenido»; si no las agrupa, un tema por contenido.",
+  "10. Una unidad curricular («U.1 …», «Unidad 2 …») es una unidad del esquema. Solo si el documento agrupa los contenidos mínimos bajo un nombre propio (por ejemplo «Etapas del proceso de desarrollo» seguido de sus contenidos), escribe un tema por grupo con el formato «Nombre del grupo: contenido; contenido; contenido», usando el nombre real que trae el documento. Si no hay grupos con nombre, escribe un tema por cada contenido y nunca inventes un nombre de grupo.",
   "11. Responde únicamente con el JSON del esquema, en el idioma del documento.",
 ].join("\n");
 
