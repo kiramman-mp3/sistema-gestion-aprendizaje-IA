@@ -68,6 +68,12 @@ guardaste y no hay cambios, el botón dice **Generar la propuesta de curso**. El
 **sección** y cada actividad en un elemento de Moodle (**tarea**, **foro**, **cuestionario vacío**, **etiqueta** o
 **página**). Las fechas y ponderaciones son solo las del sílabo.
 
+Si tu sílabo **no lista actividades por unidad** pero sí define componentes de evaluación (por ejemplo aprendizaje en contacto con
+el docente, práctico experimental y autónomo), el asistente propone **una actividad sugerida por componente en cada unidad**:
+un cuestionario vacío para el componente que se rinde con exámenes y una tarea para los demás. Su descripción empieza con
+«Sugerida a partir del componente…» y no llevan fecha ni ponderación: revísalas, cámbialas o quítalas antes de aprobar. Si el
+sílabo sí lista actividades, solo se crean esas.
+
 Si el sílabo ya tiene una propuesta, te pregunta si quieres abrirla o crear otra.
 
 ### Paso 5 · Editar y aprobar la propuesta
