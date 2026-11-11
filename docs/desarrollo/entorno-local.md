@@ -194,6 +194,22 @@ crean si faltan). Los datos son deterministas y los plazos son relativos a hoy. 
 existan y se vuelven a crear; sin esa opción, si alguno existe, el script se detiene sin cambiar nada. Contraseña
 `Demo#2026` por defecto (`--password=...`).
 
+### Imágenes de portada de los cursos
+
+`infra/moodle/cli/cargar_imagenes_cursos.php` deja una imagen de portada en cada curso de prueba (la que Moodle muestra en
+«Mis cursos» y en el panel), para distinguirlos de un vistazo:
+
+```bash
+MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php /opt/smart-lms/cli/cargar_imagenes_cursos.php
+```
+
+Las imágenes están en `infra/moodle/cli/imagenes-cursos/`, una por curso y con el nombre corto del curso como nombre de
+archivo: `IS-501-DEMO`, `BD-301-DEMO`, `AN-401-PRUEBA`, `RD-301-PRUEBA`, `GP-302-PRUEBA`, `ME-201-PRUEBA` y `LI-101-PRUEBA`.
+Son ilustraciones vectoriales propias, sin texto ni fotografías: el `.svg` es la fuente y el `.png` (1200 × 675) es lo que
+se carga. Si el curso ya tenía portada, el script la reemplaza; los cursos que no existen se omiten. Después de
+`seed_cursos_prueba.php --recrear` hay que volver a ejecutarlo, porque la portada se borra con el curso. Para dar imagen a
+un curso nuevo basta con añadir un PNG con su nombre corto.
+
 ### Docentes y administrador de prueba
 
 `infra/moodle/cli/seed_docentes_prueba.php` (necesita `AN-401-PRUEBA`) crea, de forma idempotente, usuarios para probar permisos,
