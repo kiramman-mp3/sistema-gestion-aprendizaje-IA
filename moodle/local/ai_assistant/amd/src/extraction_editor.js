@@ -43,7 +43,7 @@ const PLAIN_STRINGS = [
   "field_topics", "field_topic", "field_startdate", "field_enddate", "field_outcomes",
   "field_activitytitle", "field_activitytype", "field_description", "field_due", "field_requiresreview",
   "field_instrument", "field_item", "nooutcomes", "untitled", "source_ai", "source_teacher",
-  "add_outcome", "add_period", "add_unit", "add_activity", "add_topic", "add_item", "add_instrument", "generateproposal",
+  "add_outcome", "add_period", "add_unit", "add_activity", "add_topic", "add_item", "add_instrument", "generateproposal", "saveandgenerate",
   "reason_missing", "reason_ambiguous", "reason_low_confidence", "reason_inconsistent",
   "error_required", "error_weight", "error_date", "error_outcomeid",
   ...Model.ACTIVITY_TYPES.map((type) => `acttype_${type}`),
@@ -183,11 +183,11 @@ class Editor {
     this.issues = el("div", { class: "mb-3" });
     this.orphans = el("div", { class: "mb-3" });
     this.status = el("div", { class: "mt-3", "aria-live": "polite" });
-    this.saveButton = el("button", { type: "button", class: "btn btn-primary", onclick: () => this.save() }, str("save"));
+    this.saveButton = el("button", { type: "button", class: "btn btn-outline-primary", onclick: () => this.save() }, str("save"));
     this.proposalButton = el(
       "button",
-      { type: "button", class: "btn btn-outline-primary", onclick: () => generateProposal(this.courseId, this.syllabusId, this.version) },
-      str("generateproposal"),
+      { type: "button", class: "btn btn-primary", onclick: () => this.saveAndGenerate() },
+      str("saveandgenerate"),
     );
 
     const form = el(
@@ -235,8 +235,12 @@ class Editor {
       parts.push(el("span", { class: "badge bg-danger me-2" }, str("summary_errors", summary.errors)));
     }
     this.summary.replaceChildren(...(parts.length ? parts : [el("span", { class: "badge bg-success" }, str("summary_clear"))]));
-    // The proposal is built from a saved version the teacher reviewed, never from unsaved edits.
-    this.proposalButton.classList.toggle("d-none", this.dirty || this.source !== "TEACHER");
+    // The proposal is built from a saved version the teacher reviewed, never from unsaved edits: the button
+    // saves first when the version on screen is the AI's or has changes, and only then generates.
+    const needsSave = this.dirty || this.source !== "TEACHER";
+    this.proposalButton.textContent = str(needsSave ? "saveandgenerate" : "generateproposal");
+    this.proposalButton.disabled = this.saving || !summary.canSave;
+    this.proposalButton.title = summary.canSave ? "" : str("fixerrors");
     this.saveButton.disabled = this.saving || !summary.canSave;
     this.saveButton.title = summary.canSave ? "" : str("fixerrors");
 
@@ -654,6 +658,21 @@ class Editor {
   // -------------------------------------------------------------------------------------------
   // Saving
   // -------------------------------------------------------------------------------------------
+
+  /** Saves the review if needed and goes on to the proposal, in one step. */
+  async saveAndGenerate() {
+    if (this.saving || !Model.summarize(this.extraction).canSave) {
+      return;
+    }
+    if (this.dirty || this.source !== "TEACHER") {
+      await this.save();
+      // A failed save leaves the editor as it was: the error is on screen and nothing is generated.
+      if (this.dirty || this.source !== "TEACHER") {
+        return;
+      }
+    }
+    await generateProposal(this.courseId, this.syllabusId, this.version);
+  }
 
   async save() {
     if (this.saving || !Model.summarize(this.extraction).canSave) {

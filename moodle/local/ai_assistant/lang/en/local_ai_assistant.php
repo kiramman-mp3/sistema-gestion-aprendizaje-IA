@@ -239,6 +239,7 @@ $string['extraction_reason_low_confidence'] = 'Low confidence';
 $string['extraction_reason_missing'] = 'Not in the syllabus';
 $string['extraction_remove'] = 'Remove {$a}';
 $string['extraction_save'] = 'Save review';
+$string['extraction_saveandgenerate'] = 'Save and generate the course proposal';
 $string['extraction_saved'] = 'Review saved as version {$a}.';
 $string['extraction_saveerror'] = 'The review could not be saved ({$a}).';
 $string['extraction_saving'] = 'Saving…';

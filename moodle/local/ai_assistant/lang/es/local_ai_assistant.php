@@ -239,6 +239,7 @@ $string['extraction_reason_low_confidence'] = 'Poca confianza';
 $string['extraction_reason_missing'] = 'No está en el sílabo';
 $string['extraction_remove'] = 'Quitar {$a}';
 $string['extraction_save'] = 'Guardar revisión';
+$string['extraction_saveandgenerate'] = 'Guardar y generar la propuesta de curso';
 $string['extraction_saved'] = 'Revisión guardada como versión {$a}.';
 $string['extraction_saveerror'] = 'No se pudo guardar la revisión ({$a}).';
 $string['extraction_saving'] = 'Guardando…';
