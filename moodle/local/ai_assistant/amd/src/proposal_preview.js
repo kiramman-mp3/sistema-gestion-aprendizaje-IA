@@ -669,13 +669,26 @@ export const generate = async (courseId, syllabusId, extractionVersion) => {
 };
 
 /**
- * Entry point called from index.php: resumes a proposal from the `proposalid` URL parameter.
+ * Entry point called from index.php: resumes the proposal of the `proposalid` URL parameter or, without one, the
+ * most recent proposal of the course, so the teacher finds it where they left it. A course with no proposal
+ * (404) shows nothing.
  *
  * @param {number} courseId
  * @param {string} [proposalId]
  */
-export const init = (courseId, proposalId = "") => {
+export const init = async (courseId, proposalId = "") => {
   if (proposalId) {
     open(courseId, proposalId);
+    return;
+  }
+  let latest;
+  try {
+    latest = await callBackend(courseId, "/proposals/latest");
+  } catch {
+    // No proposal yet, or the backend is not reachable: the connection card already says so.
+    return;
+  }
+  if (latest?.id) {
+    open(courseId, latest.id);
   }
 };

@@ -152,18 +152,21 @@ export class ProposalsStore {
           where: {
             moodleCourseId: number;
             status: { not: string };
-            extraction: { document: { checksumSha256: string } };
+            extraction?: { document: { checksumSha256: string } };
           };
-        }) =>
-          clone(
-            this.proposals.find(
-              (p) =>
-                p.moodleCourseId === where.moodleCourseId &&
-                p.status !== where.status.not &&
+        }) => {
+          const matches = this.proposals.filter(
+            (p) =>
+              p.moodleCourseId === where.moodleCourseId &&
+              p.status !== where.status.not &&
+              (!where.extraction ||
                 documentOf(p.extractionId).checksumSha256 ===
-                  where.extraction.document.checksumSha256,
-            ) ?? null,
-          ),
+                  where.extraction.document.checksumSha256),
+          );
+          // Sin filtro de sílabo es la consulta «la más reciente del curso»: la de actividad más nueva.
+          const newest = [...matches].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+          return clone(where.extraction ? (matches[0] ?? null) : (newest[0] ?? null));
+        },
         create: async ({ data }: { data: Partial<StoredProposal> & { id: string } }) => {
           const proposal = {
             approvedBy: null,

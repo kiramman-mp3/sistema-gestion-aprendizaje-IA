@@ -140,6 +140,25 @@ export class ProposalsService {
     return this.toDto(await this.reload(proposalId));
   }
 
+  /**
+   * La propuesta del curso del token con la actividad más reciente (sin contar las rechazadas), para retomarla al abrir
+   * la página. Responde 404 si el curso no tiene ninguna.
+   */
+  async latest(auth: AuthContext): Promise<ProposalDto> {
+    const latest = await this.prisma.courseProposal.findFirst({
+      where: { moodleCourseId: auth.courseId, status: { not: "REJECTED" } },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true },
+    });
+    if (!latest) {
+      throw new NotFoundException({
+        code: "PROPOSAL_NOT_FOUND",
+        message: "El curso no tiene propuestas.",
+      });
+    }
+    return this.findOne(auth, latest.id);
+  }
+
   /** Una propuesta de otro curso responde 404, igual que una inexistente (RF-02). */
   async findOne(auth: AuthContext, id: string): Promise<ProposalDto> {
     return this.toDto(await this.loadForCourse(auth, id));
