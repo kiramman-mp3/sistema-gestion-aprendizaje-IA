@@ -416,6 +416,7 @@ validados por el tutor y Moodle local de desarrollo.
 - La verificación de punta a punta con Moodle real encontró un error que PHPUnit y CLI no mostraban (Moodle no carga `course/lib.php` en una petición de servicio web); corregido.
 - Las pruebas PHPUnit del plugin no corren en CI (solo `phpcs`).
 - **(2026-11-11)** Se redujeron los pasos del docente de 7 a 3 botones y una casilla sin quitar la revisión: «Subir y crear la estructura», «Guardar y generar la propuesta de curso» y «Aprobar y publicar» con una sola confirmación ([ADR-024](architecture/adr/0024-estructura-del-curso-en-pocos-pasos.md), [pruebas de pantalla](resultados/pruebas-de-pantalla.md)). Solo cambia el plugin; el backend y el contrato no.
+- **(2026-11-11)** La página retoma al abrirse el sílabo y la propuesta más recientes del curso (`GET /syllabi/latest` y `GET /proposals/latest`); antes solo se mostraban con `syllabusid` o `proposalid` en la dirección y el docente perdía de vista su trabajo al recargar.
 
 ---
 
