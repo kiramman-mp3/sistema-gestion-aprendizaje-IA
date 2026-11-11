@@ -30,7 +30,7 @@
 import { callBackend } from "local_ai_assistant/assistant";
 import * as Model from "local_ai_assistant/extraction_model";
 import { generate as generateProposal } from "local_ai_assistant/proposal_preview";
-import { createStrings, el, uniqueId } from "local_ai_assistant/ui";
+import { createStrings, el, icon, uniqueId } from "local_ai_assistant/ui";
 
 /** Strings without parameters. The key is `extraction_<name>`; the map is read as `t.<name>`. */
 const PLAIN_STRINGS = [
@@ -179,7 +179,7 @@ class Editor {
     this.updaters = [];
     this.knownPaths = new Set();
     this.versionLabel = el("p", { class: "small text-muted" });
-    this.summary = el("div", { class: "mb-3", "aria-live": "polite" });
+    this.summary = el("div", { class: "lai-chips mb-3", "aria-live": "polite" });
     this.issues = el("div", { class: "mb-3" });
     this.orphans = el("div", { class: "mb-3" });
     this.status = el("div", { class: "mt-3", "aria-live": "polite" });
@@ -208,7 +208,7 @@ class Editor {
       this.orphans,
       this.issues,
       form,
-      el("div", { class: "mt-3 d-flex gap-2 flex-wrap" }, this.saveButton, this.proposalButton),
+      el("div", { class: "lai-actions" }, this.saveButton, this.proposalButton),
       this.status,
     );
     this.refresh();
@@ -308,7 +308,7 @@ class Editor {
     this.updaters.push((errors) => this.drawFieldState(path, control, flag, help, errors));
     return el(
       "div",
-      { class: "mb-3" },
+      { class: "lai-field" },
       el("label", { class: "form-label", for: id }, label, flag),
       control,
       help,
@@ -402,7 +402,7 @@ class Editor {
     const known = this.extraction.learningOutcomes.map((outcome) => outcome.id);
     const unknown = [...new Set(selected.filter((id) => !known.includes(id)))];
     const uniqueKnown = [...new Set(known)];
-    const legend = el("legend", { class: "form-label fs-6" }, label);
+    const legend = el("legend", { class: "form-label" }, label);
     const flag = el("span");
     const help = el("div", { class: "small", id: this.uid("help") });
     this.knownPaths.add(path);
@@ -415,7 +415,7 @@ class Editor {
           const id = this.uid("outcome");
           return el(
             "div",
-            { class: "form-check form-check-inline" },
+            { class: "form-check form-check-inline lai-chip" },
             el("input", {
               id,
               type: "checkbox",
@@ -427,7 +427,7 @@ class Editor {
           );
         })
       : [el("span", { class: "text-muted small" }, str("nooutcomes"))];
-    return el("fieldset", { class: "mb-3" }, legend, el("div", {}, boxes), help);
+    return el("fieldset", { class: "lai-field lai-outcomes" }, legend, el("div", { class: "lai-chip-group" }, boxes), help);
   }
 
   setOutcomeLink(path, id, checked) {
@@ -438,7 +438,7 @@ class Editor {
 
   /** A button that adds an item and puts the cursor in it. */
   addButton(label, onclick) {
-    return el("button", { type: "button", class: "btn btn-sm btn-outline-primary", onclick }, label);
+    return el("button", { type: "button", class: "btn btn-sm btn-outline-primary lai-add", onclick }, icon("plus"), label);
   }
 
   /**
@@ -454,9 +454,10 @@ class Editor {
       "button",
       {
         type: "button",
-        class: "btn btn-sm btn-outline-danger",
+        class: "btn btn-sm btn-outline-danger lai-remove",
         onclick: () => this.change(remove(), { redraw: true }),
       },
+      icon("trash"),
       str("remove", itemLabel),
     );
   }
@@ -472,7 +473,7 @@ class Editor {
     return el(
       "details",
       {
-        class: "card card-body mb-3",
+        class: "lai-block",
         open: !this.collapsed.has(key),
         ontoggle: (event) => {
           if (event.target.open) {
@@ -482,8 +483,8 @@ class Editor {
           }
         },
       },
-      el("summary", { class: "fw-bold mb-2" }, title, flag),
-      ...content,
+      el("summary", {}, el("span", { class: "lai-block__title" }, title), flag),
+      el("div", { class: "lai-block__body" }, ...content),
     );
   }
 
@@ -493,17 +494,21 @@ class Editor {
 
   section(title, ...content) {
     const id = this.uid("section");
-    return el("section", { class: "mb-4", "aria-labelledby": id }, el("h4", { class: "h6", id }, title), ...content);
+    return el("section", { class: "lai-section", "aria-labelledby": id }, el("h4", { class: "h6", id }, title), ...content);
   }
 
   courseSection() {
     return this.section(
       str("section_course"),
-      this.textField("course.name", str("field_coursename")),
-      this.textField("course.code", str("field_coursecode"), { optional: true }),
-      this.textField("course.period", str("field_period"), { optional: true }),
-      this.textField("course.teacher", str("field_teacher"), { optional: true }),
-      this.textField("course.generalObjective", str("field_objective"), { multiline: true, optional: true }),
+      el(
+        "div",
+        { class: "lai-grid" },
+        this.textField("course.name", str("field_coursename")),
+        this.textField("course.code", str("field_coursecode"), { optional: true }),
+        this.textField("course.period", str("field_period"), { optional: true }),
+        this.textField("course.teacher", str("field_teacher"), { optional: true }),
+        this.textField("course.generalObjective", str("field_objective"), { multiline: true, optional: true }),
+      ),
     );
   }
 
@@ -605,7 +610,7 @@ class Editor {
       this.outcomeLinks(`${base}.learningOutcomeIds`, str("field_outcomes")),
       el(
         "div",
-        { class: "form-check mb-3" },
+        { class: "form-check lai-field" },
         el("input", {
           id: reviewId,
           type: "checkbox",
@@ -626,16 +631,16 @@ class Editor {
       const path = `${arrayPath}[${i}]`;
       return el(
         "div",
-        { class: "d-flex gap-2 align-items-start" },
-        el("div", { class: "flex-grow-1" }, this.textField(path, `${itemLabel} ${i + 1}`)),
-        el("div", { class: "mt-4 pt-1" }, this.removeButton(arrayPath, i, `${itemLabel} ${i + 1}`)),
+        { class: "lai-list-row" },
+        this.textField(path, `${itemLabel} ${i + 1}`),
+        this.removeButton(arrayPath, i, `${itemLabel} ${i + 1}`),
       );
     });
     const add = this.addButton(addLabel, () => {
       const next = Model.addItem(this.extraction, arrayPath, "");
       this.change(next, { redraw: true, focus: `${arrayPath}[${items.length}]` });
     });
-    return el("fieldset", { class: "mb-3" }, el("legend", { class: "form-label fs-6" }, groupLabel), ...rows, add);
+    return el("fieldset", { class: "lai-field lai-list" }, el("legend", { class: "form-label" }, groupLabel), ...rows, add);
   }
 
   textListSection(key, title) {

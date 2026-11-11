@@ -28,7 +28,7 @@
 import { callBackend } from "local_ai_assistant/assistant";
 import * as Model from "local_ai_assistant/proposal_model";
 import { loadPanelStrings, PublishPanel } from "local_ai_assistant/publish_panel";
-import { createStrings, el, uniqueId } from "local_ai_assistant/ui";
+import { createStrings, el, icon, uniqueId } from "local_ai_assistant/ui";
 
 const PLAIN_STRINGS = [
   "title", "intro", "loading", "generating", "notreviewed", "exists", "openexisting", "createanother",
@@ -218,7 +218,7 @@ class Preview {
 
   render(focusId = null) {
     this.updaters = [];
-    this.summary = el("div", { class: "mb-3", "aria-live": "polite" });
+    this.summary = el("div", { class: "lai-chips mb-3", "aria-live": "polite" });
     this.general = el("div", { class: "mb-3" });
     this.status = el("div", { class: "mt-3", "aria-live": "polite" });
     this.publishBox = el("div");
@@ -240,7 +240,7 @@ class Preview {
     this.approvePublishButton = el("button", { type: "button", class: "btn btn-success", onclick: () => this.approveAndPublish() }, str("approveandpublish"));
     this.approvePublishBlock = el(
       "div",
-      { class: "border rounded p-3 mb-3" },
+      { class: "lai-confirm" },
       el("p", { class: "small text-muted mb-2" }, str("approveandpublishhint")),
       el("div", { class: "form-check mb-2" }, this.confirmBox, el("label", { class: "form-check-label", for: confirmId }, str("approveandpublishconfirm"))),
       this.approvePublishButton,
@@ -250,7 +250,7 @@ class Preview {
     this.show(
       el(
         "div",
-        { class: "d-flex align-items-center gap-2 mb-1" },
+        { class: "lai-heading" },
         el("h3", { class: "h5 mb-0" }, str("title")),
         el("span", { class: `badge ${STATUS_CLASS[this.proposal.status] ?? "lai-secondary"}` }, str(`status_${this.proposal.status.toLowerCase()}`)),
       ),
@@ -266,7 +266,7 @@ class Preview {
       })),
       // Only while the proposal waits for review: afterwards the publication panel asks for its own confirmation.
       this.proposal.status === "NEEDS_REVIEW" ? this.approvePublishBlock : null,
-      el("div", { class: "d-flex gap-2 flex-wrap" }, this.saveButton, this.approveButton, this.approveHint),
+      el("div", { class: "lai-actions" }, this.saveButton, this.approveButton, this.approveHint),
       this.status,
       this.publishBox,
     );
@@ -344,7 +344,7 @@ class Preview {
   }
 
   addButton(label, onclick) {
-    return el("button", { type: "button", class: "btn btn-sm btn-outline-primary", onclick }, label);
+    return el("button", { type: "button", class: "btn btn-sm btn-outline-primary lai-add", onclick }, icon("plus"), label);
   }
 
   /** A block for a section with its activities. */
@@ -354,39 +354,51 @@ class Preview {
     return el(
       "details",
       {
-        class: "card card-body mb-3",
+        class: "lai-block lai-block--section",
         open: !this.collapsed.has(section.id),
         ontoggle: (event) => this.remember(section.id, event.target.open),
       },
-      el("summary", { class: "fw-bold mb-2" }, `${label}: ${section.title || str("untitled")}`),
-      this.itemControls(section, label),
-      this.titleField(section),
-      this.textareaField(section, "description", str("field_description")),
-      this.outcomeLinks(section),
-      this.itemIssues(section),
-      el("div", { class: "ms-md-3" }, ...activities.map((activity, i) => this.activityBlock(activity, i))),
-      el("div", {}, this.addButton(str("add_activity"), () => {
-        const next = Model.addActivity(this.items, section.id);
-        const created = next.find((item) => !this.items.some((existing) => existing.id === item.id));
-        this.change(next, { redraw: true, focus: created.id });
-      })),
+      el("summary", {}, el("span", { class: "lai-block__title" }, `${label}: ${section.title || str("untitled")}`)),
+      el(
+        "div",
+        { class: "lai-block__body" },
+        this.itemControls(section, label),
+        this.titleField(section),
+        this.textareaField(section, "description", str("field_description")),
+        this.outcomeLinks(section),
+        this.itemIssues(section),
+        ...activities.map((activity, i) => this.activityBlock(activity, i)),
+        el("div", { class: "lai-block__footer" }, this.addButton(str("add_activity"), () => {
+          const next = Model.addActivity(this.items, section.id);
+          const created = next.find((item) => !this.items.some((existing) => existing.id === item.id));
+          this.change(next, { redraw: true, focus: created.id });
+        })),
+      ),
     );
   }
 
   activityBlock(activity, index) {
     const label = str("activityn", index + 1);
     return el(
-      "div",
-      { class: "border rounded p-3 mb-3" },
-      el("div", { class: "fw-bold mb-2" }, `${label}: ${activity.title || str("untitled")}`),
-      this.itemControls(activity, label),
-      this.titleField(activity),
-      this.typeField(activity),
-      this.textareaField(activity, "description", str("field_description")),
-      this.dateField(activity),
-      this.weightField(activity),
-      this.outcomeLinks(activity),
-      this.itemIssues(activity),
+      "details",
+      {
+        class: "lai-block lai-block--activity",
+        open: !this.collapsed.has(activity.id),
+        ontoggle: (event) => this.remember(activity.id, event.target.open),
+      },
+      el("summary", {}, el("span", { class: "lai-block__title" }, `${label}: ${activity.title || str("untitled")}`)),
+      el(
+        "div",
+        { class: "lai-block__body" },
+        this.itemControls(activity, label),
+        this.titleField(activity),
+        this.typeField(activity),
+        this.dateField(activity),
+        this.weightField(activity),
+        this.textareaField(activity, "description", str("field_description")),
+        this.outcomeLinks(activity),
+        this.itemIssues(activity),
+      ),
     );
   }
 
@@ -408,27 +420,27 @@ class Preview {
         "button",
         {
           type: "button",
-          class: "btn btn-sm btn-outline-secondary",
+          class: "btn btn-sm btn-outline-secondary lai-move",
           disabled: !Model.canMove(this.items, item.id, direction),
           "aria-label": str(direction < 0 ? "moveup" : "movedown", label),
           title: str(direction < 0 ? "moveup" : "movedown", label),
           onclick: () => this.change(Model.moveItem(this.items, item.id, direction), { redraw: true, focus: item.id }),
         },
-        text,
+        icon(text),
       );
     return el(
       "div",
-      { class: "d-flex gap-2 mb-2" },
-      move(-1, "↑"),
-      move(1, "↓"),
-      el("button", { type: "button", class: "btn btn-sm btn-outline-danger", onclick: () => this.change(Model.removeItem(this.items, item.id), { redraw: true }) }, str("remove", label)),
+      { class: "lai-toolbar" },
+      move(-1, "arrow-up"),
+      move(1, "arrow-down"),
+      el("button", { type: "button", class: "btn btn-sm btn-outline-danger lai-remove", onclick: () => this.change(Model.removeItem(this.items, item.id), { redraw: true }) }, icon("trash"), str("remove", label)),
     );
   }
 
   /** Review findings the backend reported for one item. */
   itemIssues(item) {
     const found = Model.issuesForItem(this.proposal.issues, item.id);
-    return found.length ? el("ul", { class: "small mb-2" }, found.map((issue) => this.issueLine(issue))) : null;
+    return found.length ? el("ul", { class: "lai-issues" }, found.map((issue) => this.issueLine(issue))) : null;
   }
 
   /**
@@ -453,7 +465,7 @@ class Preview {
       control.setAttribute("aria-invalid", found ? "true" : "false");
       error.textContent = found ? str(`error_${found.code}`) : "";
     });
-    return el("div", { class: "mb-3" }, el("label", { class: "form-label", for: id }, label), control, error);
+    return el("div", { class: "lai-field" }, el("label", { class: "form-label", for: id }, label), control, error);
   }
 
   /** Disables editing controls when the proposal can no longer be edited. */
@@ -479,7 +491,7 @@ class Preview {
     const id = uniqueId("field");
     return el(
       "div",
-      { class: "mb-3" },
+      { class: "lai-field" },
       el("label", { class: "form-label", for: id }, label),
       el("textarea", {
         id,
@@ -495,7 +507,7 @@ class Preview {
     const id = uniqueId("field");
     return el(
       "div",
-      { class: "mb-3" },
+      { class: "lai-field" },
       el("label", { class: "form-label", for: id }, str("field_type")),
       el(
         "select",
@@ -547,7 +559,7 @@ class Preview {
           const id = uniqueId("outcome");
           return el(
             "div",
-            { class: "form-check form-check-inline" },
+            { class: "form-check form-check-inline lai-chip" },
             el("input", {
               id,
               type: "checkbox",
@@ -565,7 +577,7 @@ class Preview {
           );
         })
       : [el("span", { class: "small text-muted" }, str("nooutcomes"))];
-    return el("fieldset", { class: "mb-3" }, el("legend", { class: "form-label fs-6" }, str("field_outcomes")), el("div", {}, boxes));
+    return el("fieldset", { class: "lai-field lai-outcomes" }, el("legend", { class: "form-label" }, str("field_outcomes")), el("div", { class: "lai-chip-group" }, boxes));
   }
 
   // -------------------------------------------------------------------------------------------
