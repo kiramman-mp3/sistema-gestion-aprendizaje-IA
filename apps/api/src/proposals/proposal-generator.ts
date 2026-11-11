@@ -20,6 +20,20 @@ export interface DraftItem {
   weight: number | null;
 }
 
+export interface GenerateOptions {
+  /** Ver `ProposalPolicy.deriveActivitiesFromInstruments`. Por defecto, sí. */
+  deriveActivitiesFromInstruments?: boolean;
+}
+
+/** Los componentes que se rinden con exámenes o pruebas se proponen como cuestionario; el resto, como tarea. */
+const QUIZ_COMPONENT = /contacto|sumativ|ex[aá]men|prueba|lecci[oó]n/i;
+
+/** «APRENDIZAJE PRÁCTICO EXPERIMENTAL» → «Aprendizaje práctico experimental». */
+function sentenceCase(text: string): string {
+  const lower = text.trim().toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
 /**
  * Convierte una extracción en la estructura propuesta para el curso (RF-07).
  *
@@ -27,11 +41,31 @@ export interface DraftItem {
  * - Cada actividad es un elemento hijo de su sección, con el tipo de Moodle según D-05.
  * - Una actividad sin resultados de aprendizaje propios hereda los de su unidad.
  * - No inventa nada: la fecha y la ponderación son las de la extracción, o `null`.
+ * - Excepción marcada: si ninguna unidad trae actividades pero el sílabo sí define componentes de evaluación, se propone
+ *   una actividad **sugerida** por componente en cada unidad. Su descripción empieza con «Sugerida», lleva el porcentaje
+ *   del componente y no tiene fecha ni ponderación propias: el docente las revisa.
  *
  * Es una función pura: la misma extracción produce siempre la misma propuesta.
  */
-export function generateProposalItems(extraction: SyllabusExtraction): DraftItem[] {
+export function generateProposalItems(
+  extraction: SyllabusExtraction,
+  { deriveActivitiesFromInstruments = true }: GenerateOptions = {},
+): DraftItem[] {
   const items: DraftItem[] = [];
+  const noUnitHasActivities = extraction.gradingPeriods.every((period) =>
+    period.units.every((unit) => unit.activities.length === 0),
+  );
+  // Un mismo componente no se repite si el documento lo lista dos veces.
+  const seen = new Set<string>();
+  const instruments =
+    deriveActivitiesFromInstruments && noUnitHasActivities
+      ? extraction.assessmentInstruments.filter((instrument) => {
+          const key = instrument.name.trim().toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+      : [];
 
   extraction.gradingPeriods.forEach((period, p) => {
     period.units.forEach((unit, u) => {
@@ -65,6 +99,24 @@ export function generateProposalItems(extraction: SyllabusExtraction): DraftItem
               : [...unit.learningOutcomeIds],
           dueDate: activity.suggestedDueDate,
           weight: activity.weight,
+        });
+      });
+
+      instruments.forEach((instrument, i) => {
+        const percentage = instrument.weight === null ? "" : ` (${instrument.weight} % de la nota)`;
+        items.push({
+          key: `${unitRef}.suggested[${i}]`,
+          parentKey: unitRef,
+          itemType: QUIZ_COMPONENT.test(instrument.name) ? "QUIZ" : "ASSIGN",
+          title: `${sentenceCase(instrument.name)} — ${unit.title}`.slice(0, 255),
+          description:
+            `Sugerida a partir del componente de evaluación «${instrument.name.trim()}»${percentage} del sílabo. ` +
+            "El sílabo no define actividades por unidad: revisa el título, el tipo, la fecha y la ponderación.",
+          position: items.length,
+          unitRef,
+          learningOutcomeIds: [...unit.learningOutcomeIds],
+          dueDate: null,
+          weight: null,
         });
       });
     });

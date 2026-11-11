@@ -91,7 +91,9 @@ export class ProposalsService {
       }
     }
 
-    const drafts = generateProposalItems(content.data);
+    const drafts = generateProposalItems(content.data, {
+      deriveActivitiesFromInstruments: this.policy.deriveActivitiesFromInstruments,
+    });
     const idByKey = new Map(drafts.map((draft) => [draft.key, randomUUID()]));
     const proposalId = randomUUID();
 
