@@ -401,3 +401,103 @@ describe("al recargar la página", () => {
     );
   });
 });
+
+describe("aprobar y publicar con una sola confirmación", () => {
+  const approveConfirmBox = () =>
+    [...root().querySelectorAll('input[type="checkbox"]')].find((box) =>
+      box.nextElementSibling?.textContent.startsWith("I confirm that I want to approve"),
+    );
+  const calls = () =>
+    backend.calls.filter((call) => call.method === "POST").map((call) => call.path);
+
+  /** Una propuesta en revisión: approve la deja aprobada y publish crea la operación, que termina enseguida. */
+  const reviewing = (extra = {}) => {
+    const state = { current: proposal("NEEDS_REVIEW") };
+    serve(state, {
+      [`POST /proposals/${PROPOSAL_ID}/approve`]: async () => {
+        state.current = proposal("APPROVED");
+        return structuredClone(state.current);
+      },
+      [`POST /proposals/${PROPOSAL_ID}/publish`]: async () => operation(),
+      [`GET /proposals/${PROPOSAL_ID}/publish-operations/${OPERATION_ID}`]: async () => {
+        state.current = proposal("PUBLISHED", {
+          items: created(baseItems()),
+          lastPublishOperation: { id: OPERATION_ID, status: "SUCCEEDED" },
+        });
+        return operation({
+          status: "SUCCEEDED",
+          createdCount: 4,
+          finishedAt: "2026-11-09T15:01:00Z",
+        });
+      },
+      ...extra,
+    });
+    return state;
+  };
+
+  it("solo se ofrece mientras la propuesta espera revisión y no publica sin la casilla", async () => {
+    reviewing();
+    await open(7, PROPOSAL_ID);
+
+    expect(button("Approve and publish")).toBeDefined();
+    expect(button("Approve and publish").disabled).toBe(true);
+
+    click(button("Approve and publish"));
+    expect(calls()).toEqual([]);
+
+    check(approveConfirmBox());
+    expect(button("Approve and publish").disabled).toBe(false);
+  });
+
+  it("con la casilla marcada aprueba y publica, en ese orden, con la confirmación y la clave", async () => {
+    reviewing();
+    await open(7, PROPOSAL_ID);
+    check(approveConfirmBox());
+
+    click(button("Approve and publish"));
+    await vi.waitFor(() =>
+      expect(text()).toContain("Published: 4 elements were created in the course."),
+    );
+
+    expect(calls()).toEqual([
+      `/proposals/${PROPOSAL_ID}/approve`,
+      `/proposals/${PROPOSAL_ID}/publish`,
+    ]);
+    const publish = backend.calls.find((call) => call.path === `/proposals/${PROPOSAL_ID}/publish`);
+    expect(publish.json).toEqual({ confirm: true });
+    expect(publish.headers["Idempotency-Key"]).toMatch(/^[A-Za-z0-9._:-]{16,128}$/);
+  });
+
+  it("si la aprobación falla no se publica nada y se explica", async () => {
+    reviewing({
+      [`POST /proposals/${PROPOSAL_ID}/approve`]: async () => {
+        throw Object.assign(new Error("x"), { code: "INVALID_TRANSITION" });
+      },
+    });
+    await open(7, PROPOSAL_ID);
+    check(approveConfirmBox());
+
+    click(button("Approve and publish"));
+    await vi.waitFor(() => expect(root().querySelector('[role="alert"]')).not.toBeNull());
+
+    expect(calls()).toEqual([`/proposals/${PROPOSAL_ID}/approve`]);
+    expect(text()).toContain("could not be approved");
+  });
+
+  it("con cambios sin guardar no deja aprobar ni publicar", async () => {
+    reviewing();
+    await open(7, PROPOSAL_ID);
+    check(approveConfirmBox());
+    typeInto(root().querySelector("input[type=text]"), "Otro título");
+
+    expect(button("Approve and publish").disabled).toBe(true);
+  });
+
+  it("una propuesta ya aprobada solo muestra el panel de publicación, con su propia confirmación", async () => {
+    serve({ current: proposal("APPROVED") });
+    await open(7, PROPOSAL_ID);
+
+    expect(button("Approve and publish")).toBeUndefined();
+    expect(button("Publish to the course")).toBeDefined();
+  });
+});

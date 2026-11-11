@@ -278,19 +278,94 @@ describe("guardado", () => {
 });
 
 describe("generar la propuesta", () => {
-  const proposalButton = () => buttons("Generate the course proposal")[0];
+  // "Save and generate the course proposal" before saving, "Generate the course proposal" after.
+  const proposalButton = () => buttons("enerate the course proposal")[0];
+  const PROPOSAL = {
+    id: "11111111-1111-4111-8111-111111111111",
+    courseId: 2,
+    syllabusId: SYLLABUS_ID,
+    extractionVersion: 2,
+    status: "NEEDS_REVIEW",
+    approvedBy: null,
+    approvedAt: null,
+    items: [],
+    issues: [],
+  };
+  /** Lets the backend create the proposal on top of what `mount` set up. */
+  const allowProposal = () => {
+    const previous = backend.handler;
+    backend.handler = async (call) =>
+      call.method === "POST" && call.path === "/proposals" ? PROPOSAL : previous(call);
+  };
+  const proposalCall = () =>
+    backend.calls.find((call) => call.method === "POST" && call.path === "/proposals");
 
-  it("solo se ofrece sobre una versión que el docente guardó, sin cambios pendientes", async () => {
+  it("el botón dice qué hará: guardar y generar sobre la versión de la IA o con cambios, solo generar sobre la guardada", async () => {
     await mount();
-    expect(proposalButton().classList.contains("d-none")).toBe(true);
+    expect(proposalButton().textContent).toBe("Save and generate the course proposal");
 
     type(field("course.name"), "Otro nombre");
     click(buttons("Save review")[0]);
     await vi.waitFor(() => expect(root().textContent).toContain("Review saved as version 2."));
-    expect(proposalButton().classList.contains("d-none")).toBe(false);
+    expect(proposalButton().textContent).toBe("Generate the course proposal");
 
     type(field("course.name"), "Otro nombre más");
-    expect(proposalButton().classList.contains("d-none")).toBe(true);
+    expect(proposalButton().textContent).toBe("Save and generate the course proposal");
+  });
+
+  it("sobre la versión de la IA, un solo clic guarda la revisión y genera la propuesta", async () => {
+    await mount();
+    allowProposal();
+
+    click(proposalButton());
+    await vi.waitFor(() => expect(proposalCall()).toBeDefined());
+
+    const methods = backend.calls.map((call) => `${call.method} ${call.path}`);
+    expect(methods.indexOf(`PUT /syllabi/${SYLLABUS_ID}/extraction`)).toBeGreaterThan(-1);
+    expect(methods.indexOf("POST /proposals")).toBeGreaterThan(
+      methods.indexOf(`PUT /syllabi/${SYLLABUS_ID}/extraction`),
+    );
+    // La propuesta sale de la versión que se acaba de guardar, no de la de la IA.
+    expect(proposalCall().json).toEqual({ syllabusId: SYLLABUS_ID, extractionVersion: 2 });
+  });
+
+  it("sobre una versión ya guardada y sin cambios no vuelve a guardar", async () => {
+    await mount();
+    type(field("course.name"), "Otro nombre");
+    click(buttons("Save review")[0]);
+    await vi.waitFor(() => expect(root().textContent).toContain("Review saved as version 2."));
+    allowProposal();
+    const saves = () => backend.calls.filter((call) => call.method === "PUT").length;
+    expect(saves()).toBe(1);
+
+    click(proposalButton());
+    await vi.waitFor(() => expect(proposalCall()).toBeDefined());
+
+    expect(saves()).toBe(1);
+  });
+
+  it("si guardar falla no genera la propuesta y muestra el error", async () => {
+    await mount(buildSyllabusExtraction(), () => {
+      throw Object.assign(new Error("no"), { code: "VERSION_CONFLICT" });
+    });
+    allowProposal();
+
+    click(proposalButton());
+    await vi.waitFor(() => expect(root().textContent).toContain("could not be saved"));
+
+    expect(proposalCall()).toBeUndefined();
+  });
+
+  it("con valores inválidos no guarda ni genera", async () => {
+    await mount();
+    type(field("gradingPeriods[0].weight"), "150");
+
+    expect(proposalButton().disabled).toBe(true);
+    click(proposalButton());
+
+    expect(backend.calls.some((call) => call.method === "PUT" || call.path === "/proposals")).toBe(
+      false,
+    );
   });
 
   it("pide la propuesta con la versión guardada y la muestra", async () => {

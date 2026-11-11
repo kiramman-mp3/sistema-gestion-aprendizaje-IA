@@ -125,8 +125,11 @@ const extractStructure = async (view, syllabusId) => {
  *
  * @param {{courseId: number, progress: HTMLElement, status: HTMLElement}} view
  * @param {object|null} syllabus
+ * @param {{autoExtract?: boolean}} [options] `autoExtract` goes on to extract the structure as soon as the text is
+ *     ready (the teacher used "Upload and create the structure"). A scanned text of low confidence is the
+ *     exception: the teacher sees the warning first and decides.
  */
-const showResult = async (view, syllabus) => {
+const showResult = async (view, syllabus, { autoExtract = false } = {}) => {
   const { courseId, status } = view;
   if (!syllabus) {
     show(status, "warning", [await getString("syllabustimeout", "local_ai_assistant")]);
@@ -154,6 +157,11 @@ const showResult = async (view, syllabus) => {
     messages.push(await getString("syllabuslowconfidence", "local_ai_assistant"));
   }
   show(status, syllabus.textConfidence === "low" ? "warning" : "success", messages);
+
+  if (syllabus.status === "TEXT_READY" && autoExtract && syllabus.textConfidence !== "low") {
+    await extractStructure(view, syllabus.id);
+    return;
+  }
 
   if (syllabus.status === "TEXT_READY") {
     const button = document.createElement("button");
@@ -189,8 +197,9 @@ const checkFile = async (file) => {
  *
  * @param {{courseId: number, progress: HTMLElement, status: HTMLElement}} view
  * @param {HTMLFormElement} form
+ * @param {boolean} createStructure Also extract the structure when the text is ready.
  */
-const upload = async (view, form) => {
+const upload = async (view, form, createStructure) => {
   const { courseId, progress, status } = view;
   const file = form.elements.file.files[0];
   const invalid = await checkFile(file);
@@ -225,7 +234,7 @@ const upload = async (view, form) => {
 
   const syllabus = await follow(courseId, syllabusId, progress);
   setProgress(progress, null);
-  await showResult(view, syllabus);
+  await showResult(view, syllabus, { autoExtract: createStructure });
 };
 
 /**
@@ -260,7 +269,7 @@ export const init = (courseId, syllabusId = "") => {
   }
   const progress = region.querySelector('[data-region="syllabus-progress"]');
   const status = region.querySelector('[data-region="syllabus-status"]');
-  const button = form.querySelector('[type="submit"]');
+  const buttons = [...form.querySelectorAll('[type="submit"]')];
   const view = { courseId, progress, status };
 
   if (syllabusId) {
@@ -269,14 +278,20 @@ export const init = (courseId, syllabusId = "") => {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    button.disabled = true;
+    // The main button uploads and goes on to the structure; the other one only uploads.
+    const createStructure = event.submitter?.dataset.action === "upload-and-structure";
+    buttons.forEach((button) => {
+      button.disabled = true;
+    });
     try {
-      await upload(view, form);
+      await upload(view, form, createStructure);
     } catch (error) {
       setProgress(progress, null);
       show(status, "danger", [await getString("connectionerror", "local_ai_assistant", error.code || error.message)]);
     } finally {
-      button.disabled = false;
+      buttons.forEach((button) => {
+        button.disabled = false;
+      });
     }
   });
 };
