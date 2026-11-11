@@ -28,7 +28,8 @@ const page = () => {
 const tab = (name) => document.querySelector(`[role="tab"][data-tab="${name}"]`);
 const panel = (name) => document.querySelector(`[data-panel="${name}"]`);
 const region = (name) => document.querySelector(`[data-region="${name}"]`);
-const visibleTabs = () => [...document.querySelectorAll('[role="tab"]')].filter((t) => !t.hidden).map((t) => t.dataset.tab);
+const visibleTabs = () =>
+  [...document.querySelectorAll('[role="tab"]')].filter((t) => !t.hidden).map((t) => t.dataset.tab);
 const selected = () => document.querySelector('[role="tab"][aria-selected="true"]')?.dataset.tab;
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -119,7 +120,8 @@ describe("cambiar de pestaña", () => {
 
   it("las flechas, Inicio y Fin recorren las pestañas visibles", () => {
     tab("syllabus").focus();
-    const press = (key) => document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    const press = (key) =>
+      document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 
     press("ArrowRight");
     expect(selected()).toBe("proposal");
@@ -172,7 +174,16 @@ describe("al generar la propuesta", () => {
     backend.calls = [];
     backend.handler = async (call) =>
       call.method === "POST"
-        ? { id: "p1", syllabusId: "s1", extractionVersion: 1, status: "NEEDS_REVIEW", approvedBy: null, approvedAt: null, items: [], issues: [] }
+        ? {
+            id: "p1",
+            syllabusId: "s1",
+            extractionVersion: 1,
+            status: "NEEDS_REVIEW",
+            approvedBy: null,
+            approvedAt: null,
+            items: [],
+            issues: [],
+          }
         : { content: { learningOutcomes: [] } };
 
     await generate(7, "s1", 1);
