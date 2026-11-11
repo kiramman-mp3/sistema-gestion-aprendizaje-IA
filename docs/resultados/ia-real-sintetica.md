@@ -41,6 +41,11 @@ quedaron de una ejecución interrumpida; se limpiaron y se repitió).
 - **Ponderaciones:** en 5 de 12 documentos el modelo confundió los componentes de evaluación (instrumentos) con los periodos
   de calificación; las ponderaciones coincidieron en 17 de 36 casos. Es el hallazgo más importante: depende de la
   convención de la institución (D-04) y debe resolverse con los sílabos reales.
+- **Corregido el 2026-11-11 ([ADR-025](../architecture/adr/0025-estructura-segun-la-organizacion-del-silabo.md)):** un sílabo real
+  mostró el mismo error (los componentes 40/30/30 salieron como tres periodos). Con tres reglas nuevas en el prompt, los 12
+  sílabos ficticios dan un único periodo sin ponderación (de 2/12 a 12/12) y los componentes de evaluación coinciden con lo
+  esperado en 10/12 (los otros dos, escaneados, tienen un error de OCR en el nombre: «AUTÓNONO»). El F1 de unidades y de
+  resultados de aprendizaje sigue en 100 %.
 - Un error `AI_INVALID_OUTPUT` inicial se debió a que el modelo escribía mal la constante `schemaVersion`; ahora la fija el
   sistema.
 
