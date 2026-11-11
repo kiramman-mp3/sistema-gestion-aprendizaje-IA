@@ -54,6 +54,11 @@ y Gemini reales y un curso desechable (`PUB-PRUEBA2`, borrado después):
 | **Aprobar y publicar** antes de marcar la casilla          | Deshabilitado                                                                                 |
 | Marcar la casilla y pulsar **Aprobar y publicar**          | Se aprueba y se publica; se crearon las secciones del sílabo y el curso de Moodle las muestra |
 
+Al volver a abrir la página del curso sin nada en la dirección, el plugin retomó el sílabo revisado (versión 2, del docente) y
+la propuesta pendiente de revisión con `GET /syllabi/latest` y `GET /proposals/latest`; antes, ese trabajo solo se veía si
+la dirección llevaba `syllabusid` y `proposalid`. La primera carga tras limpiar la caché de Moodle tardó más de 5
+segundos en mostrar el editor; la segunda fue inmediata.
+
 Las pruebas del plugin cubren además: la extracción automática solo con el botón principal, la excepción del texto de OCR
 de baja confianza, el fallo de la extracción, el orden aprobar y luego publicar con `confirm: true` y clave de
 idempotencia, que no se publique si la aprobación falla y que el bloque no aparezca fuera de la revisión.

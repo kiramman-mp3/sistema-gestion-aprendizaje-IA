@@ -146,6 +146,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /syllabi/latest:
+    get:
+      tags: [syllabi]
+      operationId: getLatestSyllabus
+      summary: El sílabo más reciente del curso
+      description: |
+        Devuelve el sílabo del curso del token con la actividad más reciente (carga, extracción o revisión), para que la
+        página lo retome al abrirse sin que el docente conserve su id. Responde 404 (`SYLLABUS_NOT_FOUND`) si el curso no
+        tiene ninguno; nunca devuelve sílabos de otro curso.
+      responses:
+        "200":
+          description: Sílabo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyllabusDocument"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /syllabi/{syllabusId}:
     get:
       tags: [syllabi]
@@ -295,6 +316,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+
+  /proposals/latest:
+    get:
+      tags: [proposals]
+      operationId: getLatestProposal
+      summary: La propuesta más reciente del curso
+      description: |
+        Devuelve la propuesta del curso del token con la actividad más reciente, sin contar las rechazadas, para que la
+        página la retome al abrirse. Responde 404 (`PROPOSAL_NOT_FOUND`) si el curso no tiene ninguna; nunca devuelve
+        propuestas de otro curso.
+      responses:
+        "200":
+          description: Propuesta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /proposals/{proposalId}:
     get:

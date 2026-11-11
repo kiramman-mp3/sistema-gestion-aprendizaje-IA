@@ -31,9 +31,10 @@ sequenceDiagram
     B-->>E: 201 nueva versión (source TEACHER)
 ```
 
-Si el docente vuelve a la página, `index.php?courseid=<id>&syllabusid=<uuid>` retoma el sílabo en el
-estado en que esté: ofrece extraer si está en `TEXT_READY` y abre el editor si está en `EXTRACTED` o
-`REVIEWED`.
+Si el docente vuelve a la página, el plugin pregunta `GET /syllabi/latest` y retoma el sílabo del curso con la actividad más
+reciente, en el estado en que esté: ofrece extraer si está en `TEXT_READY` y abre el editor si está en `EXTRACTED` o
+`REVIEWED`. Un curso sin sílabos (404) no muestra nada. Con `index.php?courseid=<id>&syllabusid=<uuid>` se abre uno concreto
+y no se pregunta por el último.
 
 ## Módulos
 
@@ -105,5 +106,5 @@ un doble de `callBackend`. Esas pruebas están en `infra/amd/tests/` y se ejecut
 - Comprobar el editor en Moodle con la API real cuando la línea de IA entregue las rutas.
 - La verificación visual en un navegador contra Moodle queda para la integración; en este sprint solo
   se probó en un DOM simulado.
-- Listado de sílabos del curso: hoy no existe `GET /syllabi`; el docente retoma un sílabo con el
-  parámetro `syllabusid` de la URL.
+- Listado de sílabos del curso: no existe `GET /syllabi`. La página retoma solo el más reciente (`GET /syllabi/latest`); para
+  abrir uno anterior hace falta el parámetro `syllabusid` de la URL.

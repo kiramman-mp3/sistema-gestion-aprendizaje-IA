@@ -31,6 +31,9 @@ Solo los docentes ven esta página: los estudiantes no.
 4. Si el PDF es una imagen escaneada, el texto se lee con reconocimiento óptico y el sistema te avisa de que **debes
    revisarlo con más cuidado**.
 
+Si cierras la página o vuelves otro día, el asistente **retoma solo tu último sílabo y tu última propuesta** del curso, en el
+estado en que los dejaste. Si no los ves, recarga la página.
+
 Archivos que se rechazan: con una extensión que no corresponde a su contenido, con macros, con virus o protegidos con
 contraseña (quita la protección y vuelve a subirlo).
 
