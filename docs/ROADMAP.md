@@ -588,6 +588,11 @@ de modelos propios y publicación masiva sin revisión.
 
 ## 📈 Seguimiento
 
+> **Nota de alcance (2026-11-11).** El proyecto se cierra como demostración del agente. Lo que depende de datos reales (D-03,
+> los sílabos reales y el F1 sobre ellos) y lo que de ello se deriva (entrevistas, aval ético, piloto con docentes y encuesta
+> SUS, capacitación impartida, despliegue en producción) no se hará y queda fuera de alcance. Los sprints siguen «En curso»
+> porque esas tareas siguen sin hacerse; todo lo demás está construido y verificado con datos sintéticos.
+
 | Sprint | Estado    | Inicio     | Fin        | Notas                                                                                                                                                                                                                           |
 | ------ | --------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | S0     | En curso  | 2026-11-09 | 2026-11-29 | Tareas técnicas terminadas; pendientes D-03, D-04 (pesos), D-05, D-07, D-08, D-09, D-10                                                                                                                                         |
