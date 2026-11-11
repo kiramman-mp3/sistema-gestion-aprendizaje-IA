@@ -38,6 +38,7 @@ const PLAIN_STRINGS = [
   "field_title", "field_description", "field_type", "field_due", "field_weight", "field_outcomes",
   "nooutcomes", "itemtype_assign", "itemtype_forum", "itemtype_quiz", "itemtype_label", "itemtype_page",
   "add_section", "add_activity", "save", "saving", "saved", "approve", "approving", "approvehint",
+  "approveandpublish", "approveandpublishconfirm", "approveandpublishhint",
   "error_weight", "error_date", "error_toolong", "severity_error", "severity_warning",
 ];
 
@@ -85,6 +86,8 @@ class Preview {
     this.knownOutcomes = [];
     this.dirty = false;
     this.busy = false;
+    /** The teacher ticked the confirmation that goes with "Approve and publish". */
+    this.confirmPublish = false;
     this.collapsed = new Set();
     this.updaters = [];
     this.publishPanel = new PublishPanel({
@@ -220,8 +223,28 @@ class Preview {
     this.status = el("div", { class: "mt-3", "aria-live": "polite" });
     this.publishBox = el("div");
     this.saveButton = el("button", { type: "button", class: "btn btn-primary", onclick: () => this.save() }, str("save"));
-    this.approveButton = el("button", { type: "button", class: "btn btn-success", onclick: () => this.approve() }, str("approve"));
+    this.approveButton = el("button", { type: "button", class: "btn btn-outline-success", onclick: () => this.approve() }, str("approve"));
     this.approveHint = el("span", { class: "small text-muted align-self-center" });
+    // One decision to approve and publish: the confirmation is explicit and stays, but it is asked once.
+    const confirmId = uniqueId("approvepublish");
+    this.confirmBox = el("input", {
+      id: confirmId,
+      type: "checkbox",
+      class: "form-check-input",
+      checked: this.confirmPublish,
+      onchange: (event) => {
+        this.confirmPublish = event.target.checked;
+        this.refresh();
+      },
+    });
+    this.approvePublishButton = el("button", { type: "button", class: "btn btn-success", onclick: () => this.approveAndPublish() }, str("approveandpublish"));
+    this.approvePublishBlock = el(
+      "div",
+      { class: "border rounded p-3 mb-3" },
+      el("p", { class: "small text-muted mb-2" }, str("approveandpublishhint")),
+      el("div", { class: "form-check mb-2" }, this.confirmBox, el("label", { class: "form-check-label", for: confirmId }, str("approveandpublishconfirm"))),
+      this.approvePublishButton,
+    );
 
     const sections = Model.sectionsOf(this.items);
     this.show(
@@ -241,6 +264,8 @@ class Preview {
         const next = Model.addSection(this.items);
         this.change(next, { redraw: true, focus: next.at(-1).id });
       })),
+      // Only while the proposal waits for review: afterwards the publication panel asks for its own confirmation.
+      this.proposal.status === "NEEDS_REVIEW" ? this.approvePublishBlock : null,
       el("div", { class: "d-flex gap-2 flex-wrap" }, this.saveButton, this.approveButton, this.approveHint),
       this.status,
       this.publishBox,
@@ -298,6 +323,8 @@ class Preview {
     this.approveButton.disabled = this.busy || !actions.canApprove;
     this.approveButton.classList.toggle("d-none", this.proposal.status !== "NEEDS_REVIEW");
     this.approveHint.textContent = actions.canApprove || this.proposal.status !== "NEEDS_REVIEW" ? "" : str("approvehint");
+    this.confirmBox.disabled = this.busy;
+    this.approvePublishButton.disabled = this.busy || !actions.canApprove || !this.confirmPublish;
 
     const fieldErrors = Model.findFieldErrors(this.items);
     for (const update of this.updaters) {
@@ -586,6 +613,23 @@ class Preview {
       "approveerror",
       null,
     );
+  }
+
+  /**
+   * Approves and publishes with a single confirmation. Approval is still a step of its own on the backend (who
+   * approved and when is recorded) and publication still needs `confirm: true`; here both are asked together.
+   * If the approval fails its error is on screen and nothing is published.
+   */
+  async approveAndPublish() {
+    if (this.busy || !this.confirmPublish || !Model.availableActions(this.proposal, this.dirty, this.items).canApprove) {
+      return;
+    }
+    await this.approve();
+    if (this.proposal.status !== "APPROVED") {
+      return;
+    }
+    this.publishPanel.confirmed = true;
+    await this.publishPanel.start();
   }
 }
 

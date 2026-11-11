@@ -166,7 +166,8 @@ describe("carga", () => {
 
     await open(7, PROPOSAL_ID);
 
-    const boxes = [...root().querySelectorAll('input[type="checkbox"]')].map(
+    // Solo las casillas de resultados de aprendizaje: la de «Aprobar y publicar» no cuenta.
+    const boxes = [...root().querySelectorAll('fieldset input[type="checkbox"]')].map(
       (box) => box.nextElementSibling.textContent,
     );
     expect(new Set(boxes)).toEqual(new Set(["RA1"]));
