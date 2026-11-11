@@ -42,6 +42,25 @@ instancias.
 | El estudiante recibe HTTP 500 con la traza de Moodle                                  | Es el comportamiento de Moodle con el modo de depuración de desarrollo activado ante un permiso faltante; revisar que producción no lo active |
 | Tras una interrupción la pregunta no vuelve al cuadro                                 | Intencional: ya hay una respuesta parcial en la conversación                                                                                  |
 
+## Estructura del curso en pocos pasos (2026-11-11)
+
+Con [ADR-024](../architecture/adr/0024-estructura-del-curso-en-pocos-pasos.md) se probó en Chromium, con Moodle, el backend
+y Gemini reales y un curso desechable (`PUB-PRUEBA2`, borrado después):
+
+| Paso del docente                                           | Resultado                                                                                     |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Elegir el archivo y pulsar **Subir y crear la estructura** | Sin más clics, a los 19 segundos aparece el editor con la extracción                          |
+| **Guardar y generar la propuesta de curso**                | Guarda la revisión (versión 2) y genera la propuesta con sus secciones                        |
+| **Aprobar y publicar** antes de marcar la casilla          | Deshabilitado                                                                                 |
+| Marcar la casilla y pulsar **Aprobar y publicar**          | Se aprueba y se publica; se crearon las secciones del sílabo y el curso de Moodle las muestra |
+
+Las pruebas del plugin cubren además: la extracción automática solo con el botón principal, la excepción del texto de OCR
+de baja confianza, el fallo de la extracción, el orden aprobar y luego publicar con `confirm: true` y clave de
+idempotencia, que no se publique si la aprobación falla y que el bloque no aparezca fuera de la revisión.
+
+Al levantar el worker a mano para esta prueba hay que pasar `WORKER_STORAGE_SOURCE=./apps/api/var/storage`; sin eso el
+texto del sílabo falla con `TEXT_EXTRACTION_FAILED`.
+
 ## Navegadores, pantalla pequeña y accesibilidad
 
 El mismo recorrido del docente (cargar la página, ver las cuatro secciones, preguntar «¿Qué hay pendiente de calificar?» y
