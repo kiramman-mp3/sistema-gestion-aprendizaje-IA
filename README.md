@@ -15,10 +15,12 @@ partir de su sílabo, consultar en lenguaje natural la información real del cur
 recomendaciones pedagógicas basadas en evidencias.
 
 Es un proyecto de desarrollo de software y titulación para una institución de educación superior de
-Ecuador. Terminó el **Sprint 4** del [roadmap](docs/ROADMAP.md): sobre la versión `v0.1.0` (hito H1,
-plugin, backend y Moodle autenticados), el docente ya sube su sílabo y el sistema extrae su texto con
-páginas, encabezados y tablas, con OCR para documentos escaneados. Todo se prueba con datos
-sintéticos. La extracción estructurada con IA llega en el Sprint 5.
+Ecuador, y se presenta como una **demostración funcional del agente**. La versión `v0.2.0` recorre de
+punta a punta lo planeado en el [roadmap](docs/ROADMAP.md): el docente sube su sílabo, el sistema
+extrae su estructura con IA, propone el curso y, tras su aprobación, lo publica en Moodle; después
+puede preguntarle al asistente por los datos reales del curso, ver la analítica y recibir
+recomendaciones pedagógicas. Todo se prueba con datos sintéticos: no se reúnen sílabos reales ni se
+hace el piloto con docentes (véase la sección «Decisiones y pendientes»).
 
 > [!TIP]
 > Para levantar el entorno completo, sigue la [guía del entorno local](docs/desarrollo/entorno-local.md).
@@ -60,10 +62,10 @@ gestionan la plataforma.
 
 ## 🖼️ Capturas
 
-| Página del asistente                                                                                                   | Carga del sílabo                                                                                                           |
-| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <img width="420" src="docs/capturas/asistente-conexion.jpg" alt="Página del asistente en Moodle conectada al backend"> | <img width="420" src="docs/capturas/carga-silabo.jpg" alt="Sílabo escaneado procesado con OCR en la página del asistente"> |
-| <sub>El docente del curso ve la conexión con el backend y sus permisos (Moodle local, datos sintéticos).</sub>         | <sub>Un sílabo escaneado sintético se procesó con OCR y quedó marcado para revisión.</sub>                                 |
+| Página del asistente                                                                                                                       | Carga del sílabo                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| <img width="420" src="docs/capturas/asistente-conexion.jpg" alt="Página del asistente en Moodle conectada al backend">                     | <img width="420" src="docs/capturas/carga-silabo.jpg" alt="Sílabo escaneado procesado con OCR en la página del asistente"> |
+| <sub>El docente del curso ve la conexión con el backend, sus permisos y las pestañas del asistente (Moodle local, datos sintéticos).</sub> | <sub>Un sílabo escaneado sintético se procesó con OCR y quedó marcado para revisión.</sub>                                 |
 
 Capturas tomadas en un navegador real (Chromium) con Moodle 5.1 local, el modelo de IA real y datos sintéticos:
 
@@ -97,7 +99,7 @@ Base:
 - **Autenticación entre el plugin y el backend:** el plugin firma un JWT HS256 de 5 minutos y un solo uso; el backend lo verifica y rechaza reutilizaciones.
 - **Permisos de Moodle en cada petición:** el backend pregunta a Moodle qué puede hacer el docente en el curso y bloquea cursos ajenos y estudiantes.
 - **Auditoría:** los rechazos de autenticación y de acceso quedan registrados sin tokens ni datos personales.
-- **Página del asistente en Moodle:** enlazada desde el curso, comprueba la conexión con el backend y muestra los permisos del docente.
+- **Página del asistente en Moodle:** enlazada desde el curso, comprueba la conexión con el backend, muestra los permisos del docente y se organiza en pestañas por tarea (sílabo, propuesta, preguntas, analítica, actividades y administración); una pestaña solo aparece si hay algo que mostrar y se puede recorrer con el teclado.
 - **Contrato del sílabo:** esquema Zod v1 con reglas de consistencia y exportación a JSON Schema.
 - **Carga segura de sílabos:** PDF y DOCX de hasta 10 MB, validados por su contenido real, sin macros, con límite de descompresión y analizados con ClamAV antes de guardarse; un archivo malicioso se rechaza y se audita.
 - **Extracción de texto en segundo plano:** un worker aislado, sin acceso a la base de datos, extrae el texto con su página, encabezados y tablas; el backend valida el resultado antes de guardarlo.
@@ -124,7 +126,7 @@ Asistente y analítica (hechos):
 - **Worker documental:** Node con TypeScript, pdf.js 6 para PDF, fflate y fast-xml-parser para DOCX, Poppler y Tesseract para OCR.
 - **Cola de trabajos:** BullMQ 6 sobre Redis, con flujos padre/hijo y planificadores.
 - **Base de datos:** PostgreSQL 17 con `pgvector` 0.8.6 mediante Prisma 7 y el adaptador `pg`; Redis 8.8 con `ioredis`.
-- **IA:** proveedor LLM y de embeddings por definir (D-07) detrás de las interfaces `LlmProvider` y `EmbeddingProvider`; con `AI_PROVIDER=mock` hay un proveedor de demostración y con `AI_PROVIDER=gemini` uno real para pruebas con datos sintéticos ([ADR-023](docs/architecture/adr/0023-proveedor-gemini-y-modelos.md)). Búsqueda en documentos (RAG) con `pgvector` (vectores de 1024 dimensiones, índice HNSW por coseno).
+- **IA:** proveedor LLM y de embeddings sin decisión institucional (D-07; la demostración usa Gemini) detrás de las interfaces `LlmProvider` y `EmbeddingProvider`; con `AI_PROVIDER=mock` hay un proveedor de demostración y con `AI_PROVIDER=gemini` uno real para pruebas con datos sintéticos ([ADR-023](docs/architecture/adr/0023-proveedor-gemini-y-modelos.md)). Búsqueda en documentos (RAG) con `pgvector` (vectores de 1024 dimensiones, índice HNSW por coseno).
 - **Contratos:** Zod 4 en `packages/contracts`, con exportación a JSON Schema.
 - **Pruebas:** Vitest en `packages/*`, en el worker y en el JavaScript del plugin (con jsdom); Jest y Supertest en el backend; PHPUnit en el plugin.
 - **Calidad:** ESLint, Prettier, Redocly CLI (contrato OpenAPI), `phpcs` con `moodle-cs` y GitHub Actions.
@@ -157,9 +159,11 @@ graph TD
 ```
 
 Moodle es la fuente de verdad de los datos académicos. El backend valida permisos y consulta Moodle;
-la IA interpreta, consulta herramientas y propone, y el docente conserva la decisión final. Hoy están
-construidos el plugin, el backend con autenticación y permisos, la carga con antivirus, la cola y el
-worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
+la IA interpreta, consulta herramientas y propone, y el docente conserva la decisión final. Todos los
+módulos del diagrama están construidos y verificados de punta a punta con datos sintéticos: el plugin,
+el backend con autenticación y permisos, la carga con antivirus, la cola, el worker documental, la
+extracción y las propuestas con IA, la publicación en Moodle, el chat con RAG, la analítica y las
+recomendaciones.
 
 ---
 
@@ -254,8 +258,8 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 - Git; en Windows, Git Bash para los scripts de `infra/scripts/`.
 - Docker Desktop o Docker Engine con Compose v2, unos 3 GB libres para Moodle y las imágenes, y 1,5 GB de memoria para ClamAV.
 
-En producción se necesitarán además una instancia de Moodle 5.1 accesible por HTTPS, un gestor de
-secretos y un proveedor de IA; se definen en el Sprint 13.
+En producción se necesitan además una instancia de Moodle 5.1 accesible por HTTPS, un gestor de
+secretos y un proveedor de IA; los pasos están en el [manual de instalación y operación](docs/operacion/instalacion-y-operacion.md).
 
 ---
 
@@ -339,37 +343,39 @@ conocidos. En resumen:
 
 ### Desarrollo
 
-| Comando                                          | Qué hace                                                                                                                      |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm lint`                                      | ESLint en todo el repositorio                                                                                                 |
-| `pnpm lint:api`                                  | Valida `docs/api/openapi.yaml` con Redocly                                                                                    |
-| `pnpm format` / `pnpm format:check`              | Formatea o verifica el formato con Prettier                                                                                   |
-| `pnpm typecheck`                                 | Revisa tipos en todos los paquetes                                                                                            |
-| `pnpm test`                                      | Pruebas de todos los paquetes                                                                                                 |
-| `pnpm build`                                     | Compila todos los paquetes                                                                                                    |
-| `pnpm --filter @smart-lms/api dev`               | Backend en modo desarrollo con recarga                                                                                        |
-| `pnpm --filter @smart-lms/api prisma:migrate`    | Crea y aplica una migración en desarrollo                                                                                     |
-| `pnpm --filter @smart-lms/api prisma:deploy`     | Aplica las migraciones pendientes                                                                                             |
-| `pnpm --filter @smart-lms/contracts schema:json` | Regenera el JSON Schema del sílabo                                                                                            |
-| `pnpm --filter @smart-lms/document-worker test`  | Pruebas del worker documental                                                                                                 |
-| `pnpm --filter @smart-lms/plugin-js test`        | Pruebas del JavaScript del plugin (modelo y editor de la extracción)                                                          |
-| `docker compose --profile antivirus up -d`       | Levanta ClamAV                                                                                                                |
-| `docker compose --profile worker up -d --build`  | Levanta el worker documental aislado                                                                                          |
-| `pnpm build:amd`                                 | Compila los módulos AMD del plugin                                                                                            |
-| `pnpm check:amd`                                 | Falla si `amd/build` no corresponde a `amd/src`                                                                               |
-| `pnpm mock:ai`                                   | API de IA simulada (puerto 3100) para probar la interfaz sin el LLM                                                           |
-| `pnpm loadtest -- --scenario session`            | Prueba de carga básica del backend (también `--scenario chat`)                                                                |
-| `pnpm smoke:publicacion`                         | Verificación de punta a punta de CU-02 y CU-03 con Moodle real                                                                |
-| `pnpm smoke:asistente`                           | Verificación del chat, la analítica, la administración y los snapshots con la API real y el curso de prueba                   |
-| `pnpm smoke:ia`                                  | Chat, búsqueda en documentos, ataques, recomendación y latencia con el proveedor de IA real (consume cuota; datos sintéticos) |
-| `pnpm extract:synthetic`                         | Pasa los 12 sílabos sintéticos por la extracción real y guarda lo obtenido en `var/` para medir el F1                         |
-| `pnpm smoke:silabos`                             | Carga, antivirus, worker, OCR, extracción y búsqueda en documentos con los sílabos sintéticos                                 |
-| `pnpm synthetic:syllabi`                         | Regenera los 12 sílabos sintéticos (los escaneados usan Docker)                                                               |
-| `pnpm eval:text` / `pnpm eval:text:docker`       | Qué parte del contenido de un sílabo llega al texto que extrae el worker (con OCR en Docker)                                  |
-| `bash infra/monitoring/check-ai-usage.sh`        | Alertas de errores y consumo de IA (para cron)                                                                                |
-| `pnpm eval:extraction [dir] [--check]`           | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia                                                |
-| `bash infra/scripts/moodle.sh <comando>`         | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`                                                      |
-| `bash infra/scripts/phpcs.sh [--fix]`            | Revisa (o corrige) el PHP con el estándar de Moodle                                                                           |
+| Comando                                             | Qué hace                                                                                                                      |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                         | ESLint en todo el repositorio                                                                                                 |
+| `pnpm lint:api`                                     | Valida `docs/api/openapi.yaml` con Redocly                                                                                    |
+| `pnpm format` / `pnpm format:check`                 | Formatea o verifica el formato con Prettier                                                                                   |
+| `pnpm typecheck`                                    | Revisa tipos en todos los paquetes                                                                                            |
+| `pnpm test`                                         | Pruebas de todos los paquetes                                                                                                 |
+| `pnpm build`                                        | Compila todos los paquetes                                                                                                    |
+| `pnpm --filter @smart-lms/api dev`                  | Backend en modo desarrollo con recarga                                                                                        |
+| `pnpm --filter @smart-lms/api prisma:migrate`       | Crea y aplica una migración en desarrollo                                                                                     |
+| `pnpm --filter @smart-lms/api prisma:deploy`        | Aplica las migraciones pendientes                                                                                             |
+| `pnpm --filter @smart-lms/contracts schema:json`    | Regenera el JSON Schema del sílabo                                                                                            |
+| `pnpm --filter @smart-lms/document-worker test`     | Pruebas del worker documental                                                                                                 |
+| `pnpm --filter @smart-lms/plugin-js test`           | Pruebas del JavaScript del plugin: pantallas, modelos y navegación por pestañas                                               |
+| `docker compose --profile antivirus up -d`          | Levanta ClamAV                                                                                                                |
+| `docker compose --profile worker up -d --build`     | Levanta el worker documental aislado                                                                                          |
+| `pnpm build:amd`                                    | Compila los módulos AMD del plugin                                                                                            |
+| `pnpm check:amd`                                    | Falla si `amd/build` no corresponde a `amd/src`                                                                               |
+| `pnpm mock:ai`                                      | API de IA simulada (puerto 3100) para probar la interfaz sin el LLM                                                           |
+| `pnpm loadtest -- --scenario session`               | Prueba de carga básica del backend (también `--scenario chat`)                                                                |
+| `pnpm smoke:publicacion`                            | Verificación de punta a punta de CU-02 y CU-03 con Moodle real                                                                |
+| `pnpm smoke:asistente`                              | Verificación del chat, la analítica, la administración y los snapshots con la API real y el curso de prueba                   |
+| `pnpm smoke:ia`                                     | Chat, búsqueda en documentos, ataques, recomendación y latencia con el proveedor de IA real (consume cuota; datos sintéticos) |
+| `pnpm extract:synthetic`                            | Pasa los 12 sílabos sintéticos por la extracción real y guarda lo obtenido en `var/` para medir el F1                         |
+| `pnpm smoke:silabos`                                | Carga, antivirus, worker, OCR, extracción y búsqueda en documentos con los sílabos sintéticos                                 |
+| `pnpm synthetic:syllabi`                            | Regenera los 12 sílabos sintéticos (los escaneados usan Docker)                                                               |
+| `pnpm eval:text` / `pnpm eval:text:docker`          | Qué parte del contenido de un sílabo llega al texto que extrae el worker (con OCR en Docker)                                  |
+| `bash infra/monitoring/check-ai-usage.sh`           | Alertas de errores y consumo de IA (para cron)                                                                                |
+| `pnpm eval:extraction [dir] [--check]`              | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia                                                |
+| `bash infra/scripts/moodle.sh <comando>`            | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`                                                      |
+| `bash infra/scripts/phpcs.sh [--fix]`               | Revisa (o corrige) el PHP con el estándar de Moodle                                                                           |
+| `php /opt/smart-lms/cli/seed_cursos_prueba.php`     | Dentro del contenedor de Moodle: crea cuatro cursos de prueba más (`--recrear` los borra y los vuelve a crear)                |
+| `php /opt/smart-lms/cli/cargar_imagenes_cursos.php` | Dentro del contenedor de Moodle: deja la imagen de portada de cada curso de prueba                                            |
 
 ### Producción local
 
@@ -478,9 +484,17 @@ El plugin de Moodle tiene su propia tabla, `local_ai_assistant_items` (relaciona
 
 El detalle está en [decisiones del Sprint 0](docs/architecture/decisiones-sprint-0.md).
 
+> [!NOTE]
+> Este repositorio es una demostración del agente. Lo que depende de datos reales (los sílabos reales para
+> medir el F1) y lo que de ello se deriva (entrevistas, aval ético, piloto con docentes y su encuesta,
+> capacitación impartida y despliegue en producción) no se hará y queda fuera de alcance. Todo lo demás
+> está construido y probado con datos sintéticos.
+
 ---
 
 ## 🗺️ Roadmap de Funcionalidades
+
+Los puntos sin marcar dependen de datos o personas reales y quedan fuera del alcance de la demostración.
 
 - [x] Repositorio, flujo de ramas y CI base
 - [x] Decisiones de arquitectura iniciales
@@ -519,8 +533,8 @@ están en [`CLAUDE.md`](CLAUDE.md).
 
 | Nombre            | Commits |
 | ----------------- | ------- |
+| JoseM151          | 276     |
 | kiramman-mp3      | 196     |
-| JoseM151          | 176     |
 | JuanCarlos        | 77      |
 | JuanCarlos Pashma | 2       |
 
