@@ -145,6 +145,7 @@ const renderConnected = async (status, session) => {
       const label = await getString(stringId, "local_ai_assistant");
       const li = document.createElement("li");
       li.textContent = `${label}: ${session.capabilities[key] ? yes : no}`;
+      li.dataset.enabled = String(Boolean(session.capabilities[key]));
       return li;
     }),
   );
