@@ -132,7 +132,7 @@ export class PublishPanel {
   // -------------------------------------------------------------------------------------------
 
   heading(text) {
-    return el("h4", { class: "h6 mt-4" }, text);
+    return el("h4", { class: "h6 lai-subheading" }, text);
   }
 
   alert(type, ...content) {

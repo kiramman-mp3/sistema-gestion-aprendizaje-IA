@@ -766,6 +766,139 @@
 }
 
 /* ------------------------------------------------------------------------------------------------
+ * Tablas
+ * --------------------------------------------------------------------------------------------- */
+
+.local_ai_assistant .table-responsive {
+    border: 1px solid var(--lai-border);
+    border-radius: var(--lai-radius-sm);
+}
+
+.local_ai_assistant .table {
+    --bs-table-bg: transparent;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 0;
+}
+
+.local_ai_assistant .table > :not(caption) > * > * {
+    padding: 0.65rem 0.8rem;
+}
+
+.local_ai_assistant .table > thead > tr > th {
+    background: var(--lai-muted-bg);
+    border-bottom: 1px solid var(--lai-border);
+    color: var(--lai-muted-text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.local_ai_assistant .table > tbody > tr:last-child > * {
+    border-bottom: 0;
+}
+
+.local_ai_assistant .table > tbody > tr > th[scope="row"] {
+    font-weight: 500;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .local_ai_assistant .table > tbody > tr:hover > * {
+        background: var(--lai-muted-bg);
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Tarjetas dentro de un panel: indicadores como fichas y listas como filas
+ * --------------------------------------------------------------------------------------------- */
+
+.local_ai_assistant [data-region] .card.h-100 {
+    background: var(--lai-muted-bg);
+    border: 0;
+    border-radius: var(--lai-radius-sm);
+}
+
+.local_ai_assistant [data-region] li.card,
+.local_ai_assistant [data-region] section.card {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    border-top: 1px solid var(--lai-border);
+    margin-bottom: 0 !important;
+    padding: 0.25rem 0;
+}
+
+.local_ai_assistant [data-region] li.card > .card-body,
+.local_ai_assistant [data-region] section.card > .card-body {
+    padding: 0.875rem 0;
+}
+
+.local_ai_assistant [data-region] li.card.card-body {
+    padding: 0.875rem 0;
+}
+
+/* Subtítulos de los paneles de analítica y administración. */
+.local_ai_assistant [data-region] > h4.h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    margin-top: 1.75rem !important;
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Pestañas de administración como control segmentado
+ * --------------------------------------------------------------------------------------------- */
+
+.local_ai_assistant .btn-group[role="group"] {
+    align-self: flex-start;
+    background: var(--lai-muted-bg);
+    border: 1px solid var(--lai-border);
+    border-radius: var(--lai-radius-sm);
+    display: inline-flex;
+    gap: 0.2rem;
+    padding: 0.2rem;
+}
+
+.local_ai_assistant .btn-group[role="group"] > .btn {
+    --bs-btn-border-color: transparent;
+    --bs-btn-color: var(--lai-muted-text);
+    --bs-btn-hover-bg: transparent;
+    --bs-btn-hover-color: var(--bs-body-color, inherit);
+    --bs-btn-hover-border-color: transparent;
+    border-radius: calc(var(--lai-radius-sm) - 0.2rem) !important;
+    margin: 0;
+}
+
+.local_ai_assistant .btn-group[role="group"] > .btn.active {
+    --bs-btn-active-bg: var(--lai-surface);
+    --bs-btn-active-color: var(--bs-body-color, inherit);
+    --bs-btn-active-border-color: transparent;
+    background: var(--lai-surface);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.16);
+    color: var(--bs-body-color, inherit);
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Publicación
+ * --------------------------------------------------------------------------------------------- */
+
+.local_ai_assistant .lai-subheading {
+    border-top: 1px solid var(--lai-border);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+}
+
+.local_ai_assistant .progress {
+    background: var(--lai-muted-bg);
+    border: 1px solid var(--lai-border);
+    border-radius: 999px;
+    height: 0.625rem;
+}
+
+/* ------------------------------------------------------------------------------------------------
  * Movimiento reducido
  * --------------------------------------------------------------------------------------------- */
 
