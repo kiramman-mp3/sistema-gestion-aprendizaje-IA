@@ -173,6 +173,27 @@ MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php /o
 Los plazos son relativos a hoy. Con `--recrear` se borra el curso y se vuelve a crear; los usuarios `prueba_*` se
 conservan. Sin esa opción, si el curso ya existe, el script se detiene.
 
+### Cursos de prueba adicionales
+
+`infra/moodle/cli/seed_cursos_prueba.php` crea cuatro cursos más, cada uno con un grupo de estudiantes distinto, para ver
+cómo responden la analítica, el chat y las señales de dificultad ante datos diferentes:
+
+```bash
+MSYS_NO_PATHCONV=1 bash infra/scripts/moodle.sh compose exec -T webserver php /opt/smart-lms/cli/seed_cursos_prueba.php
+```
+
+| Curso           | Nombre                         | Qué lo distingue                                                                                                       |
+| --------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `RD-301-PRUEBA` | Redes de Computadores          | Grupo sólido: pocas entregas tardías y pocas señales. 3 tareas, un cuestionario, foro, página, etiqueta                |
+| `GP-302-PRUEBA` | Gestión de Proyectos           | Muchas entregas tardías y varias sin calificar. 4 tareas, un cuestionario, foro, página, etiqueta                      |
+| `ME-201-PRUEBA` | Métodos Numéricos              | Notas bajas, un cuestionario muy difícil y varios estudiantes inactivos. 3 tareas, un cuestionario                     |
+| `LI-101-PRUEBA` | Lógica de Programación (vacío) | Solo la sección General y 8 estudiantes: sirve para probar de principio a fin el sílabo, la propuesta y la publicación |
+
+El docente es `prueba_docente` y los estudiantes son `prueba_est01` a `prueba_est12` (los mismos de `AN-401-PRUEBA`, que se
+crean si faltan). Los datos son deterministas y los plazos son relativos a hoy. Con `--recrear` se borran los cursos que ya
+existan y se vuelven a crear; sin esa opción, si alguno existe, el script se detiene sin cambiar nada. Contraseña
+`Demo#2026` por defecto (`--password=...`).
+
 ### Docentes y administrador de prueba
 
 `infra/moodle/cli/seed_docentes_prueba.php` (necesita `AN-401-PRUEBA`) crea, de forma idempotente, usuarios para probar permisos,
