@@ -331,7 +331,7 @@ class Admin {
       }
     };
 
-    const scope = el("span", { class: "badge bg-secondary ms-2" }, str(SCOPE_STRINGS[rule.scope]));
+    const scope = el("span", { class: "badge lai-secondary ms-2" }, str(SCOPE_STRINGS[rule.scope]));
     return el(
       "section",
       { class: "card mb-3" },

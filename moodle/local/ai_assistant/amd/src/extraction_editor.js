@@ -226,15 +226,15 @@ class Editor {
     const summary = Model.summarize(this.extraction);
     const parts = [];
     if (summary.uncertain) {
-      parts.push(el("span", { class: "badge bg-warning text-dark me-2" }, str("summary_uncertain", summary.uncertain)));
+      parts.push(el("span", { class: "badge lai-warning me-2" }, str("summary_uncertain", summary.uncertain)));
     }
     if (summary.inconsistencies) {
-      parts.push(el("span", { class: "badge bg-warning text-dark me-2" }, str("summary_issues", summary.inconsistencies)));
+      parts.push(el("span", { class: "badge lai-warning me-2" }, str("summary_issues", summary.inconsistencies)));
     }
     if (summary.errors) {
-      parts.push(el("span", { class: "badge bg-danger me-2" }, str("summary_errors", summary.errors)));
+      parts.push(el("span", { class: "badge lai-danger me-2" }, str("summary_errors", summary.errors)));
     }
-    this.summary.replaceChildren(...(parts.length ? parts : [el("span", { class: "badge bg-success" }, str("summary_clear"))]));
+    this.summary.replaceChildren(...(parts.length ? parts : [el("span", { class: "badge lai-success" }, str("summary_clear"))]));
     // The proposal is built from a saved version the teacher reviewed, never from unsaved edits: the button
     // saves first when the version on screen is the AI's or has changes, and only then generates.
     const needsSave = this.dirty || this.source !== "TEACHER";
@@ -320,7 +320,7 @@ class Editor {
     flag.replaceChildren(
       ...(uncertain
         ? [
-            el("span", { class: "badge bg-warning text-dark ms-2", title: uncertain.note || "" }, str(`reason_${uncertain.reason}`)),
+            el("span", { class: "badge lai-warning ms-2", title: uncertain.note || "" }, str(`reason_${uncertain.reason}`)),
             el("button", { type: "button", class: "btn btn-link btn-sm py-0", onclick: () => this.change(Model.markReviewed(this.extraction, path)) }, str("markreviewed")),
           ]
         : []),
@@ -467,7 +467,7 @@ class Editor {
     const flag = el("span");
     this.updaters.push(() => {
       const uncertain = Model.findUncertain(this.extraction, flagPath);
-      flag.replaceChildren(...(uncertain ? [el("span", { class: "badge bg-warning text-dark ms-2" }, str(`reason_${uncertain.reason}`))] : []));
+      flag.replaceChildren(...(uncertain ? [el("span", { class: "badge lai-warning ms-2" }, str(`reason_${uncertain.reason}`))] : []));
     });
     return el(
       "details",

@@ -229,7 +229,7 @@ export class PublishPanel {
           el(
             "li",
             { class: item.parentId ? "ms-4 mb-1" : "mt-2 mb-1 fw-bold" },
-            el("span", { class: "badge bg-secondary me-2" }, str(`kind_${item.itemType.toLowerCase()}`)),
+            el("span", { class: "badge lai-secondary me-2" }, str(`kind_${item.itemType.toLowerCase()}`)),
             `${item.title || "—"} `,
             el("a", { href: item.url, target: "_blank", rel: "noopener" }, str("open")),
           ),

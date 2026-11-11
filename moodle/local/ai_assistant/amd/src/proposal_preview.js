@@ -61,13 +61,13 @@ const PARAM_STRINGS = {
 const { load: loadStrings, str } = createStrings("proposal", PLAIN_STRINGS, PARAM_STRINGS);
 
 const STATUS_CLASS = {
-  DRAFT: "bg-secondary",
-  NEEDS_REVIEW: "bg-warning text-dark",
-  APPROVED: "bg-success",
-  PUBLISHING: "bg-info text-dark",
-  PUBLISHED: "bg-success",
-  REJECTED: "bg-danger",
-  FAILED: "bg-danger",
+  DRAFT: "lai-secondary",
+  NEEDS_REVIEW: "lai-warning",
+  APPROVED: "lai-success",
+  PUBLISHING: "lai-info",
+  PUBLISHED: "lai-success",
+  REJECTED: "lai-danger",
+  FAILED: "lai-danger",
 };
 
 /**
@@ -252,7 +252,7 @@ class Preview {
         "div",
         { class: "d-flex align-items-center gap-2 mb-1" },
         el("h3", { class: "h5 mb-0" }, str("title")),
-        el("span", { class: `badge ${STATUS_CLASS[this.proposal.status] ?? "bg-secondary"}` }, str(`status_${this.proposal.status.toLowerCase()}`)),
+        el("span", { class: `badge ${STATUS_CLASS[this.proposal.status] ?? "lai-secondary"}` }, str(`status_${this.proposal.status.toLowerCase()}`)),
       ),
       el("p", { class: "small text-muted mb-2" }, str("basedon", this.proposal.extractionVersion)),
       el("p", { class: "text-muted" }, str("intro")),
@@ -295,13 +295,13 @@ class Preview {
     const warnings = this.proposal.issues.length - errors;
     const badges = [];
     if (errors) {
-      badges.push(el("span", { class: "badge bg-danger me-2" }, str("summary_errors", errors)));
+      badges.push(el("span", { class: "badge lai-danger me-2" }, str("summary_errors", errors)));
     }
     if (warnings) {
-      badges.push(el("span", { class: "badge bg-warning text-dark me-2" }, str("summary_warnings", warnings)));
+      badges.push(el("span", { class: "badge lai-warning me-2" }, str("summary_warnings", warnings)));
     }
     this.summary.replaceChildren(
-      ...(badges.length ? badges : [el("span", { class: "badge bg-success" }, str("summary_clear"))]),
+      ...(badges.length ? badges : [el("span", { class: "badge lai-success" }, str("summary_clear"))]),
       ...(this.dirty ? [el("span", { class: "small text-muted" }, str("summary_unsaved"))] : []),
     );
 
@@ -338,7 +338,7 @@ class Preview {
     return el(
       "li",
       {},
-      el("span", { class: `badge ${issue.severity === "error" ? "bg-danger" : "bg-warning text-dark"} me-1` }, str(`severity_${issue.severity}`)),
+      el("span", { class: `badge ${issue.severity === "error" ? "lai-danger" : "lai-warning"} me-1` }, str(`severity_${issue.severity}`)),
       issue.message,
     );
   }
