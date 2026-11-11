@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { backend } from "./stubs/assistant.mjs";
-import { generate, open } from "../../../moodle/local/ai_assistant/amd/src/proposal_preview.js";
+import {
+  generate,
+  init,
+  open,
+} from "../../../moodle/local/ai_assistant/amd/src/proposal_preview.js";
 
 const PROPOSAL_ID = "11111111-1111-4111-8111-111111111111";
 const SYLLABUS_ID = "22222222-2222-4222-8222-222222222222";
@@ -534,5 +538,42 @@ describe("generar la propuesta", () => {
     expect(root().querySelector('[role="alert"]').textContent).toBe(
       "The proposal could not be generated (FORBIDDEN_CAPABILITY).",
     );
+  });
+});
+
+describe("retomar la última propuesta al abrir la página", () => {
+  it("sin id en la dirección abre la propuesta más reciente del curso", async () => {
+    serve(proposal(), {
+      "GET /proposals/latest": async () => proposal(),
+    });
+
+    await init(7);
+    await vi.waitFor(() => expect(text()).toContain("Course proposal"));
+
+    expect(backend.calls[0]).toMatchObject({ method: "GET", path: "/proposals/latest" });
+    expect(backend.calls.some((call) => call.path === `/proposals/${PROPOSAL_ID}`)).toBe(true);
+    expect(text()).toContain("Requisitos");
+  });
+
+  it("un curso sin propuestas no muestra nada y no falla", async () => {
+    serve(proposal(), {
+      "GET /proposals/latest": async () => {
+        throw Object.assign(new Error("no"), { code: "PROPOSAL_NOT_FOUND", status: 404 });
+      },
+    });
+
+    await init(7);
+
+    expect(backend.calls.map((call) => call.path)).toEqual(["/proposals/latest"]);
+    expect(root().classList.contains("d-none")).toBe(true);
+  });
+
+  it("con un id en la dirección usa ese y no pregunta por la última", async () => {
+    serve(proposal());
+
+    await init(7, PROPOSAL_ID);
+    await vi.waitFor(() => expect(text()).toContain("Course proposal"));
+
+    expect(backend.calls.some((call) => call.path === "/proposals/latest")).toBe(false);
   });
 });

@@ -256,10 +256,30 @@ const resume = async (view, syllabusId) => {
 };
 
 /**
+ * Picks up the course's most recent syllabus when the page opens without one in the URL, so the teacher finds
+ * their work where they left it instead of an empty form. A course with no syllabus (404) shows nothing.
+ *
+ * @param {{courseId: number, progress: HTMLElement, status: HTMLElement}} view
+ */
+const resumeLatest = async (view) => {
+  let latest;
+  try {
+    latest = await callBackend(view.courseId, "/syllabi/latest");
+  } catch {
+    // No syllabus yet, or the backend is not reachable: the connection card already says so.
+    return;
+  }
+  if (latest?.id) {
+    await resume(view, latest.id);
+  }
+};
+
+/**
  * Entry point called from index.php.
  *
  * @param {number} courseId
- * @param {string} [syllabusId] A syllabus to resume (from the `syllabusid` URL parameter).
+ * @param {string} [syllabusId] A syllabus to resume (from the `syllabusid` URL parameter); without one, the
+ *     course's most recent syllabus is resumed.
  */
 export const init = (courseId, syllabusId = "") => {
   const region = document.querySelector('[data-region="local_ai_assistant"] [data-region="syllabus"]');
@@ -274,6 +294,8 @@ export const init = (courseId, syllabusId = "") => {
 
   if (syllabusId) {
     resume(view, syllabusId);
+  } else {
+    resumeLatest(view);
   }
 
   form.addEventListener("submit", async (event) => {

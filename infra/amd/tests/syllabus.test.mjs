@@ -75,6 +75,11 @@ beforeEach(() => {
       <section class="d-none" data-region="extraction-editor"></section>
       <section class="d-none" data-region="proposal-preview"></section>
     </div>`;
+  // Un curso sin sílabos: lo que quedó de la prueba anterior no debe responder a la consulta de «el último».
+  backend.calls = [];
+  backend.handler = async () => {
+    throw Object.assign(new Error("no"), { code: "SYLLABUS_NOT_FOUND", status: 404 });
+  };
   init(7);
 });
 
@@ -142,5 +147,70 @@ describe("subir y crear la estructura", () => {
     await vi.waitFor(() => expect(status().textContent).not.toBe(""));
 
     expect(calls()).toEqual([]);
+  });
+});
+
+describe("retomar el último sílabo al abrir la página", () => {
+  /** Backend con un sílabo ya cargado en el curso: `latest` es lo que responde /syllabi/latest. */
+  const serveLatest = (current) => {
+    backend.calls = [];
+    backend.handler = async (call) => {
+      const key = `${call.method} ${call.path}`;
+      if (key === "GET /syllabi/latest") {
+        if (!current)
+          throw Object.assign(new Error("no"), { code: "SYLLABUS_NOT_FOUND", status: 404 });
+        return structuredClone(current);
+      }
+      if (key === `GET /syllabi/${SYLLABUS_ID}`) return structuredClone(current);
+      if (key === `GET /syllabi/${SYLLABUS_ID}/extraction`) {
+        return {
+          version: 2,
+          schemaVersion: "1.0",
+          source: "TEACHER",
+          content: buildSyllabusExtraction(),
+          consistencyIssues: [],
+          createdAt: "2026-11-11T12:00:00Z",
+        };
+      }
+      throw Object.assign(new Error(`Ruta sin respuesta: ${key}`), { code: "NOT_FOUND" });
+    };
+  };
+
+  it("un sílabo ya revisado abre el editor con su última versión, sin pasar por la URL", async () => {
+    serveLatest(syllabus("REVIEWED"));
+
+    init(7);
+    await vi.waitFor(() => expect(editor().classList.contains("d-none")).toBe(false));
+
+    expect(calls()[0]).toBe("GET /syllabi/latest");
+    expect(calls()).toContain(`GET /syllabi/${SYLLABUS_ID}/extraction`);
+  });
+
+  it("un sílabo con el texto listo ofrece extraer la estructura", async () => {
+    serveLatest(syllabus("TEXT_READY"));
+
+    init(7);
+    await vi.waitFor(() => expect(button("Extract the course structure")).toBeDefined());
+
+    expect(editor().classList.contains("d-none")).toBe(true);
+  });
+
+  it("un curso sin sílabos no muestra nada y no falla", async () => {
+    serveLatest(null);
+
+    init(7);
+    await vi.waitFor(() => expect(calls()).toEqual(["GET /syllabi/latest"]));
+
+    expect(status().textContent).toBe("");
+    expect(editor().classList.contains("d-none")).toBe(true);
+  });
+
+  it("con un sílabo en la dirección usa ese y no pregunta por el último", async () => {
+    serveLatest(syllabus("REVIEWED"));
+
+    init(7, SYLLABUS_ID);
+    await vi.waitFor(() => expect(editor().classList.contains("d-none")).toBe(false));
+
+    expect(calls()).not.toContain("GET /syllabi/latest");
   });
 });
