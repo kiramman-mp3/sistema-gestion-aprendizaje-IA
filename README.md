@@ -213,7 +213,7 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │   └── index.php, lib.php          # Página del asistente y enlace en el curso
 ├── infra/
 │   ├── docker/                     # Init de PostgreSQL e imagen de phpcs
-│   ├── moodle/                     # local.yml de moodle-docker, Apache y scripts CLI (integración, seed, curso de prueba y cursos de prueba adicionales)
+│   ├── moodle/                     # local.yml de moodle-docker, Apache y scripts CLI (integración, seed, cursos de prueba y sus imágenes de portada)
 │   ├── amd/                        # Rollup de los módulos AMD y pruebas de su JavaScript (Vitest + jsdom)
 │   ├── mocks/                      # API de IA simulada para desarrollar la interfaz (`pnpm mock:ai`)
 │   ├── loadtest/                   # Prueba de carga básica (`pnpm loadtest`)
