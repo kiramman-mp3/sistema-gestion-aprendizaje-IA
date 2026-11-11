@@ -208,6 +208,7 @@ worker documental; la IA, la publicación y el RAG llegan en los sprints 5 a 9.
 │   ├── classes/local/              # Emisor de tokens, publicador de secciones y actividades, lectura de datos académicos (reader.php) y observador
 │   ├── amd/src/ y amd/build/       # Módulos de la página (carga, editor de la extracción, propuesta, publicación, chat, analítica, relación de actividades) y su build
 │   ├── templates/                  # Plantilla Mustache de la página
+│   ├── styles.css                  # Estilos de la página (`.local_ai_assistant`), sobre las variables de Bootstrap del tema; tras cambiarlo hay que purgar cachés de Moodle
 │   ├── db/                         # Capacidades, servicios web, tabla de mapeo (install.xml, upgrade.php) y eventos
 │   └── index.php, lib.php          # Página del asistente y enlace en el curso
 ├── infra/
