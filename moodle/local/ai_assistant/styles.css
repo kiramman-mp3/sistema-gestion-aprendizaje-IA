@@ -180,6 +180,15 @@
     padding: 0.4rem 0.7rem;
 }
 
+/* Los desplegables reservan sitio a la flecha y ocupan todo el ancho de su campo. */
+.local_ai_assistant .lai-field > .form-select {
+    width: 100%;
+}
+
+.local_ai_assistant .form-select {
+    padding-right: 2.25rem;
+}
+
 .local_ai_assistant textarea.form-control {
     min-height: 4.25rem;
     resize: vertical;
