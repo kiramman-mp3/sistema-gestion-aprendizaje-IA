@@ -89,6 +89,40 @@ describe("Propuestas (e2e)", () => {
       return editableItem;
     });
 
+  describe("GET /proposals/latest", () => {
+    it("devuelve la propuesta más reciente del curso, para retomarla al abrir la página", async () => {
+      const first = await createdProposal();
+      const second = (await create({ confirmDuplicate: true }).expect(201)).body;
+      store.proposals.find((p) => p.id === second.id)!.updatedAt = new Date("2026-11-10T00:00:00Z");
+
+      const res = await call("get", "/proposals/latest").expect(200);
+
+      expect(res.body.id).toBe(second.id);
+      expect(res.body.id).not.toBe(first.id);
+      expect(res.body.items.length).toBeGreaterThan(0);
+    });
+
+    it("no cuenta las rechazadas", async () => {
+      const first = await createdProposal();
+      const second = (await create({ confirmDuplicate: true }).expect(201)).body;
+      const rejected = store.proposals.find((p) => p.id === second.id)!;
+      rejected.updatedAt = new Date("2026-11-10T00:00:00Z");
+      rejected.status = "REJECTED";
+
+      const res = await call("get", "/proposals/latest").expect(200);
+
+      expect(res.body.id).toBe(first.id);
+    });
+
+    it("responde 404 si el curso no tiene propuestas, y no usa las de otro curso (SEC-01)", async () => {
+      await createdProposal();
+
+      const res = await call("get", "/proposals/latest", undefined, 8).expect(404);
+
+      expect(res.body.code).toBe("PROPOSAL_NOT_FOUND");
+    });
+  });
+
   describe("POST /proposals", () => {
     it("RF-07: genera la propuesta de una extracción revisada, lista para revisión", async () => {
       const res = await create();

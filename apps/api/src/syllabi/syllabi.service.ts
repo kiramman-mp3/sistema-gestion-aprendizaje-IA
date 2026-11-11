@@ -133,6 +133,25 @@ export class SyllabiService {
   }
 
   /**
+   * El sílabo del curso del token con la actividad más reciente, para que la página lo retome al abrirse sin que
+   * el docente tenga que recordar su id. Responde 404 si el curso no tiene ninguno.
+   */
+  async latest(auth: AuthContext): Promise<SyllabusDocumentDto> {
+    const latest = await this.prisma.syllabusDocument.findFirst({
+      where: { moodleCourseId: auth.courseId },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true },
+    });
+    if (!latest) {
+      throw new NotFoundException({
+        code: "SYLLABUS_NOT_FOUND",
+        message: "El curso no tiene sílabos.",
+      });
+    }
+    return this.findOne(auth, latest.id);
+  }
+
+  /**
    * Estado de un sílabo del curso del token. Un sílabo de otro curso responde 404, igual que uno que
    * no existe, para no revelar que existe (RF-02).
    */

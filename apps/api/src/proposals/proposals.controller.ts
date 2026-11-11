@@ -34,6 +34,12 @@ export class ProposalsController {
     return this.proposals.create(auth, body);
   }
 
+  /** La propuesta más reciente del curso, para retomarla al abrir la página (antes que `:proposalId`). */
+  @Get("latest")
+  latest(@Auth() auth: AuthContext): Promise<ProposalDto> {
+    return this.proposals.latest(auth);
+  }
+
   @Get(":proposalId")
   findOne(@Auth() auth: AuthContext, @Param("proposalId") id: string): Promise<ProposalDto> {
     return this.proposals.findOne(auth, id);

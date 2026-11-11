@@ -48,6 +48,12 @@ export class SyllabiController {
     return this.syllabi.upload(auth, parseCourseId(courseId), file);
   }
 
+  /** El sílabo más reciente del curso, para retomarlo al abrir la página (antes que `:syllabusId`). */
+  @Get("latest")
+  latest(@Auth() auth: AuthContext): Promise<SyllabusDocumentDto> {
+    return this.syllabi.latest(auth);
+  }
+
   /** Estado y progreso del procesamiento (RF-04). */
   @Get(":syllabusId")
   findOne(

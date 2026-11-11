@@ -41,13 +41,20 @@ function fakePrisma(documents: StoredDocument[]) {
   return {
     integrationAccount: { upsert: async () => ({ id: "cuenta-1" }) },
     syllabusDocument: {
-      findFirst: async ({ where }: { where: Partial<StoredDocument> }) =>
-        documents.find(
-          (d) =>
-            d.moodleCourseId === where.moodleCourseId &&
-            d.checksumSha256 === where.checksumSha256 &&
-            !["REJECTED", "FAILED"].includes(d.status),
-        ) ?? null,
+      findFirst: async ({ where }: { where: Partial<StoredDocument> }) => {
+        // Sin suma de verificación es la consulta del «más reciente del curso»: el último que se cargó.
+        if (where.checksumSha256 === undefined) {
+          return documents.filter((d) => d.moodleCourseId === where.moodleCourseId).at(-1) ?? null;
+        }
+        return (
+          documents.find(
+            (d) =>
+              d.moodleCourseId === where.moodleCourseId &&
+              d.checksumSha256 === where.checksumSha256 &&
+              !["REJECTED", "FAILED"].includes(d.status),
+          ) ?? null
+        );
+      },
       create: async ({
         data,
       }: {
@@ -270,6 +277,35 @@ describe("Carga de sílabos (e2e)", () => {
       expect(res.body.code).toBe("SYLLABUS_NOT_FOUND");
       await get("no-es-un-uuid").expect(404);
       await get("00000000-0000-4000-8000-999999999999").expect(404);
+    });
+  });
+
+  describe("GET /syllabi/latest", () => {
+    const latest = (courseid = 7) =>
+      request(app.getHttpServer())
+        .get("/api/v1/syllabi/latest")
+        .set("Authorization", `Bearer ${signPluginToken({ courseid })}`);
+
+    it("devuelve el último sílabo cargado en el curso del token, para retomarlo al abrir la página", async () => {
+      await upload(minimalPdf("primero"), "primero.pdf").expect(202);
+      const second = await upload(minimalPdf("segundo"), "segundo.pdf").expect(202);
+
+      const res = await latest().expect(200);
+
+      expect(res.body).toMatchObject({ id: second.body.id, status: "PROCESSING" });
+    });
+
+    it("SEC-01: no devuelve sílabos de otro curso", async () => {
+      await upload(minimalPdf("curso siete"), "siete.pdf").expect(202);
+
+      // El curso 8 no tiene ninguno: responde 404 aunque el 7 tenga varios.
+      const res = await latest(8).expect(404);
+
+      expect(res.body.code).toBe("SYLLABUS_NOT_FOUND");
+    });
+
+    it("SEC-03: exige el token", async () => {
+      await request(app.getHttpServer()).get("/api/v1/syllabi/latest").expect(401);
     });
   });
 });
