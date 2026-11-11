@@ -30,12 +30,14 @@ Reglas que se mantienen:
 - **Nada se crea en Moodle sin la confirmación explícita.** El bloque no aparece si la propuesta no está en revisión; una
   propuesta ya aprobada muestra el panel de publicación de siempre con su propia casilla.
 - **El backend no cambia.** Aprobar y publicar siguen siendo operaciones separadas, con su auditoría (quién aprobó y
-  cuándo), su máquina de estados y la idempotencia. Solo la interfaz las encadena. No hay migración ni cambios en
-  `docs/api/openapi.yaml`.
+  cuándo), su máquina de estados y la idempotencia. Solo la interfaz las encadena. No hay migración. Después se
+  añadieron dos lecturas, `GET /syllabi/latest` y `GET /proposals/latest`, para retomar el trabajo al abrir la página.
 - **Con texto de OCR de baja confianza no se sigue solo.** El docente ve el aviso y decide si extraer con el botón de
   siempre.
 - **El encadenado vive en el navegador.** Si el docente cierra la página, la extracción en curso termina en el servidor y
-  puede retomarla con `index.php?courseid=<id>&syllabusid=<uuid>`, pero no avanza sola hasta la propuesta.
+  la página la retoma al abrirse (la más reciente del curso, con `GET /syllabi/latest` y `GET /proposals/latest`), pero no
+  avanza sola hasta la propuesta. Antes solo se retomaba con `syllabusid` o `proposalid` en la dirección, y un docente que
+  recargaba la página no veía su trabajo.
 - **Aviso de privacidad en el propio botón:** el texto de ayuda dice que «Subir y crear la estructura» envía el texto del
   archivo al proveedor de IA y que «Subir sílabo» no lo envía (D-08).
 

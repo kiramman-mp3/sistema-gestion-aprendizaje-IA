@@ -121,7 +121,7 @@ títulos ni descripciones.
 - Los valores vacíos se envían como `null`; `moodleItemId` y `publishStatus` no se envían.
 - Estados de solo lectura (`PUBLISHING`, `PUBLISHED`, `REJECTED`, `FAILED`) y aprobada (editable, con aviso).
 - Se llega desde el editor de la extracción (botón «Guardar y generar la propuesta de curso», que guarda la revisión si
-  hace falta y genera; [ADR-024](adr/0024-estructura-del-curso-en-pocos-pasos.md)) o con `index.php?courseid=<id>&proposalid=<uuid>`.
+  hace falta y genera; [ADR-024](adr/0024-estructura-del-curso-en-pocos-pasos.md)) o al abrir la página, que retoma la más reciente del curso (`GET /proposals/latest`, sin contar las rechazadas) o la que indique `index.php?courseid=<id>&proposalid=<uuid>`.
 - Si el sílabo ya tiene propuesta, ofrece abrirla o crear otra.
 - Con la propuesta en revisión, «Aprobar y publicar» pide una casilla de confirmación y encadena `approve` y `publish`; el backend
   no cambia ([ADR-024](adr/0024-estructura-del-curso-en-pocos-pasos.md)).
