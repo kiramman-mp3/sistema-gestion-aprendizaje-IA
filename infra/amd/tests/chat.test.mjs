@@ -237,7 +237,7 @@ describe("cuando algo falla", () => {
 
     expect(log().querySelector('[role="alert"]').textContent).toContain("No answer was generated");
     // Sin texto no hay burbuja vacía: solo el aviso.
-    expect(log().querySelector('[data-role="assistant"] .bg-light')).toBeNull();
+    expect(log().querySelector('[data-role="assistant"] .lai-bubble')).toBeNull();
     // La pregunta vuelve al cuadro para reenviarla sin escribirla otra vez.
     expect(input().value).toBe("pregunta");
   });

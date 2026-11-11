@@ -68,6 +68,15 @@ export const el = (tag, props = {}, ...children) => {
 };
 
 /**
+ * Creates a Font Awesome icon, as Moodle's own icon system does. It is decorative: the text next to it (or the
+ * `aria-label` of its button) is what a screen reader hears.
+ *
+ * @param {string} name Icon name without the `fa-` prefix, for example "trash".
+ * @returns {HTMLElement}
+ */
+export const icon = (name) => el("i", { class: `icon fa fa-${name} fa-fw`, "aria-hidden": "true" });
+
+/**
  * Prepares the strings of one screen. All of them are requested at once, so drawing stays synchronous.
  *
  * Parameterized strings are requested with markers (`{name}`) and filled in when used.

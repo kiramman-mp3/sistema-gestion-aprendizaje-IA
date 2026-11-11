@@ -91,7 +91,7 @@ describe("indicador de confianza", () => {
   it("marca el campo dudoso, su motivo y la fuente citada", async () => {
     await mount();
 
-    const flagged = field(DUE_PATH).closest(".mb-3");
+    const flagged = field(DUE_PATH).closest(".lai-field");
     expect(flagged.textContent).toContain("Not in the syllabus");
     expect(root().textContent).toContain("Source: page 2");
     expect(root().textContent).toContain("1 uncertain fields to review");
@@ -102,7 +102,7 @@ describe("indicador de confianza", () => {
 
     type(field(DUE_PATH), "2027-01-15");
 
-    expect(field(DUE_PATH).closest(".mb-3").textContent).not.toContain("Not in the syllabus");
+    expect(field(DUE_PATH).closest(".lai-field").textContent).not.toContain("Not in the syllabus");
     expect(root().textContent).toContain("Nothing left to review.");
   });
 
@@ -137,7 +137,7 @@ describe("validación y coherencia", () => {
     type(field("gradingPeriods[0].weight"), "150");
 
     expect(field("gradingPeriods[0].weight").classList.contains("is-invalid")).toBe(true);
-    expect(field("gradingPeriods[0].weight").closest(".mb-3").textContent).toContain(
+    expect(field("gradingPeriods[0].weight").closest(".lai-field").textContent).toContain(
       "Enter a number between 0 and 100.",
     );
     expect(save.disabled).toBe(true);
@@ -153,7 +153,7 @@ describe("validación y coherencia", () => {
 
     type(field("gradingPeriods[0].units[0].title"), "  ");
 
-    expect(field("gradingPeriods[0].units[0].title").closest(".mb-3").textContent).toContain(
+    expect(field("gradingPeriods[0].units[0].title").closest(".lai-field").textContent).toContain(
       "This field cannot be empty.",
     );
   });
@@ -196,7 +196,7 @@ describe("estructura", () => {
     expect(field("gradingPeriods[0].units[0].activities[1]")).toBeUndefined();
     expect(root().textContent).not.toContain("values to fix before saving");
     // La nota de la actividad del segundo periodo sigue en su sitio.
-    expect(field(DUE_PATH).closest(".mb-3").textContent).toContain("Not in the syllabus");
+    expect(field(DUE_PATH).closest(".lai-field").textContent).toContain("Not in the syllabus");
   });
 
   it("agrega un resultado de aprendizaje y se puede vincular a una unidad", async () => {

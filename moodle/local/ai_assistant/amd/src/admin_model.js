@@ -88,13 +88,13 @@ export const eventDetail = (event) => {
 };
 
 /**
- * Bootstrap badge colour of an outcome.
+ * Badge tone of an outcome (styled in styles.css).
  *
  * @param {string} outcome
  * @returns {string}
  */
 export const outcomeBadge = (outcome) =>
-  ({ SUCCESS: "bg-success", DENIED: "bg-warning text-dark", ERROR: "bg-danger" })[outcome] ?? "bg-secondary";
+  ({ SUCCESS: "lai-success", DENIED: "lai-warning", ERROR: "lai-danger" })[outcome] ?? "lai-secondary";
 
 /**
  * Parameters each rule accepts, with the limits the backend enforces (`difficulty-rules.ts`).

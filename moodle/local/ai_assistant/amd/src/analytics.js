@@ -201,7 +201,7 @@ class Analytics {
         { class: "mb-0" },
         group.signals.map((signal) => {
           const key = Model.ruleKey(signal.rule);
-          return el("li", {}, el("span", { class: "badge bg-warning text-dark me-2" }, key ? str(`rule_${key}`) : signal.rule), signal.explanation);
+          return el("li", {}, el("span", { class: "badge lai-warning me-2" }, key ? str(`rule_${key}`) : signal.rule), signal.explanation);
         }),
       ),
     );

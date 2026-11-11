@@ -137,7 +137,7 @@ class Chat {
 
   render() {
     const inputId = uniqueId("message");
-    this.log = el("div", { class: "border rounded p-3 mb-3 overflow-auto", style: "max-height: 28rem", role: "log", "aria-live": "polite", "aria-relevant": "additions text" });
+    this.log = el("div", { class: "lai-chat-log", role: "log", "aria-live": "polite", "aria-relevant": "additions text", tabindex: "0" });
     this.notice = el("div");
     this.input = el("textarea", {
       id: inputId,
@@ -166,6 +166,7 @@ class Chat {
       el(
         "form",
         {
+          class: "lai-composer",
           onsubmit: (event) => {
             event.preventDefault();
             this.send();
@@ -173,7 +174,7 @@ class Chat {
         },
         el("label", { class: "form-label", for: inputId }, str("messagelabel")),
         this.input,
-        el("div", { class: "d-flex gap-2 mt-2" }, this.sendButton, this.stopButton, this.newButton),
+        el("div", { class: "lai-composer__actions" }, this.sendButton, this.stopButton, this.newButton),
       ),
     );
     this.drawMessages();
@@ -194,7 +195,7 @@ class Chat {
 
   drawMessages() {
     if (this.conversation.messages.length === 0) {
-      this.log.replaceChildren(el("p", { class: "text-muted mb-0" }, str("empty")));
+      this.log.replaceChildren(el("p", { class: "lai-chat-empty" }, str("empty")));
       return;
     }
     this.log.replaceChildren(...this.conversation.messages.map((message) => this.messageBlock(message)));
@@ -206,12 +207,12 @@ class Chat {
     const text = this.messageText(message) || (message.status === "streaming" ? str("thinking") : "");
     return el(
       "div",
-      { class: `mb-3 ${mine ? "text-end" : ""}`, "data-role": message.role },
-      el("div", { class: "small text-muted" }, str(mine ? "you" : "assistant")),
+      { class: `lai-msg lai-msg--${mine ? "user" : "assistant"}`, "data-role": message.role },
+      el("div", { class: "lai-msg__who" }, str(mine ? "you" : "assistant")),
       // An answer that failed before saying anything has no text: only the error is shown, not an empty bubble.
       text === ""
         ? null
-        : el("div", { class: `d-inline-block rounded p-2 text-start ${mine ? "bg-primary text-white" : "bg-light"}`, style: "white-space: pre-wrap; max-width: 100%" }, text),
+        : el("div", { class: `lai-bubble lai-bubble--${mine ? "user" : "assistant"}` }, text),
       mine ? null : this.assistantExtras(message),
     );
   }
@@ -225,20 +226,20 @@ class Chat {
   assistantExtras(message) {
     const extras = [];
     if (message.status === "streaming" && message.tools.length > 0) {
-      extras.push(el("div", { class: "small text-muted", role: "status" }, str("consulting", message.tools.map(Model.toolLabel).join(", "))));
+      extras.push(el("div", { role: "status" }, str("consulting", message.tools.map(Model.toolLabel).join(", "))));
     }
     if (message.status === "error") {
       extras.push(this.errorAlert(message));
     }
     if (message.incompleteData) {
-      extras.push(el("div", { class: "small text-warning-emphasis", role: "note" }, str("incomplete")));
+      extras.push(el("div", { class: "lai-incomplete", role: "note" }, str("incomplete")));
     }
     if (message.criteria?.length > 0) {
       extras.push(
         el(
           "details",
-          { class: "small mt-1" },
-          el("summary", { class: "text-muted" }, str("criteria")),
+          { class: "lai-criteria" },
+          el("summary", {}, str("criteria")),
           el("ul", { class: "mb-0" }, ...message.criteria.map((rule) => el("li", {}, rule))),
         ),
       );
@@ -247,16 +248,16 @@ class Chat {
       extras.push(
         el(
           "div",
-          { class: "small mt-1" },
-          el("span", { class: "text-muted me-1" }, `${str("sources")}:`),
+          { class: "lai-sources" },
+          el("span", { class: "me-1" }, `${str("sources")}:`),
           ...message.sources.map((source, i) => this.sourceItem(source, i)),
         ),
       );
     }
     if (message.generatedAt) {
-      extras.push(el("div", { class: "small text-muted" }, str("consulted", new Date(message.generatedAt).toLocaleString())));
+      extras.push(el("div", {}, str("consulted", new Date(message.generatedAt).toLocaleString())));
     }
-    return el("div", {}, ...extras);
+    return el("div", { class: "lai-msg__extras" }, ...extras);
   }
 
   errorAlert(message) {
@@ -271,7 +272,7 @@ class Chat {
       text = str(`error_${kind}`);
     }
     const details = message.details?.length > 0 ? el("ul", { class: "mb-0" }, ...message.details.map((detail) => el("li", {}, detail))) : null;
-    return el("div", { class: "alert alert-danger py-1 px-2 mt-1 mb-0 small", role: "alert" }, text, details);
+    return el("div", { class: "alert alert-danger lai-msg__error", role: "alert" }, text, details);
   }
 
   sourceItem(source, index) {
