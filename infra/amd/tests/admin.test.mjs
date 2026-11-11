@@ -160,6 +160,8 @@ describe("auditoría (CU-07)", () => {
     await vi.waitFor(() => expect(root().querySelectorAll("tbody tr")).toHaveLength(2));
     expect(backend.calls.at(-1).path).toContain("cursor=c1");
     expect(button("Load more")).toBeUndefined();
+    // Sin más páginas no queda nada bajo la tabla: replaceChildren(null) escribiría el texto «null».
+    expect(root().textContent).not.toContain("null");
   });
 
   it("un error del backend se explica", async () => {

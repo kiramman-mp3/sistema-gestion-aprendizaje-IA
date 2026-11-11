@@ -178,8 +178,9 @@ class Admin {
       const page = await callBackend(this.courseId, `/audit?${Model.auditQuery(this.filters, append ? this.cursor : null)}`);
       this.cursor = page.nextCursor;
       this.drawRows(page.items, append);
+      // A null argument would be written as the text "null": without another page nothing is added.
       this.more.replaceChildren(
-        page.nextCursor ? el("button", { type: "button", class: "btn btn-outline-secondary", onclick: () => this.loadAudit(true) }, str("loadmore")) : null,
+        ...(page.nextCursor ? [el("button", { type: "button", class: "btn btn-outline-secondary", onclick: () => this.loadAudit(true) }, str("loadmore"))] : []),
       );
     } catch (error) {
       this.more.replaceChildren();
