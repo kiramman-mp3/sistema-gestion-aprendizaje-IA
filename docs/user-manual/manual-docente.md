@@ -18,6 +18,19 @@ saber nada técnico.
 
 Solo los docentes ven esta página: los estudiantes no.
 
+La página se organiza en **pestañas**, una por tarea, que puedes recorrer también con las flechas del teclado:
+
+| Pestaña            | Qué hay en ella                                                                                     |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| **Sílabo**         | Subir el sílabo y revisar la estructura que extrajo el asistente (pasos 1 a 3 de la sección 2).     |
+| **Propuesta**      | La propuesta de curso, su aprobación y su publicación. Aparece cuando el curso tiene una propuesta. |
+| **Preguntas**      | El chat con el asistente (sección 4).                                                               |
+| **Analítica**      | Los indicadores del curso y las señales por estudiante (sección 5).                                 |
+| **Actividades**    | La relación de cada actividad con una unidad del sílabo (sección 3).                                |
+| **Administración** | La auditoría y las reglas de dificultad. Solo la ven quienes tienen ese permiso.                    |
+
+Una pestaña solo aparece si tienes lo necesario para usarla.
+
 ## 2. Crear la estructura del curso desde el sílabo
 
 ### Paso 1 · Subir el sílabo
@@ -66,7 +79,7 @@ Pulsa **Guardar y generar la propuesta de curso**: guarda tu revisión (o la del
 nada) y genera la propuesta. Guardar es lo que convierte la extracción en tu revisión, así que revísala antes. Si ya
 guardaste y no hay cambios, el botón dice **Generar la propuesta de curso**. El asistente convierte cada unidad en una
 **sección** y cada actividad en un elemento de Moodle (**tarea**, **foro**, **cuestionario vacío**, **etiqueta** o
-**página**). Las fechas y ponderaciones son solo las del sílabo.
+**página**). Las fechas y ponderaciones son solo las del sílabo. Al terminar, el asistente te lleva a la pestaña **Propuesta**.
 
 Si tu sílabo **no lista actividades por unidad** pero sí define componentes de evaluación (por ejemplo aprendizaje en contacto con
 el docente, práctico experimental y autónomo), el asistente propone **una actividad sugerida por componente en cada unidad**:
