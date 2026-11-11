@@ -29,6 +29,7 @@ nuevo y el anterior pasa a "Reemplazada por ADR-NNN".
 | [ADR-021](0021-snapshots-de-indicadores-bajo-demanda.md)          | Snapshots de indicadores bajo demanda, uno por día y docente                 | Aceptada                                   |
 | [ADR-022](0022-rotacion-secreto-jwt-cada-90-dias.md)              | Rotación del secreto JWT cada 90 días                                        | Aceptada                                   |
 | [ADR-023](0023-proveedor-gemini-y-modelos.md)                     | Proveedor Gemini para el asistente, la extracción y los embeddings           | Propuesta (D-07)                           |
+| [ADR-024](0024-estructura-del-curso-en-pocos-pasos.md)            | Estructura del curso en pocos pasos, con dos puntos de revisión              | Aceptada                                   |
 
 Las decisiones en estado "Propuesta" se confirman o se reemplazan durante el Sprint 1 o en el sprint
 indicado en cada ADR.

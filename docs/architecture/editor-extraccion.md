@@ -16,8 +16,8 @@ sequenceDiagram
     D->>S: sube el sílabo
     S->>B: POST /syllabi y GET /syllabi/:id cada 2 s
     B-->>S: TEXT_READY
-    S-->>D: botón "Extraer la estructura del curso"
-    D->>S: clic
+    S-->>D: botón "Extraer la estructura del curso" (con «Subir sílabo»)
+    D->>S: clic (con «Subir y crear la estructura» S lo pide solo, salvo texto de OCR de baja confianza)
     S->>B: POST /syllabi/:id/extract (202)
     loop cada 2 s, hasta EXTRACTED, REVIEWED o FAILED
         S->>B: GET /syllabi/:id

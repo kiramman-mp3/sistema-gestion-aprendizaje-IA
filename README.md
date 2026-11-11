@@ -46,7 +46,7 @@ calificaciones en distintas pantallas y detectar a tiempo a quién conviene apoy
 1. El docente carga su sílabo en PDF o DOCX.
 2. El sistema extrae unidades, resultados de aprendizaje, actividades, evaluaciones y fechas, y marca lo que no encuentra.
 3. El docente revisa y corrige la extracción.
-4. El sistema propone la estructura del curso y, tras la aprobación del docente, la publica en Moodle.
+4. El sistema propone la estructura del curso y, tras la aprobación del docente, la publica en Moodle. Con «Subir y crear la estructura» la extracción arranca sola al subir el archivo, y «Aprobar y publicar» aprueba y publica con una sola confirmación ([ADR-024](docs/architecture/adr/0024-estructura-del-curso-en-pocos-pasos.md)); la revisión del docente se mantiene en dos puntos.
 5. El docente pregunta en lenguaje natural, por ejemplo "¿quién no entregó la tarea 3?", y recibe datos reales de Moodle con su fuente.
 6. El sistema calcula indicadores del curso y señales transparentes de posible dificultad.
 7. Para un estudiante, el sistema resume evidencias y sugiere estrategias pedagógicas que el docente decide si aplica.
@@ -79,6 +79,8 @@ Capturas tomadas en un navegador real (Chromium) con Moodle 5.1 local, el modelo
 | <sub>Al alcanzar el límite de uso (429) se indica cuánto esperar, en horas o minutos.</sub>                                                         | <sub>Si el docente detiene la respuesta, se muestra como interrumpida y puede estar incompleta.</sub>                              |
 | <img width="420" src="docs/capturas/publicacion-resultado.jpg" alt="Resultado de la publicación de la propuesta">                                   | <img width="420" src="docs/capturas/curso-publicado-en-moodle.jpg" alt="Curso de Moodle con las secciones creadas">                |
 | <sub>Tras confirmar, la publicación crea las secciones en el curso y enlaza a cada una; las actividades se crean ocultas.</sub>                     | <sub>El curso de Moodle con las cuatro secciones creadas desde la propuesta aprobada.</sub>                                        |
+| <img width="420" src="docs/capturas/subir-y-crear-estructura.jpg" alt="Carga del sílabo con el botón de subir y crear la estructura">               |                                                                                                                                    |
+| <sub>«Subir y crear la estructura» sube el archivo y extrae la estructura sin más clics; «Subir sílabo» solo lee el texto.</sub>                    |                                                                                                                                    |
 | <img width="420" src="docs/capturas/administracion-auditoria.jpg" alt="Pantalla de administración: auditoría">                                      | <img width="420" src="docs/capturas/administracion-reglas.jpg" alt="Pantalla de administración: reglas de dificultad">             |
 | <sub>Auditoría para administradores: acciones, usuarios y resultados, sin nombres, notas ni texto de mensajes.</sub>                                | <sub>Reglas de dificultad por institución o por curso, con su valor por defecto.</sub>                                             |
 

@@ -23,7 +23,7 @@ de pantalla se toman al impartirla (ver «Material»).
 | ------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | 0–10    | Bienvenida y límites       | Qué hace y qué no hace el asistente; privacidad; consentimiento si hay piloto                                                   | 6                  |
 | 10–20   | Entrar al asistente        | Abrir el curso, **Más ▸ Asistente IA**, leer los permisos de la conexión                                                        | 1                  |
-| 20–50   | Del sílabo a la propuesta  | Subir el sílabo, extraer, **revisar las insignias amarillas**, guardar, generar y aprobar la propuesta                          | 2                  |
+| 20–50   | Del sílabo a la propuesta  | Subir y crear la estructura, **revisar las insignias amarillas**, guardar y generar y aprobar la propuesta                      | 2                  |
 | 50–60   | Publicar                   | Publicar en el curso de prueba; ver que las actividades quedan **ocultas**; publicar otra vez y comprobar que no hay duplicados | 2                  |
 | 60–70   | Pausa                      |                                                                                                                                 |                    |
 | 70–85   | Relacionar actividades     | Relacionar dos actividades con sus unidades; ver cómo cambia el rendimiento por unidad                                          | 3                  |

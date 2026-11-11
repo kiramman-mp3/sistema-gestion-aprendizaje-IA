@@ -22,7 +22,10 @@ Solo los docentes ven esta página: los estudiantes no.
 
 ### Paso 1 · Subir el sílabo
 
-1. En **Sílabo del curso**, elige el archivo **PDF o DOCX** (hasta 10 MB) y pulsa **Subir sílabo**.
+1. En **Sílabo del curso**, elige el archivo **PDF o DOCX** (hasta 10 MB). Tienes dos botones:
+   - **Subir y crear la estructura** (el recomendado): sube el archivo, lee su texto y **sigue solo** con el paso 2. El
+     texto del archivo se envía al proveedor de IA.
+   - **Subir sílabo**: solo sube el archivo y lee su texto, sin usar la IA. Después puedes pulsar tú el paso 2.
 2. Espera: el sistema revisa el archivo (antivirus, formato) y extrae su texto. Verás el progreso.
 3. Si el archivo ya se subió antes al curso, el sistema te lo dice y te muestra el estado del existente.
 4. Si el PDF es una imagen escaneada, el texto se lee con reconocimiento óptico y el sistema te avisa de que **debes
@@ -33,8 +36,10 @@ contraseña (quita la protección y vuelve a subirlo).
 
 ### Paso 2 · Extraer la estructura
 
-Cuando el texto está listo, pulsa **Extraer la estructura del curso**. El asistente propone unidades, temas,
-resultados de aprendizaje, fechas y ponderaciones. **No inventa**: lo que el sílabo no dice queda vacío y marcado.
+Con **Subir y crear la estructura** este paso ocurre solo y se abre la revisión cuando termina. Con **Subir sílabo**, o si
+el texto viene de un escaneo de baja confianza (el sistema te avisa y no continúa solo), pulsa **Extraer la estructura
+del curso** cuando el texto esté listo. El asistente propone unidades, temas, resultados de aprendizaje, fechas y
+ponderaciones. **No inventa**: lo que el sílabo no dice queda vacío y marcado.
 
 ### Paso 3 · Revisar y corregir
 
@@ -49,12 +54,14 @@ Aparece **Revisar la estructura extraída**. Verás:
 - Un valor inválido (un porcentaje fuera de 0 a 100, una fecha que no existe) se marca en rojo y **bloquea el
   guardado** hasta corregirlo.
 
-Puedes agregar y quitar elementos. Pulsa **Guardar revisión**: cada guardado crea una versión nueva y las anteriores se
-conservan. Si sales con cambios sin guardar, el navegador te avisa.
+Puedes agregar y quitar elementos. Pulsa **Guardar revisión** si solo quieres guardar: cada guardado crea una versión
+nueva y las anteriores se conservan. Si sales con cambios sin guardar, el navegador te avisa.
 
 ### Paso 4 · Generar la propuesta
 
-Con la revisión guardada aparece **Generar la propuesta de curso**. El asistente convierte cada unidad en una
+Pulsa **Guardar y generar la propuesta de curso**: guarda tu revisión (o la del asistente tal como está, si no cambiaste
+nada) y genera la propuesta. Guardar es lo que convierte la extracción en tu revisión, así que revísala antes. Si ya
+guardaste y no hay cambios, el botón dice **Generar la propuesta de curso**. El asistente convierte cada unidad en una
 **sección** y cada actividad en un elemento de Moodle (**tarea**, **foro**, **cuestionario vacío**, **etiqueta** o
 **página**). Las fechas y ponderaciones son solo las del sílabo.
 
@@ -67,13 +74,15 @@ aprendizaje; agregar, quitar y reordenar (flechas ↑ ↓) secciones y actividad
 
 - Las **observaciones** te dicen qué revisar: los **errores** (por ejemplo, ponderaciones de un periodo que superan 100)
   impiden aprobar; las **advertencias** (una actividad sin resultado de aprendizaje, una sección vacía) no.
-- Pulsa **Guardar cambios** y, cuando no queden errores, **Aprobar la propuesta**. Se registra quién aprobó y cuándo.
+- Pulsa **Guardar cambios** y, cuando no queden errores, **Aprobar la propuesta** si solo quieres aprobar, o pasa
+  directamente al paso 6 con **Aprobar y publicar**. Se registra quién aprobó y cuándo.
 - Si editas una propuesta aprobada, vuelve a revisión: lo aprobado debe ser lo que se publica.
 
 ### Paso 6 · Publicar en Moodle
 
-1. En **Publicar en Moodle**, marca **Confirmo que quiero crear estos elementos en este curso** y pulsa
-   **Publicar en el curso**.
+1. Con la propuesta en revisión, marca **Confirmo que quiero aprobar esta propuesta y crear sus elementos en este curso**
+   y pulsa **Aprobar y publicar**: se aprueba y se publica de una vez. Si ya la aprobaste por separado, en
+   **Publicar en Moodle** marca **Confirmo que quiero crear estos elementos en este curso** y pulsa **Publicar en el curso**.
 2. Mientras se publica verás el progreso («2 de 4 elementos creados»). Puedes salir de la página: continúa solo.
 3. Al terminar, **Creado en el curso** lista cada sección y actividad con un enlace **Abrir en Moodle**.
 
