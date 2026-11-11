@@ -49,6 +49,10 @@ sequenceDiagram
 - Cada actividad es un elemento hijo de su sección. Si no tiene resultados de aprendizaje propios, hereda
   los de su unidad; si ninguno los tiene, queda sin vínculo y la revisión lo marca.
 - **No se inventa nada.** La fecha y la ponderación son las de la extracción, o `null`.
+- **Excepción marcada:** si ninguna unidad trae actividades pero el sílabo define componentes de evaluación, se propone una
+  actividad **sugerida** por componente en cada unidad (cuestionario para el componente que se rinde con exámenes, tarea para
+  el resto), con descripción «Sugerida a partir del componente…», sin fecha ni ponderación propias y con los resultados de
+  su unidad. Se apaga con `ProposalPolicy.deriveActivitiesFromInstruments` ([ADR-025](adr/0025-estructura-segun-la-organizacion-del-silabo.md)).
 - `unitRef` guarda la ruta de la unidad (`gradingPeriods[0].units[1]`): es lo que permite sumar
   ponderaciones por periodo.
 - El mismo sílabo no genera dos propuestas sin confirmación: `409 PROPOSAL_EXISTS` con el id de la
