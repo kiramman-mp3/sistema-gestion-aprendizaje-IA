@@ -35,6 +35,9 @@ export default defineConfig({
       "local_ai_assistant/proposal_model": path(
         "../../moodle/local/ai_assistant/amd/src/proposal_model.js",
       ),
+      "local_ai_assistant/navigation": path(
+        "../../moodle/local/ai_assistant/amd/src/navigation.js",
+      ),
       "local_ai_assistant/proposal_preview": path(
         "../../moodle/local/ai_assistant/amd/src/proposal_preview.js",
       ),
