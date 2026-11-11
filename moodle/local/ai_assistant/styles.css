@@ -656,6 +656,116 @@
 }
 
 /* ------------------------------------------------------------------------------------------------
+ * Chat
+ * --------------------------------------------------------------------------------------------- */
+
+.local_ai_assistant .lai-chat-log {
+    background: var(--lai-muted-bg);
+    border: 1px solid var(--lai-border);
+    border-radius: var(--lai-radius);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+    max-height: min(34rem, 65vh);
+    min-height: 8rem;
+    overflow: auto;
+    padding: 1.125rem;
+}
+
+.local_ai_assistant .lai-chat-empty {
+    align-self: center;
+    color: var(--lai-muted-text);
+    margin: auto;
+    max-width: 40ch;
+    text-align: center;
+}
+
+.local_ai_assistant .lai-msg {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.local_ai_assistant .lai-msg--user {
+    align-items: flex-end;
+}
+
+.local_ai_assistant .lai-msg__who {
+    color: var(--lai-muted-text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding-inline: 0.25rem;
+}
+
+.local_ai_assistant .lai-bubble {
+    border-radius: 1rem;
+    line-height: 1.5;
+    max-width: min(100%, 46rem);
+    overflow-wrap: anywhere;
+    padding: 0.6rem 0.95rem;
+    white-space: pre-wrap;
+}
+
+.local_ai_assistant .lai-bubble--user {
+    background: var(--lai-accent);
+    border-bottom-right-radius: 0.3rem;
+    color: #fff;
+}
+
+.local_ai_assistant .lai-bubble--assistant {
+    background: var(--lai-surface);
+    border: 1px solid var(--lai-border);
+    border-bottom-left-radius: 0.3rem;
+}
+
+.local_ai_assistant .lai-msg__extras {
+    color: var(--lai-muted-text);
+    display: grid;
+    font-size: 0.8125rem;
+    gap: 0.35rem;
+    max-width: 46rem;
+    padding-inline: 0.25rem;
+}
+
+.local_ai_assistant .lai-criteria summary {
+    cursor: pointer;
+    width: fit-content;
+}
+
+.local_ai_assistant .lai-criteria ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.local_ai_assistant .lai-sources a {
+    font-weight: 500;
+}
+
+.local_ai_assistant .lai-incomplete {
+    color: var(--bs-warning-text-emphasis, #664d03);
+}
+
+.local_ai_assistant .lai-msg__error {
+    font-size: 0.875rem;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+}
+
+.local_ai_assistant .lai-composer__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.625rem;
+}
+
+.local_ai_assistant .lai-composer__actions > :last-child {
+    margin-inline-start: auto;
+}
+
+/* ------------------------------------------------------------------------------------------------
  * Movimiento reducido
  * --------------------------------------------------------------------------------------------- */
 
