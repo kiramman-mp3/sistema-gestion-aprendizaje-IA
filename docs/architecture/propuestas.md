@@ -120,9 +120,11 @@ títulos ni descripciones.
   guardada: con cambios sin guardar se avisa, y **aprobar solo se habilita con todo guardado y sin errores**.
 - Los valores vacíos se envían como `null`; `moodleItemId` y `publishStatus` no se envían.
 - Estados de solo lectura (`PUBLISHING`, `PUBLISHED`, `REJECTED`, `FAILED`) y aprobada (editable, con aviso).
-- Se llega desde el editor de la extracción (botón "Generar la propuesta", solo sobre una versión
-  guardada por el docente) o con `index.php?courseid=<id>&proposalid=<uuid>`.
+- Se llega desde el editor de la extracción (botón «Guardar y generar la propuesta de curso», que guarda la revisión si
+  hace falta y genera; [ADR-024](adr/0024-estructura-del-curso-en-pocos-pasos.md)) o con `index.php?courseid=<id>&proposalid=<uuid>`.
 - Si el sílabo ya tiene propuesta, ofrece abrirla o crear otra.
+- Con la propuesta en revisión, «Aprobar y publicar» pide una casilla de confirmación y encadena `approve` y `publish`; el backend
+  no cambia ([ADR-024](adr/0024-estructura-del-curso-en-pocos-pasos.md)).
 
 ## Pruebas
 
