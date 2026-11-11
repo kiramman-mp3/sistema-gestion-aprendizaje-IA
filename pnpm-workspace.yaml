@@ -1,6 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "infra/amd"
+  - "infra/mocks"
 
 # Scripts de instalación de dependencias. pnpm los bloquea por defecto y, en CI o Docker, falla si
 # alguno queda sin decidir. Ninguno es necesario: Prisma 7 genera el cliente y migra sin ellos, y
@@ -8,4 +10,12 @@ packages:
 allowBuilds:
   "@parcel/watcher": false
   "@prisma/engines": false
+  # Acelerador nativo opcional de msgpackr (BullMQ); sin él usa la versión en JavaScript.
+  msgpackr-extract: false
   prisma: false
+
+# multer (dependencia de @nestjs/platform-express) <2.5.0 tiene una vulnerabilidad de denegación de servicio
+# (GHSA-q7qp-rjg7-q26m, severidad alta, detectada con `pnpm audit --prod` en la revisión del Sprint 12).
+# Se fuerza la versión corregida hasta que @nestjs/platform-express la incluya; entonces se puede quitar.
+overrides:
+  multer: ">=2.5.0"

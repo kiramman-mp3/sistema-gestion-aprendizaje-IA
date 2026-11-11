@@ -9,10 +9,11 @@ import { HttpExceptionFilter } from "./http-exception.filter";
 function mockHost() {
   const json = jest.fn();
   const status = jest.fn().mockReturnValue({ json });
+  const setHeader = jest.fn();
   const host = {
-    switchToHttp: () => ({ getResponse: () => ({ status }) }),
+    switchToHttp: () => ({ getResponse: () => ({ status, setHeader }) }),
   } as unknown as ArgumentsHost;
-  return { host, status, json };
+  return { host, status, json, setHeader };
 }
 
 describe("HttpExceptionFilter", () => {
@@ -67,5 +68,26 @@ describe("HttpExceptionFilter", () => {
       code: "INTERNAL_ERROR",
       message: "Error interno del servidor.",
     });
+  });
+
+  it("envía Retry-After cuando la excepción lo pide", () => {
+    const { host, status, setHeader } = mockHost();
+    const exception = Object.assign(
+      new HttpException({ code: "RATE_LIMITED", message: "Límite de uso." }, 429),
+      { retryAfterSeconds: 90.2 },
+    );
+
+    filter.catch(exception, host);
+
+    expect(setHeader).toHaveBeenCalledWith("Retry-After", "91");
+    expect(status).toHaveBeenCalledWith(429);
+  });
+
+  it("no envía Retry-After si la excepción no lo pide", () => {
+    const { host, setHeader } = mockHost();
+
+    filter.catch(new ForbiddenException("x"), host);
+
+    expect(setHeader).not.toHaveBeenCalled();
   });
 });

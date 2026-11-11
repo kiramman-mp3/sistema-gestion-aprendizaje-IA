@@ -1,11 +1,11 @@
 # Modelo de datos de la base auxiliar
 
-Versión 0.2 · Sprint 2. Amplía la sección 8 del
+Versión 0.3 · Sprint 4. Amplía la sección 8 del
 [documento de requisitos](../requisitos/implementacion_lms_inteligente_ia.md) con las entidades que
 faltaban y unifica los estados.
 
 **Implementación:** [`apps/api/prisma/schema.prisma`](../../apps/api/prisma/schema.prisma) y la
-migración `20261109163904_init`. Diferencias con este documento:
+migraciones `20261109163904_init`, `20261109200000_integration_account_unique_url` y `20261110090000_document_text`. Diferencias con este documento:
 
 - Todas las tablas tienen `id` UUID y `created_at`; las que se editan tienen además `updated_at`.
 - `embedding` es `vector` sin dimensión y sin índice HNSW hasta elegir el modelo de embeddings (D-07).
@@ -51,26 +51,29 @@ Una instancia de Moodle conectada. En el MVP hay una sola, pero el modelo permit
 | Campo              | Tipo | Notas                                     |
 | ------------------ | ---- | ----------------------------------------- |
 | `name`             | text | Nombre de la institución o instancia      |
-| `moodle_base_url`  | text | URL base de Moodle                        |
+| `moodle_base_url`  | text | URL base de Moodle; única (Sprint 4)      |
 | `token_secret_ref` | text | Referencia al secreto, nunca el token     |
 | `jwt_key_ref`      | text | Referencia a la clave de firma del plugin |
 | `status`           | enum | `ACTIVE`, `DISABLED`                      |
 
 ### `syllabus_documents`
 
-| Campo                    | Tipo      | Notas                                         |
-| ------------------------ | --------- | --------------------------------------------- |
-| `integration_account_id` | uuid FK   |                                               |
-| `moodle_course_id`       | int       |                                               |
-| `uploaded_by`            | int       | ID de usuario Moodle                          |
-| `filename`               | text      |                                               |
-| `mime_type`              | text      | MIME real detectado                           |
-| `size_bytes`             | int       | ≤ 10 MB (RNF-04)                              |
-| `checksum_sha256`        | text      | Detecta recargas del mismo archivo            |
-| `storage_key`            | text      | Ubicación del archivo; nula tras la retención |
-| `status`                 | enum      | `DocumentStatus`                              |
-| `error_code`             | text null | Motivo de rechazo o fallo                     |
-| `retain_until`           | timestamp | Fecha de eliminación del archivo              |
+| Campo                    | Tipo           | Notas                                         |
+| ------------------------ | -------------- | --------------------------------------------- |
+| `integration_account_id` | uuid FK        |                                               |
+| `moodle_course_id`       | int            |                                               |
+| `uploaded_by`            | int            | ID de usuario Moodle                          |
+| `filename`               | text           |                                               |
+| `mime_type`              | text           | MIME real detectado                           |
+| `size_bytes`             | int            | ≤ 10 MB (RNF-04)                              |
+| `checksum_sha256`        | text           | Detecta recargas del mismo archivo            |
+| `storage_key`            | text           | Ubicación del archivo; nula tras la retención |
+| `status`                 | enum           | `DocumentStatus`                              |
+| `error_code`             | text null      | Motivo de rechazo o fallo                     |
+| `retain_until`           | timestamp      | Fecha de eliminación del archivo              |
+| `extracted_text`         | jsonb null     | `documentTextSchema` (Sprint 4)               |
+| `page_count`             | int null       | Páginas; estimadas en DOCX                    |
+| `text_extracted_at`      | timestamp null | Fin de la extracción de texto                 |
 
 Índices: `(moodle_course_id, created_at)`, `(moodle_course_id, checksum_sha256)`.
 
@@ -137,17 +140,18 @@ Hace idempotente la publicación (RF-09).
 
 ### `document_chunks`
 
-| Campo              | Tipo      | Notas                                                      |
-| ------------------ | --------- | ---------------------------------------------------------- |
-| `document_id`      | uuid FK   |                                                            |
-| `moodle_course_id` | int       | Duplicado a propósito para filtrar antes de buscar (RF-14) |
-| `page`             | int null  |                                                            |
-| `chunk_index`      | int       |                                                            |
-| `content`          | text      |                                                            |
-| `embedding`        | vector(N) | `pgvector`; N depende del modelo de D-07                   |
-| `embedding_model`  | text      | Permite reindexar al cambiar de modelo                     |
+| Campo              | Tipo         | Notas                                                                                                             |
+| ------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `document_id`      | uuid FK      |                                                                                                                   |
+| `moodle_course_id` | int          | Duplicado a propósito para filtrar antes de buscar (RF-14)                                                        |
+| `page`             | int null     |                                                                                                                   |
+| `chunk_index`      | int          |                                                                                                                   |
+| `content`          | text         |                                                                                                                   |
+| `embedding`        | vector(1024) | `pgvector`; 1024 es la dimensión de los embeddings de demostración (ADR-019); con el modelo de D-07 puede cambiar |
+| `embedding_model`  | text         | Permite reindexar al cambiar de modelo                                                                            |
 
-Índices: `(moodle_course_id)`, índice vectorial HNSW sobre `embedding`.
+Índices: `(moodle_course_id)`, único `(document_id, chunk_index)` e índice vectorial HNSW por coseno sobre `embedding`
+(creado con SQL: Prisma no lo conoce, ver ADR-019).
 
 ### `ai_conversations` y `ai_messages`
 
@@ -177,14 +181,17 @@ sistema (necesario para el rendimiento por unidad, RF-15).
 
 Historial para calcular la evolución (RF-15).
 
-| Campo              | Tipo      | Notas                                      |
-| ------------------ | --------- | ------------------------------------------ |
-| `moodle_course_id` | int       |                                            |
-| `moodle_user_id`   | int null  | Nulo para indicadores del curso completo   |
-| `taken_at`         | timestamp |                                            |
-| `indicators`       | jsonb     | Valores calculados y versión de la fórmula |
+| Campo              | Tipo      | Notas                                                                                                 |
+| ------------------ | --------- | ----------------------------------------------------------------------------------------------------- |
+| `moodle_course_id` | int       |                                                                                                       |
+| `moodle_user_id`   | int null  | Nulo para indicadores del curso completo                                                              |
+| `taken_by`         | int null  | Docente que abrió el panel (ADR-021)                                                                  |
+| `taken_on`         | date null | Día UTC del snapshot                                                                                  |
+| `taken_at`         | timestamp |                                                                                                       |
+| `indicators`       | jsonb     | `{formula, signals, values}`: versión de la fórmula, cantidad de señales y el valor de cada indicador |
 
-Índice: `(moodle_course_id, moodle_user_id, taken_at)`.
+Índices: `(moodle_course_id, moodle_user_id, taken_at)` y único `(integration_account_id, moodle_course_id, taken_by, taken_on)`
+(uno por día, curso y docente).
 
 ### `difficulty_rules`
 
@@ -230,14 +237,15 @@ en ambos). Quedan separados así:
 ```mermaid
 stateDiagram-v2
     [*] --> UPLOADED
-    UPLOADED --> REJECTED: validación o antivirus falla
-    UPLOADED --> PROCESSING
-    PROCESSING --> EXTRACTED
-    PROCESSING --> FAILED
-    FAILED --> PROCESSING: reintento
+    UPLOADED --> PROCESSING: encolado
+    PROCESSING --> TEXT_READY: worker documental
+    PROCESSING --> FAILED: error_code
+    TEXT_READY --> EXTRACTED: extracción con IA (Sprint 5)
     EXTRACTED --> REVIEWED: docente guarda la revisión
     REVIEWED --> REVIEWED: nueva versión
 ```
+
+Un archivo rechazado en la carga (tipo, macros o antivirus) no crea fila: queda solo en `audit_events`. `REJECTED` sigue en el enum, sin uso por ahora.
 
 ### `ProposalStatus`
 

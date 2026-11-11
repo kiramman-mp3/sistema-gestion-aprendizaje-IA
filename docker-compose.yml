@@ -3,10 +3,12 @@
 #
 # Uso:
 #   docker compose up -d                  # base auxiliar y Redis (el backend corre en el host: pnpm dev)
-#   docker compose --profile api up -d    # además, el backend en un contenedor
+#   docker compose --profile antivirus up -d   # además, ClamAV para analizar los archivos subidos
+#   docker compose --profile worker up -d      # además, el worker documental (lee var/storage del backend en el host)
+#   docker compose --profile api up -d    # además, el backend y el worker en contenedores (incluye ClamAV)
 services:
   app-db:
-    image: pgvector/pgvector:0.8.6-pg17
+    image: pgvector/pgvector:0.8.6-pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
     environment:
       POSTGRES_DB: ai_assistant
       POSTGRES_USER: app
@@ -23,7 +25,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:8.8.4-alpine
+    image: redis:8.8.4-alpine@sha256:c027ae0f677dcf73d74038256f5b88c9ba7b11ccbfae97e96a9f091208d36125
     command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
@@ -34,6 +36,22 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Antivirus de los archivos subidos (RF-03). La imagen trae firmas y freshclam las actualiza; el
+  # primer arranque tarda unos minutos y usa alrededor de 1,5 GB de memoria.
+  clamav:
+    image: clamav/clamav:1.5.4@sha256:45fe5149fbee5a46509c9848ef20d0c354b7b2323c9369f285939a37cf33422a
+    profiles: ["antivirus", "api"]
+    ports:
+      - "127.0.0.1:${CLAMAV_PORT:-3310}:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5m
+      retries: 5
 
   api:
     profiles: ["api"]
@@ -52,6 +70,10 @@ services:
       MOODLE_BASE_URL: ${MOODLE_BASE_URL_FROM_DOCKER:-http://host.docker.internal:8000}
       MOODLE_TOKEN: ${MOODLE_TOKEN:-}
       PLUGIN_JWT_SECRET: ${PLUGIN_JWT_SECRET:-}
+      CLAMAV_URL: tcp://clamav:3310
+      STORAGE_DIR: /var/lib/smart-lms/storage
+    volumes:
+      - file_storage:/var/lib/smart-lms/storage
     ports:
       - "127.0.0.1:${API_PORT:-3000}:3000"
     extra_hosts:
@@ -61,12 +83,41 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      clamav:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/v1/health"]
       interval: 10s
       timeout: 3s
       retries: 5
 
+  # Extrae el texto de los sílabos (ADR-003). Procesa archivos no confiables, así que corre aislado:
+  # sin acceso a la base ni a Moodle, con el almacén en solo lectura y el sistema de archivos bloqueado.
+  document-worker:
+    profiles: ["worker", "api"]
+    build:
+      context: .
+      dockerfile: apps/document-worker/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379
+      STORAGE_DIR: /var/lib/smart-lms/storage
+      WORKER_CONCURRENCY: 2
+    volumes:
+      # Con el perfil "worker" solo, el backend corre en el host y guarda en apps/api/var/storage.
+      - ${WORKER_STORAGE_SOURCE:-file_storage}:/var/lib/smart-lms/storage:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   app_db_data:
   redis_data:
+  clamav_data:
+  # Archivos subidos; el worker documental lo monta en solo lectura.
+  file_storage:

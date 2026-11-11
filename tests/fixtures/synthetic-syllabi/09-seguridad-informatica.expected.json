@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "SEGURIDAD INFORMATICA",
+    "code": "UAF-FCI-SF-MP-UP-09-01",
+    "period": "JULIO 2026 - DICIEMBRE 2026",
+    "teacher": "PATRICIA NARVÁEZ LOOR",
+    "generalObjective": "Identificar amenazas y aplicar controles que protejan la información de una organización."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Identifica los riesgos de seguridad de un sistema"
+    },
+    {
+      "id": "RA2",
+      "description": "Aplica criptografía para proteger datos en reposo y en tránsito"
+    },
+    {
+      "id": "RA3",
+      "description": "Detecta y corrige vulnerabilidades comunes en una aplicación"
+    },
+    {
+      "id": "RA4",
+      "description": "Plantea un procedimiento de respuesta a incidentes"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "JULIO 2026 - DICIEMBRE 2026",
+      "weight": null,
+      "units": [
+        {
+          "title": "Conceptos de seguridad",
+          "topics": [
+            "Confidencialidad, integridad y disponibilidad",
+            "Amenazas y vulnerabilidades",
+            "Gestión de riesgos"
+          ],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": "2026-08-03",
+          "endDate": "2026-08-27",
+          "activities": []
+        },
+        {
+          "title": "Criptografía aplicada",
+          "topics": ["Cifrado simétrico y asimétrico", "Funciones hash", "Certificados"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": "2026-08-31",
+          "endDate": "2026-09-24",
+          "activities": []
+        },
+        {
+          "title": "Seguridad de aplicaciones",
+          "topics": [
+            "Vulnerabilidades web más comunes",
+            "Validación de entradas",
+            "Gestión de secretos"
+          ],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": "2026-09-28",
+          "endDate": "2026-10-22",
+          "activities": []
+        },
+        {
+          "title": "Respuesta a incidentes",
+          "topics": ["Detección", "Contención", "Recuperación"],
+          "learningOutcomeIds": ["RA4"],
+          "startDate": "2026-10-26",
+          "endDate": "2026-11-19",
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso",
+    "Método Expositivo",
+    "Aprendizaje Colaborativo"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 30
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 30
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 40
+    }
+  ],
+  "bibliography": [
+    "Reinoso Cabrera, L. (2023). Casos y ejercicios resueltos. Universidad Andina Ficticia.",
+    "Paredes Ortiz, J. (2018). Manual de laboratorio. Editorial Andina Ficticia.",
+    "Salazar Beltrán, M. (2022). Buenas prácticas en la industria. Ediciones del Sur Ficticias.",
+    "Cevallos Mena, R. (2020). Introducción a los fundamentos. Editorial Andina Ficticia.",
+    "Valdivieso Ramos, E. (2021). Fundamentos prácticos de la asignatura. Editorial Andina Ficticia."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

@@ -23,6 +23,8 @@ tags:
     description: Asistente conversacional (CU-04)
   - name: analytics
     description: Indicadores, evidencias y recomendaciones (CU-05)
+  - name: mappings
+    description: Relación de las actividades de Moodle con las unidades del sílabo
   - name: admin
     description: Configuración y auditoría (CU-06, CU-07)
   - name: health
@@ -74,6 +76,10 @@ paths:
       tags: [syllabi]
       operationId: uploadSyllabus
       summary: Cargar un sílabo (RF-03)
+      description: |
+        Valida la extensión, el contenido real (magic bytes), macros y tamaño descomprimido de DOCX,
+        y analiza el archivo con ClamAV antes de guardarlo. Después encola la extracción de texto.
+        `courseId` debe ser el curso del token.
       requestBody:
         required: true
         content:
@@ -90,7 +96,9 @@ paths:
                   description: PDF o DOCX de hasta 10 MB
       responses:
         "202":
-          description: Archivo aceptado; el procesamiento continúa en segundo plano
+          description: |
+            Archivo aceptado; el procesamiento continúa en segundo plano. El estado es `PROCESSING`, o
+            `UPLOADED` si la cola no respondió (se encola en menos de 5 minutos).
           content:
             application/json:
               schema:
@@ -102,7 +110,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "409":
-          description: El mismo archivo ya fue cargado para el curso
+          description: |
+            El mismo archivo ya fue cargado para el curso (`DUPLICATE_SYLLABUS`). `details[0].message`
+            trae el id del sílabo existente.
           content:
             application/json:
               schema:
@@ -114,17 +124,55 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "415":
-          description: Tipo de archivo no permitido
+          description: |
+            Tipo de archivo no permitido: `EXTENSION_NOT_ALLOWED`, `MIME_MISMATCH`,
+            `MACROS_NOT_ALLOWED` o `ARCHIVE_TOO_LARGE`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: El antivirus detectó contenido malicioso (`MALWARE_DETECTED`); queda auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: |
+            El antivirus no respondió (`ANTIVIRUS_UNAVAILABLE`) o falló la autenticación (ver `/session`).
+            El archivo no se acepta.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /syllabi/latest:
+    get:
+      tags: [syllabi]
+      operationId: getLatestSyllabus
+      summary: El sílabo más reciente del curso
+      description: |
+        Devuelve el sílabo del curso del token con la actividad más reciente (carga, extracción o revisión), para que la
+        página lo retome al abrirse sin que el docente conserve su id. Responde 404 (`SYLLABUS_NOT_FOUND`) si el curso no
+        tiene ninguno; nunca devuelve sílabos de otro curso.
+      responses:
+        "200":
+          description: Sílabo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyllabusDocument"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /syllabi/{syllabusId}:
     get:
       tags: [syllabi]
       operationId: getSyllabus
-      summary: Estado y metadatos de un sílabo
+      summary: Estado y metadatos de un sílabo (RF-04)
+      description: Un sílabo de otro curso responde 404, igual que uno que no existe.
       parameters:
         - $ref: "#/components/parameters/SyllabusId"
       responses:
@@ -214,6 +262,14 @@ paths:
       tags: [proposals]
       operationId: createProposal
       summary: Generar una propuesta a partir de una versión de extracción (RF-07)
+      description: |
+        Requiere la capacidad `publish`. Cada unidad de la extracción es una sección y cada actividad
+        un elemento hijo, con el tipo de Moodle según D-05 (provisional). Las fechas y ponderaciones son
+        las de la extracción o `null`; nunca se inventan. La propuesta nace en `NEEDS_REVIEW`.
+
+        El sílabo debe estar `REVIEWED` (el docente guardó su revisión). Si el mismo sílabo ya tiene una
+        propuesta que no fue rechazada, responde 409 `PROPOSAL_EXISTS` y no la duplica, salvo que se
+        envíe `confirmDuplicate: true`.
       requestBody:
         required: true
         content:
@@ -228,6 +284,9 @@ paths:
                 extractionVersion:
                   type: integer
                   minimum: 1
+                confirmDuplicate:
+                  type: boolean
+                  description: Confirma que se quiere otra propuesta aunque el sílabo ya tenga una
       responses:
         "201":
           description: Propuesta creada
@@ -241,12 +300,52 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          description: |
+            `SYLLABUS_NOT_FOUND` (un sílabo de otro curso responde igual que uno inexistente) o
+            `EXTRACTION_NOT_FOUND`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: |
+            `EXTRACTION_NOT_REVIEWED` (el docente aún no guardó su revisión), `EXTRACTION_INVALID` o
+            `PROPOSAL_EXISTS` (`details[0].message` trae el id de la propuesta existente)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /proposals/latest:
+    get:
+      tags: [proposals]
+      operationId: getLatestProposal
+      summary: La propuesta más reciente del curso
+      description: |
+        Devuelve la propuesta del curso del token con la actividad más reciente, sin contar las rechazadas, para que la
+        página la retome al abrirse. Responde 404 (`PROPOSAL_NOT_FOUND`) si el curso no tiene ninguna; nunca devuelve
+        propuestas de otro curso.
+      responses:
+        "200":
+          description: Propuesta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proposal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /proposals/{proposalId}:
     get:
       tags: [proposals]
       operationId: getProposal
       summary: Consultar una propuesta
+      description: |
+        Una propuesta de otro curso responde 404 (`PROPOSAL_NOT_FOUND`), igual que una inexistente. Incluye
+        `issues`, la revisión del estado guardado.
       parameters:
         - $ref: "#/components/parameters/ProposalId"
       responses:
@@ -264,6 +363,12 @@ paths:
       tags: [proposals]
       operationId: updateProposal
       summary: Editar ítems de la propuesta (vuelve a NEEDS_REVIEW si estaba aprobada)
+      description: |
+        Requiere la capacidad `publish`. Reemplaza todos los ítems por los enviados; la posición es el
+        orden del arreglo. Un ítem nuevo trae un UUID generado por el cliente. `moodleItemId` y
+        `publishStatus` son de solo lectura y se ignoran. Una sección no tiene padre; cualquier otro ítem
+        cuelga de una sección de la misma propuesta. Solo se edita en `DRAFT`, `NEEDS_REVIEW` y
+        `APPROVED`; editar una propuesta aprobada borra la aprobación y la devuelve a `NEEDS_REVIEW`.
       parameters:
         - $ref: "#/components/parameters/ProposalId"
       requestBody:
@@ -289,16 +394,27 @@ paths:
           $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          $ref: "#/components/responses/InvalidTransition"
+          description: |
+            `PROPOSAL_NOT_EDITABLE` (el estado no admite ediciones), `ITEM_ID_CONFLICT` (un id ya
+            pertenece a otra propuesta) o `PROPOSAL_CHANGED` (otra petición la cambió a la vez)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /proposals/{proposalId}/approve:
     post:
       tags: [proposals]
       operationId: approveProposal
       summary: Aprobar la propuesta (RF-08)
+      description: |
+        Requiere la capacidad `publish`. Solo se aprueba desde `NEEDS_REVIEW`, y solo si la revisión
+        (`issues`) no tiene errores; las advertencias no lo impiden. Registra quién aprobó y cuándo.
       parameters:
         - $ref: "#/components/parameters/ProposalId"
       responses:
@@ -312,14 +428,32 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
-          $ref: "#/components/responses/InvalidTransition"
+          description: |
+            `INVALID_TRANSITION` (el estado no permite aprobar), `PROPOSAL_HAS_ERRORS` (`details` lista
+            los errores) o `PROPOSAL_CHANGED` (otra petición la cambió a la vez)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /proposals/{proposalId}/publish:
     post:
       tags: [proposals]
       operationId: publishProposal
       summary: Publicar en Moodle una propuesta aprobada (RF-09)
+      description: |
+        Requiere la capacidad `publish`. Solo se publica una propuesta `APPROVED`, o una `FAILED` para
+        reanudarla. Exige `Idempotency-Key` y `{ "confirm": true }`: sin confirmación explícita no se crea
+        nada.
+
+        Responde 202 y la publicación sigue en segundo plano, un elemento a la vez, con la identidad y los
+        permisos del docente. Repetir la petición con la misma clave devuelve la misma operación y no
+        publica de nuevo; otra clave sobre una propuesta que ya se está publicando o se publicó responde 409.
+        Moodle reconoce cada elemento por su id, así que reanudar tras un fallo no duplica lo creado. Las
+        actividades se crean ocultas.
       parameters:
         - $ref: "#/components/parameters/ProposalId"
         - name: Idempotency-Key
@@ -348,18 +482,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublishOperation"
+        "400":
+          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
-          $ref: "#/components/responses/InvalidTransition"
+          description: |
+            `INVALID_TRANSITION` (la propuesta no está aprobada ni fallida), `PROPOSAL_HAS_ERRORS`,
+            `IDEMPOTENCY_KEY_REUSED` (la clave ya se usó en otra propuesta) o `PROPOSAL_CHANGED`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: |
+            `PUBLISH_QUEUE_UNAVAILABLE`: no se pudo encolar. La propuesta queda `FAILED` y se puede reanudar.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /proposals/{proposalId}/publish-operations/{operationId}:
     get:
       tags: [proposals]
       operationId: getPublishOperation
       summary: Progreso y resultado de una publicación
+      description: |
+        Una operación solo se consulta con su propuesta y en su curso; en otro caso responde 404
+        (`PUBLISH_OPERATION_NOT_FOUND` o `PROPOSAL_NOT_FOUND`).
       parameters:
         - $ref: "#/components/parameters/ProposalId"
         - name: operationId
@@ -388,6 +542,25 @@ paths:
       description: |
         Con `Accept: text/event-stream` la respuesta se envía por eventos SSE (`token`, `tool`,
         `final`, `error`). Con `Accept: application/json` se devuelve la respuesta completa.
+
+        **Formato de los eventos** (cada uno es `event: <nombre>` y `data: <JSON en una línea>`, separados por
+        una línea en blanco). El plugin los lee con `moodle/local/ai_assistant/amd/src/sse.js`:
+
+        | Evento  | `data`                                                  | Cuándo                                        |
+        | ------- | ------------------------------------------------------ | --------------------------------------------- |
+        | `tool`  | `{"name": "get_assignment_submissions"}`                | El asistente empieza a consultar datos        |
+        | `token` | `{"text": "Tres "}`                                     | Un trozo de la respuesta, en orden            |
+        | `final` | un `ChatResponse` completo                              | Siempre al terminar bien; su `answer` reemplaza a los tokens |
+        | `error` | `{"code": "AI_PROVIDER_UNAVAILABLE", "message": "..."}` | El flujo no puede continuar; no se inventa respuesta |
+
+        Orden esperado: cero o más `tool` y `token`, y un único `final` o `error`. Un flujo que se corta sin
+        `final` ni `error` se muestra como respuesta interrumpida. Los errores previos al flujo (permisos, límite
+        de uso, proveedor caído) se responden como JSON con su código HTTP. El texto de `answer` se muestra
+        siempre como texto, nunca como HTML. `sources[].type` decide el enlace: `moodle_activity` abre
+        `mod/view.php?id=<id>`, `moodle_gradebook` el calificador del curso y `document` solo si trae `url`.
+        Una respuesta con `incompleteData: true` muestra el aviso de datos incompletos.
+
+        Referencia ejecutable: `pnpm mock:ai` (`infra/mocks/ai-api.mjs`).
       requestBody:
         required: true
         content:
@@ -424,13 +597,19 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "429":
-          description: Límite de uso alcanzado (RNF-07)
+          description: |
+            `RATE_LIMITED`: límite de peticiones por usuario y minuto (Retry-After indica cuántos segundos
+            esperar) o límite de uso y costo de IA por docente (RNF-07)
+          headers:
+            Retry-After:
+              schema:
+                type: integer
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
         "503":
-          description: Proveedor de IA no disponible; no se inventa respuesta
+          description: Proveedor de IA no disponible (`AI_PROVIDER_UNAVAILABLE`); no se inventa respuesta
           content:
             application/json:
               schema:
@@ -503,6 +682,46 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "503":
+          description: No se pudieron leer las actividades o los estudiantes de Moodle (`MOODLE_UNAVAILABLE`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /analytics/courses/{courseId}/history:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsHistory
+      summary: Evolución de los indicadores del curso
+      description: |
+        Requiere `viewanalytics`. Devuelve los snapshots que dejó el propio docente al abrir el panel: como mucho uno
+        por día, curso y docente, del más antiguo al más reciente, con solo los valores de los indicadores y la
+        cantidad de señales (ADR-018). Un día sin visita es un hueco. Cada docente ve únicamente los suyos, porque con
+        grupos separados los valores pueden diferir. Se conservan `ANALYTICS_SNAPSHOT_RETENTION_DAYS` días.
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+        - name: days
+          in: query
+          description: Cuántos días hacia atrás se consultan
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 90
+      responses:
+        "200":
+          description: Historial
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsHistory"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /analytics/courses/{courseId}/students/{studentId}:
     get:
@@ -523,6 +742,18 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          description: El estudiante no está matriculado en el curso (`STUDENT_NOT_FOUND`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: No se pudieron leer los datos de Moodle (`MOODLE_UNAVAILABLE`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /analytics/courses/{courseId}/students/{studentId}/recommendations:
     post:
@@ -543,8 +774,35 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          description: El estudiante no está matriculado en el curso (`STUDENT_NOT_FOUND`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "422":
-          description: Datos insuficientes para recomendar
+          description: |
+            Datos insuficientes para recomendar (`INSUFFICIENT_DATA`): sin porcentaje de entregas ni promedio de
+            notas. `details` lista lo que falta.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Límite diario de recomendaciones por docente (`RATE_LIMITED`); `Retry-After` indica cuánto esperar
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: |
+            El proveedor de IA no respondió o la recomendación no cumplió las reglas de lenguaje tras un reintento
+            (`AI_PROVIDER_UNAVAILABLE`), o no se pudieron leer los datos de Moodle (`MOODLE_UNAVAILABLE`). No se
+            guarda nada.
           content:
             application/json:
               schema:
@@ -584,39 +842,128 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /courses/{courseId}/activity-mappings:
+    get:
+      tags: [mappings]
+      operationId: getActivityMappings
+      summary: Unidades del sílabo revisado y actividades ya relacionadas
+      description: |
+        Requiere `use`. Las unidades y los resultados salen de la última versión del sílabo revisado del curso
+        (`REVIEWED`); sin sílabo revisado las listas vienen vacías. Las actividades de Moodle las lista el plugin
+        con la sesión del docente (`local_ai_assistant_get_course_activities`).
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+      responses:
+        "200":
+          description: Unidades, resultados de aprendizaje y relaciones
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityMappings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /courses/{courseId}/activity-mappings/{cmId}:
+    put:
+      tags: [mappings]
+      operationId: saveActivityMapping
+      summary: Relacionar una actividad con una unidad y sus resultados de aprendizaje
+      description: |
+        Requiere `publish`. Reemplaza la relación de la actividad y la marca `MANUAL`; una relación creada al
+        publicar una propuesta (`PROPOSAL`) se reemplaza igual. La unidad y los resultados deben existir en el
+        sílabo revisado.
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+        - $ref: "#/components/parameters/CmId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [unitRef]
+              properties:
+                unitRef:
+                  type: string
+                  examples: ["gradingPeriods[0].units[1]"]
+                learningOutcomeIds:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Relación guardada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityMapping"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "`NO_REVIEWED_SYLLABUS`: el curso no tiene un sílabo revisado"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [mappings]
+      operationId: deleteActivityMapping
+      summary: Quitar la relación de una actividad
+      description: Requiere `publish`.
+      parameters:
+        - $ref: "#/components/parameters/CourseId"
+        - $ref: "#/components/parameters/CmId"
+      responses:
+        "204":
+          description: Relación quitada
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "`MAPPING_NOT_FOUND`: la actividad no estaba relacionada"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /admin/difficulty-rules:
     get:
       tags: [admin]
       operationId: listDifficultyRules
       summary: Reglas de señales de dificultad (CU-06)
+      description: |
+        Requiere `admin`. Devuelve las cuatro reglas con la configuración que se aplicaría: con `courseId`, la del
+        curso (la propia del curso, si la tiene; si no, la institucional; si no, la de por defecto); sin él, la
+        institucional. `scope` indica de dónde sale cada una.
+      parameters:
+        - name: courseId
+          in: query
+          schema:
+            type: integer
+            minimum: 1
       responses:
         "200":
           description: Reglas
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DifficultyRule"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-    put:
-      tags: [admin]
-      operationId: replaceDifficultyRules
-      summary: Reemplazar las reglas institucionales
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/DifficultyRule"
-      responses:
-        "200":
-          description: Reglas guardadas
+                type: object
+                required: [courseId, rules]
+                properties:
+                  courseId:
+                    type: [integer, "null"]
+                  rules:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DifficultyRule"
         "400":
           $ref: "#/components/responses/ValidationError"
         "401":
@@ -624,16 +971,119 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /audit:
-    get:
+  /admin/difficulty-rules/{rule}:
+    parameters:
+      - name: rule
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/DifficultyRuleType"
+    put:
       tags: [admin]
-      operationId: listAuditEvents
-      summary: Consultar auditoría (RF-19, CU-07)
+      operationId: saveDifficultyRule
+      summary: Guardar una regla institucional o de un curso
+      description: |
+        Requiere `admin`. `courseId: null` configura la regla de toda la institución; un número, la de ese curso, que
+        reemplaza a la institucional. Los parámetros se validan con el esquema de la regla (estricto, con valores por
+        defecto). Cada cambio queda en la auditoría como `rules.update`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [courseId, enabled]
+              properties:
+                courseId:
+                  type: [integer, "null"]
+                  minimum: 1
+                enabled:
+                  type: boolean
+                params:
+                  type: object
+                  description: |
+                    `MISSING_REQUIRED`: `minMissing`, `requiredCmids`, `windowDays`. `GRADE_BELOW_THRESHOLD` y
+                    `REPEATED_OUTCOME_DIFFICULTY`: `thresholdPercent` (0 a 100), `minActivities`, `windowDays`.
+                    `SUSTAINED_DECLINE`: `consecutive` (3 a 10), `windowDays`.
+      responses:
+        "200":
+          description: Regla guardada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DifficultyRule"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "`RULE_NOT_FOUND`: la regla no existe"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [admin]
+      operationId: resetDifficultyRule
+      summary: Quitar la configuración propia de una regla
+      description: |
+        Requiere `admin`. Con `courseId`, el curso vuelve a la regla institucional; sin él, la institución vuelve al
+        valor por defecto. Se audita como `rules.reset`.
       parameters:
         - name: courseId
           in: query
           schema:
             type: integer
+            minimum: 1
+      responses:
+        "204":
+          description: Configuración quitada
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "`RULE_NOT_FOUND`: la regla no existe o no tenía configuración propia"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /audit:
+    get:
+      tags: [admin]
+      operationId: listAuditEvents
+      summary: Consultar auditoría (RF-19, CU-07)
+      description: |
+        Requiere `admin`. Eventos del más reciente al más antiguo, paginados con `cursor`. Los eventos no guardan
+        nombres, notas ni texto de mensajes. Consultar la auditoría deja el evento `audit.query`.
+      parameters:
+        - name: courseId
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: actorId
+          in: query
+          description: Id de Moodle de quien hizo la acción
+          schema:
+            type: integer
+            minimum: 1
+        - name: action
+          in: query
+          description: Acción exacta (`proposal.publish`) o un dominio completo terminado en punto (`proposal.`)
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9_.]{0,59}$"
+        - name: outcome
+          in: query
+          schema:
+            type: string
+            enum: [SUCCESS, DENIED, ERROR]
         - name: from
           in: query
           schema:
@@ -661,6 +1111,8 @@ paths:
                       $ref: "#/components/schemas/AuditEvent"
                   nextCursor:
                     type: [string, "null"]
+        "400":
+          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -695,6 +1147,14 @@ components:
       required: true
       schema:
         type: integer
+    CmId:
+      name: cmId
+      in: path
+      required: true
+      description: Id de la actividad en Moodle (course module)
+      schema:
+        type: integer
+        minimum: 1
     StudentId:
       name: studentId
       in: path
@@ -712,8 +1172,8 @@ components:
       schema:
         type: integer
         minimum: 1
-        maximum: 100
-        default: 25
+        maximum: 200
+        default: 50
 
   responses:
     ValidationError:
@@ -798,13 +1258,23 @@ components:
           type: string
         status:
           type: string
-          enum: [UPLOADED, REJECTED, PROCESSING, EXTRACTED, REVIEWED, FAILED]
+          enum: [UPLOADED, REJECTED, PROCESSING, TEXT_READY, EXTRACTED, REVIEWED, FAILED]
         progress:
           type: [integer, "null"]
           minimum: 0
           maximum: 100
+        pageCount:
+          type: [integer, "null"]
+          description: Páginas del documento; en DOCX son estimadas
+        textConfidence:
+          type: [string, "null"]
+          enum: [high, low, null]
+          description: "`low` si parte del texto salió de OCR"
         errorCode:
           type: [string, "null"]
+          description: |
+            Motivo de `FAILED`: `ENCRYPTED_DOCUMENT`, `CORRUPT_DOCUMENT`, `EMPTY_DOCUMENT`,
+            `DOCUMENT_TOO_COMPLEX`, `INVALID_WORKER_RESULT` o `TEXT_EXTRACTION_FAILED`
         latestExtractionVersion:
           type: [integer, "null"]
         createdAt:
@@ -826,7 +1296,7 @@ components:
             type: string
         capabilities:
           type: object
-          required: [use, publish, viewanalytics]
+          required: [use, publish, viewanalytics, admin]
           properties:
             use:
               type: boolean
@@ -834,6 +1304,9 @@ components:
               type: boolean
             viewanalytics:
               type: boolean
+            admin:
+              type: boolean
+              description: Administra el asistente (auditoría y reglas de dificultad); lo da `local/ai_assistant:administer`
 
     SyllabusExtraction:
       description: |
@@ -890,6 +1363,12 @@ components:
           type: [string, "null"]
         position:
           type: integer
+          description: Orden de visualización; en la edición se toma del orden del arreglo
+        unitRef:
+          type: string
+          description: |
+            Ruta de la unidad en la extracción (`gradingPeriods[0].units[1]`). Ubica el periodo de
+            calificación para validar ponderaciones. Si se omite, un ítem hereda el de su sección.
         learningOutcomeIds:
           type: array
           items:
@@ -935,46 +1414,117 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProposalItem"
+        lastPublishOperation:
+          readOnly: true
+          description: Última publicación, para retomar su seguimiento al recargar la página
+          oneOf:
+            - type: "null"
+            - type: object
+              required: [id, status]
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+                  enum: [RUNNING, SUCCEEDED, FAILED]
+        issues:
+          type: array
+          readOnly: true
+          description: Revisión del estado guardado. Los `error` impiden aprobar; los `warning`, no.
+          items:
+            $ref: "#/components/schemas/ProposalIssue"
+
+    ProposalIssue:
+      type: object
+      required: [code, severity, itemId, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - EMPTY_PROPOSAL
+            - EMPTY_TITLE
+            - ITEM_TYPE_NOT_ENABLED
+            - PERIOD_WEIGHTS_EXCEED_TOTAL
+            - PERIOD_WEIGHTS_NOT_TOTAL
+            - ACTIVITY_WITHOUT_OUTCOME
+            - SECTION_WITHOUT_ACTIVITIES
+        severity:
+          type: string
+          enum: [error, warning]
+        itemId:
+          type: [string, "null"]
+          format: uuid
+          description: Ítem al que se refiere; `null` si afecta a la propuesta completa
+        message:
+          type: string
 
     PublishOperation:
       type: object
-      required: [id, status, createdCount, failedCount]
+      required: [id, proposalId, status, totalCount, createdCount, failedCount, failures, createdAt]
       properties:
         id:
+          type: string
+          format: uuid
+        proposalId:
           type: string
           format: uuid
         status:
           type: string
           enum: [RUNNING, SUCCEEDED, FAILED]
+        totalCount:
+          type: integer
+          description: Elementos de la propuesta
         createdCount:
           type: integer
+          description: Elementos creados en esta operación
         failedCount:
           type: integer
         failures:
           type: array
+          description: Elementos que no se crearon. La publicación se detiene en el primer fallo.
           items:
             type: object
+            required: [itemId, error]
             properties:
               itemId:
                 type: string
                 format: uuid
               error:
                 type: string
+                description: |
+                  `MOODLE_PERMISSION`, `MOODLE_UNAVAILABLE`, `MOODLE_BAD_RESPONSE`,
+                  `MOODLE_ERROR:<código de Moodle>` o `PUBLISH_ERROR`
+        createdAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: [string, "null"]
+          format: date-time
 
     ChatResponse:
       type: object
-      required: [conversationId, answer, generatedAt, sources]
+      required: [conversationId, answer, generatedAt, sources, criteria]
       properties:
         conversationId:
           type: string
           format: uuid
         intent:
           type: [string, "null"]
+          description: |
+            Qué consultó el asistente (`pending_grading`, `grade_summary`, `document_search`, `student_evidence`…).
+            `clarification` indica que `answer` es una pregunta de aclaración: el asistente la hace una sola vez por
+            pregunta y, cuando el docente responde, contesta con lo que tenga.
         answer:
           type: string
         data:
           type: [object, "null"]
-          description: Datos estructurados devueltos por la herramienta usada
+          description: |
+            Datos estructurados devueltos por las herramientas usadas, con el nombre de la herramienta como clave
+            (una segunda llamada a la misma herramienta usa `nombre#2`). Si `answer` menciona estudiantes, trae además
+            `students`: una lista de `{alias, studentId}` con los seudónimos (`Estudiante#NNNNNNNN`) y el id de Moodle
+            correspondiente. Los nombres no pasan por el backend: el plugin sustituye cada alias por el nombre que
+            obtiene de Moodle con ese id (ADR-010).
         generatedAt:
           type: string
           format: date-time
@@ -994,6 +1544,13 @@ components:
               url:
                 type: [string, "null"]
                 format: uri
+        criteria:
+          type: array
+          description: |
+            Reglas con las que se calcularon los datos de la respuesta (el «criterio aplicado» que muestra el plugin),
+            en una frase cada una y sin repetir. Vacío si no se consultó nada, por ejemplo en una aclaración.
+          items:
+            type: string
         incompleteData:
           type: boolean
           description: Verdadero si faltaron datos para responder por completo
@@ -1014,6 +1571,11 @@ components:
           type: string
 
     CourseAnalytics:
+      description: |
+        Las señales solo traen el id del estudiante: el plugin resuelve los nombres con Moodle (función AJAX
+        `local_ai_assistant_get_course_students`), así que ni los nombres ni los datos personales pasan por el
+        backend o el proveedor de IA (ADR-010). Una señal debe explicar por qué existe (`explanation`) y no es
+        un diagnóstico. Un indicador sin dato lleva `value: null` (se muestra como guion, nunca como cero).
       type: object
       required: [courseId, computedAt, indicators, signals]
       properties:
@@ -1049,7 +1611,9 @@ components:
           type: integer
         observed:
           type: array
-          description: Datos observados en Moodle
+          description: |
+            Datos observados en Moodle, tal como están. El plugin los muestra sin interpretarlos: `{label, value}`
+            se muestra como una fila; cualquier otro objeto, campo por campo.
           items:
             type: object
         computed:
@@ -1098,19 +1662,111 @@ components:
           items:
             type: string
 
-    DifficultyRule:
+    ActivityMapping:
       type: object
-      required: [rule, enabled, params]
+      required: [moodleCmId, unitRef, learningOutcomeIds, source]
+      properties:
+        moodleCmId:
+          type: integer
+        unitRef:
+          type: string
+          description: Ruta de la unidad en la extracción
+        learningOutcomeIds:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+          enum: [PROPOSAL, MANUAL]
+          description: "`PROPOSAL` si se creó al publicar una propuesta; `MANUAL` si la eligió el docente"
+
+    ActivityMappings:
+      type: object
+      required: [syllabusId, extractionVersion, units, outcomes, mappings]
+      properties:
+        syllabusId:
+          type: [string, "null"]
+          format: uuid
+        extractionVersion:
+          type: [integer, "null"]
+        units:
+          type: array
+          items:
+            type: object
+            required: [unitRef, title, periodName, learningOutcomeIds]
+            properties:
+              unitRef:
+                type: string
+              title:
+                type: string
+              periodName:
+                type: string
+              learningOutcomeIds:
+                type: array
+                items:
+                  type: string
+        outcomes:
+          type: array
+          items:
+            type: object
+            required: [id, description]
+            properties:
+              id:
+                type: string
+              description:
+                type: string
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityMapping"
+
+    AnalyticsHistory:
+      type: object
+      required: [courseId, snapshots]
       properties:
         courseId:
-          type: [integer, "null"]
+          type: integer
+        snapshots:
+          type: array
+          items:
+            type: object
+            required: [takenAt, signals, indicators]
+            properties:
+              takenAt:
+                type: string
+                format: date-time
+              signals:
+                type: integer
+                description: Cantidad de señales de dificultad ese día
+              indicators:
+                type: array
+                items:
+                  type: object
+                  required: [key, value]
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: [number, "null"]
+
+    DifficultyRuleType:
+      type: string
+      enum:
+        - MISSING_REQUIRED
+        - GRADE_BELOW_THRESHOLD
+        - SUSTAINED_DECLINE
+        - REPEATED_OUTCOME_DIFFICULTY
+
+    DifficultyRule:
+      type: object
+      required: [rule, scope, enabled, params]
+      properties:
         rule:
+          $ref: "#/components/schemas/DifficultyRuleType"
+        scope:
           type: string
-          enum:
-            - MISSING_REQUIRED
-            - GRADE_BELOW_THRESHOLD
-            - SUSTAINED_DECLINE
-            - REPEATED_OUTCOME_DIFFICULTY
+          enum: [default, institution, course]
+          description: De dónde sale la configuración
         enabled:
           type: boolean
         params:
@@ -1136,6 +1792,9 @@ components:
         outcome:
           type: string
           enum: [SUCCESS, DENIED, ERROR]
+        metadata:
+          type: [object, "null"]
+          description: Solo valores escalares; nunca nombres, notas ni texto de mensajes
         createdAt:
           type: string
           format: date-time

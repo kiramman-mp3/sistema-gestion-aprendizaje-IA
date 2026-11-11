@@ -5,6 +5,7 @@ import { AccessService } from "./access.service";
 import { CourseAccessGuard } from "./course-access.guard";
 import { JtiStore, RedisJtiStore } from "./jti-store";
 import { PluginAuthGuard } from "./plugin-auth.guard";
+import { RateLimitGuard, RateLimitStore, RedisRateLimitStore } from "./rate-limit.guard";
 import { SessionController } from "./session.controller";
 
 @Module({
@@ -13,8 +14,11 @@ import { SessionController } from "./session.controller";
   providers: [
     AccessService,
     { provide: JtiStore, useClass: RedisJtiStore },
-    // El orden importa: primero se verifica el token y después los permisos en Moodle.
+    { provide: RateLimitStore, useClass: RedisRateLimitStore },
+    // El orden importa: se verifica el token, se limita el ritmo y solo entonces se preguntan los permisos a
+    // Moodle, para que una avalancha de peticiones no se convierta en una avalancha de llamadas a Moodle.
     { provide: APP_GUARD, useClass: PluginAuthGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: CourseAccessGuard },
   ],
 })

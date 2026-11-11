@@ -5,13 +5,18 @@ vendor/
 # Builds
 dist/
 build/
+# Moodle sirve los módulos AMD compilados desde el plugin: se versionan (pnpm check:amd).
+!moodle/**/amd/build/
 coverage/
 *.tsbuildinfo
+.eslintcache
+.pnpm-store/
 
 # Entorno y secretos
 .env
 .env.*
 !.env.example
+!.env.production.example
 *.pem
 *.key
 
@@ -24,16 +29,33 @@ pnpm-debug.log*
 # Archivos subidos y temporales
 uploads/
 tmp/
+*.tmp
+*.part
 
 # Editores y sistema operativo
 .vscode/*
 !.vscode/extensions.json
 .idea/
+*.swp
+*~
 .DS_Store
 Thumbs.db
+desktop.ini
+# Temporales de Office al abrir documentos de docs/
+~$*
+
+# Configuración local de herramientas (CLAUDE.md sí se versiona)
+.claude/settings.local.json
+CLAUDE.local.md
 
 # Moodle y moodle-docker descargados por infra/scripts/moodle.sh
 infra/.cache/
 
 # Cliente de Prisma generado (pnpm --filter @smart-lms/api prisma:generate)
 apps/api/src/generated/
+
+# Archivos subidos en desarrollo (STORAGE_DIR)
+apps/*/var/
+
+# Resultados locales de las mediciones con proveedores de IA reales
+/var/

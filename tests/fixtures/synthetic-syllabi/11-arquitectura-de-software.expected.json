@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "ARQUITECTURA DE SOFTWARE",
+    "code": "UAF-FCI-SF-MP-UP-11-01",
+    "period": "JULIO 2026 - DICIEMBRE 2026",
+    "teacher": "DANIELA CÁRDENAS YÉPEZ",
+    "generalObjective": "Diseñar y documentar arquitecturas de software que satisfagan atributos de calidad."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Relaciona los atributos de calidad con decisiones de arquitectura"
+    },
+    {
+      "id": "RA2",
+      "description": "Selecciona un estilo arquitectónico para un problema dado"
+    },
+    {
+      "id": "RA3",
+      "description": "Documenta una arquitectura con vistas y registros de decisión"
+    },
+    {
+      "id": "RA4",
+      "description": "Evalúa una arquitectura frente a escenarios de calidad"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "JULIO 2026 - DICIEMBRE 2026",
+      "weight": null,
+      "units": [
+        {
+          "title": "Atributos de calidad",
+          "topics": ["Rendimiento", "Disponibilidad", "Mantenibilidad"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Estilos y patrones",
+          "topics": ["Capas", "Microservicios", "Orientada a eventos"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Documentación de arquitectura",
+          "topics": ["Vistas", "Diagramas C4", "Registros de decisiones"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Evaluación de arquitecturas",
+          "topics": ["Escenarios de calidad", "Análisis de compromisos"],
+          "learningOutcomeIds": ["RA4"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso",
+    "Método Expositivo"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 50
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 25
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 25
+    }
+  ],
+  "bibliography": [
+    "Salazar Beltrán, M. (2022). Buenas prácticas en la industria. Ediciones del Sur Ficticias.",
+    "Cevallos Mena, R. (2020). Introducción a los fundamentos. Editorial Andina Ficticia.",
+    "Valdivieso Ramos, E. (2021). Fundamentos prácticos de la asignatura. Editorial Andina Ficticia.",
+    "Montalvo Suárez, P. (2019). Guía de estudio aplicada. Ediciones del Sur Ficticias."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

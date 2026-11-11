@@ -23,6 +23,8 @@ enum DocumentStatus {
   UPLOADED
   REJECTED
   PROCESSING
+  /// Texto extraído por el worker documental; listo para la extracción con IA (Sprint 5).
+  TEXT_READY
   EXTRACTED
   REVIEWED
   FAILED
@@ -99,7 +101,8 @@ enum AuditOutcome {
 model IntegrationAccount {
   id             String            @id @default(uuid()) @db.Uuid
   name           String
-  moodleBaseUrl  String            @map("moodle_base_url")
+  /// Un sitio Moodle tiene una sola cuenta de integración.
+  moodleBaseUrl  String            @unique @map("moodle_base_url")
   /// Referencia al gestor de secretos; nunca el token.
   tokenSecretRef String            @map("token_secret_ref")
   jwtKeyRef      String            @map("jwt_key_ref")
@@ -132,6 +135,10 @@ model SyllabusDocument {
   storageKey           String?        @map("storage_key")
   status               DocumentStatus @default(UPLOADED)
   errorCode            String?        @map("error_code")
+  /// Cumple documentTextSchema de @smart-lms/contracts.
+  extractedText        Json?          @map("extracted_text")
+  pageCount            Int?           @map("page_count")
+  textExtractedAt      DateTime?      @map("text_extracted_at")
   retainUntil          DateTime       @map("retain_until")
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
@@ -166,22 +173,22 @@ model SyllabusExtraction {
 }
 
 model DocumentChunk {
-  id             String                 @id @default(uuid()) @db.Uuid
-  documentId     String                 @map("document_id") @db.Uuid
+  id             String                      @id @default(uuid()) @db.Uuid
+  documentId     String                      @map("document_id") @db.Uuid
   /// Duplicado a propósito para filtrar por curso antes de buscar (RF-14).
-  moodleCourseId Int                    @map("moodle_course_id")
+  moodleCourseId Int                         @map("moodle_course_id")
   page           Int?
-  chunkIndex     Int                    @map("chunk_index")
+  chunkIndex     Int                         @map("chunk_index")
   content        String
-  /// La dimensión y el índice HNSW se fijan al elegir el modelo de embeddings (D-07).
-  embedding      Unsupported("vector")?
-  embeddingModel String?                @map("embedding_model")
-  createdAt      DateTime               @default(now()) @map("created_at")
+  /// vector(1024) con índice HNSW por coseno: es la dimensión de los embeddings de demostración (ADR-019).
+  embedding      Unsupported("vector(1024)")?
+  embeddingModel String?                     @map("embedding_model")
+  createdAt      DateTime                    @default(now()) @map("created_at")
 
   document SyllabusDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
+  @@unique([documentId, chunkIndex])
   @@index([moodleCourseId])
-  @@index([documentId, chunkIndex])
   @@map("document_chunks")
 }
 
@@ -306,18 +313,24 @@ model ActivityUnitMapping {
 }
 
 model AnalyticsSnapshot {
-  id                   String   @id @default(uuid()) @db.Uuid
-  integrationAccountId String   @map("integration_account_id") @db.Uuid
-  moodleCourseId       Int      @map("moodle_course_id")
+  id                   String    @id @default(uuid()) @db.Uuid
+  integrationAccountId String    @map("integration_account_id") @db.Uuid
+  moodleCourseId       Int       @map("moodle_course_id")
   /// Nulo para indicadores del curso completo.
-  moodleUserId         Int?     @map("moodle_user_id")
-  takenAt              DateTime @map("taken_at")
+  moodleUserId         Int?      @map("moodle_user_id")
+  /// Docente que abrió el panel: con grupos separados cada docente ve solo a los suyos, así que los valores
+  /// de un docente no se mezclan con los de otro (ADR-018).
+  takenBy              Int?      @map("taken_by")
+  /// Día (UTC) del snapshot: con `taken_by` y el curso, garantiza uno por día aunque dos peticiones lleguen juntas.
+  takenOn              DateTime? @map("taken_on") @db.Date
+  takenAt              DateTime  @map("taken_at")
   /// Valores calculados y versión de la fórmula.
   indicators           Json
-  createdAt            DateTime @default(now()) @map("created_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
 
   integrationAccount IntegrationAccount @relation(fields: [integrationAccountId], references: [id])
 
+  @@unique([integrationAccountId, moodleCourseId, takenBy, takenOn], map: "analytics_snapshots_day_key")
   @@index([moodleCourseId, moodleUserId, takenAt])
   @@map("analytics_snapshots")
 }

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "PROGRAMACION WEB",
+    "code": "UAF-FCI-SF-MP-UP-04-01",
+    "period": "ENERO 2027 - JUNIO 2027",
+    "teacher": "ESTEBAN MORA CISNEROS",
+    "generalObjective": "Construir aplicaciones web con buenas prácticas de desarrollo, seguridad y despliegue."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Maqueta páginas accesibles y adaptables"
+    },
+    {
+      "id": "RA2",
+      "description": "Programa interacciones en el cliente que consumen servicios web"
+    },
+    {
+      "id": "RA3",
+      "description": "Implementa una API REST con autenticación y persistencia"
+    },
+    {
+      "id": "RA4",
+      "description": "Automatiza las pruebas y el despliegue de una aplicación"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "ENERO 2027 - JUNIO 2027",
+      "weight": null,
+      "units": [
+        {
+          "title": "Fundamentos del desarrollo web",
+          "topics": ["HTML semántico", "CSS y diseño adaptable", "Accesibilidad"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "JavaScript en el navegador",
+          "topics": ["El DOM", "Eventos", "Consumo de servicios con fetch"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Servicios y persistencia",
+          "topics": ["API REST", "Autenticación", "Acceso a la base de datos"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Calidad y despliegue",
+          "topics": ["Pruebas automatizadas", "Integración continua", "Contenedores"],
+          "learningOutcomeIds": ["RA4"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 40
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 30
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 30
+    }
+  ],
+  "bibliography": [
+    "Paredes Ortiz, J. (2018). Manual de laboratorio. Editorial Andina Ficticia.",
+    "Salazar Beltrán, M. (2022). Buenas prácticas en la industria. Ediciones del Sur Ficticias.",
+    "Cevallos Mena, R. (2020). Introducción a los fundamentos. Editorial Andina Ficticia."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

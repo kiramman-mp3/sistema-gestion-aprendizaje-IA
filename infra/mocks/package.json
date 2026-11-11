@@ -1,0 +1,13 @@
+{
+  "name": "@smart-lms/mocks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API simulada de la parte de IA para desarrollar la interfaz sin el proveedor LLM",
+  "type": "module",
+  "scripts": {
+    "ai": "node ai-api.mjs"
+  },
+  "dependencies": {
+    "@smart-lms/contracts": "workspace:*"
+  }
+}

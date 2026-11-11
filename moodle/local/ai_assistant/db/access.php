@@ -63,9 +63,38 @@ $capabilities = [
         ],
     ],
 
+    // Administer the assistant for the institution: read the audit log and configure the difficulty rules. It is
+    // checked in the course of the token, so a role assigned at the system level (a manager) holds it everywhere.
+    'local/ai_assistant:administer' => [
+        'riskbitmask' => RISK_PERSONAL | RISK_CONFIG,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+
+    // Create sections and activities on behalf of a teacher who approved a proposal. Only for the backend
+    // integration user: it is the teacher's own capabilities that each call checks.
+    'local/ai_assistant:createcontent' => [
+        'riskbitmask' => RISK_XSS,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
+
     // Ask Moodle what another user may do with the assistant. Only for the backend integration user,
     // so no archetype receives it.
     'local/ai_assistant:checkaccess' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
+
+    // Read academic data of a course on behalf of a teacher (ids only, ADR-017). Only for the backend
+    // integration user: each call checks the teacher's own viewanalytics capability.
+    'local/ai_assistant:readdata' => [
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,

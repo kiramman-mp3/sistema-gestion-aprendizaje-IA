@@ -30,17 +30,18 @@ sequenceDiagram
 
 ## Piezas
 
-| Pieza               | Ubicación                                                          | Responsabilidad                                                        |
-| ------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| Emisor de tokens    | `moodle/local/ai_assistant/classes/local/token_issuer.php`         | Firma el JWT con el secreto de los ajustes del plugin                  |
-| `get_backend_token` | `moodle/local/ai_assistant/classes/external/get_backend_token.php` | Función AJAX con la sesión del usuario; exige `use` en el curso        |
-| `check_access`      | `moodle/local/ai_assistant/classes/external/check_access.php`      | Función REST solo para el usuario de integración (`checkaccess`)       |
-| `verifyPluginToken` | `apps/api/src/auth/plugin-token.ts`                                | Verificación HS256 con `node:crypto` y comparación en tiempo constante |
-| `PluginAuthGuard`   | `apps/api/src/auth/plugin-auth.guard.ts`                           | Guard global; `@Public()` lo omite                                     |
-| `RedisJtiStore`     | `apps/api/src/auth/jti-store.ts`                                   | `SET jti:<id> NX EX <ttl>`: cada token sirve una vez                   |
-| `AccessService`     | `apps/api/src/auth/access.service.ts`                              | Llama a `check_access` y guarda el resultado 120 s en Redis            |
-| `CourseAccessGuard` | `apps/api/src/auth/course-access.guard.ts`                         | Exige `use`, curso de la ruta igual al del token y capacidades extra   |
-| `AuditService`      | `apps/api/src/audit/audit.service.ts`                              | Registra `auth.denied` y `access.denied` en `audit_events`             |
+| Pieza                               | Ubicación                                                          | Responsabilidad                                                                                                                              |
+| ----------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Emisor de tokens                    | `moodle/local/ai_assistant/classes/local/token_issuer.php`         | Firma el JWT con el secreto de los ajustes del plugin                                                                                        |
+| `get_backend_token`                 | `moodle/local/ai_assistant/classes/external/get_backend_token.php` | Función AJAX con la sesión del usuario; exige `use` en el curso                                                                              |
+| `check_access`                      | `moodle/local/ai_assistant/classes/external/check_access.php`      | Función REST solo para el usuario de integración (`checkaccess`)                                                                             |
+| `verifyPluginToken`                 | `apps/api/src/auth/plugin-token.ts`                                | Verificación HS256 con `node:crypto` y comparación en tiempo constante                                                                       |
+| `PluginAuthGuard`                   | `apps/api/src/auth/plugin-auth.guard.ts`                           | Guard global; `@Public()` lo omite                                                                                                           |
+| `RedisJtiStore`                     | `apps/api/src/auth/jti-store.ts`                                   | `SET jti:<id> NX EX <ttl>`: cada token sirve una vez                                                                                         |
+| `AccessService`                     | `apps/api/src/auth/access.service.ts`                              | Llama a `check_access` y guarda el resultado 120 s en Redis                                                                                  |
+| `CourseAccessGuard`                 | `apps/api/src/auth/course-access.guard.ts`                         | Exige `use`, curso de la ruta igual al del token y capacidades extra                                                                         |
+| `AuditService`                      | `apps/api/src/audit/audit.service.ts`                              | Registra `auth.denied` y `access.denied` en `audit_events`                                                                                   |
+| `publish_section`, `publish_module` | `moodle/local/ai_assistant/classes/external/`                      | Crean contenido para un docente; exigen `createcontent` al usuario de integración y los permisos del docente ([publicación](publicacion.md)) |
 
 ## Decisiones de detalle
 
@@ -50,6 +51,7 @@ sequenceDiagram
 - **Caché de permisos de 120 s.** Un cambio de rol en Moodle tarda como máximo 2 minutos en aplicarse (RF-02 pide ≤ 5).
 - **Curso de la ruta.** Si una ruta tiene `:courseId`, debe ser el curso del token; se rechaza antes de consultar Moodle.
 - **Auditoría sin datos sensibles.** Se guardan acción, resultado, IDs de Moodle, código de error, método y ruta sin query string. Nunca el token.
+- **Escritura en nombre del docente.** El usuario de integración solo puede crear contenido si el docente indicado tiene `publish`, `course:manageactivities` (o `course:update`) y `mod/<tipo>:addinstance` en el curso; Moodle decide, no el backend. Detalle en [publicación](publicacion.md).
 - **CORS explícito.** Solo los orígenes de `CORS_ORIGINS` pueden llamar al backend desde el navegador; no se usan cookies.
 
 ## Códigos de error

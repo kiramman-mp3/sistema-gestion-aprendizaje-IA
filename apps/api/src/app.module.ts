@@ -2,6 +2,9 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { APP_FILTER } from "@nestjs/core";
 import { LoggerModule } from "nestjs-pino";
+import { AdminModule } from "./admin/admin.module";
+import { AnalyticsModule } from "./analytics/analytics.module";
+import { AssistantModule } from "./assistant/assistant.module";
 import { AuditModule } from "./audit/audit.module";
 import { AuthModule } from "./auth/auth.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
@@ -9,8 +12,16 @@ import { validateEnv, type Env } from "./config/env";
 import { buildLoggerParams } from "./config/logger";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
+import { IntegrationAccountModule } from "./integrations/integration-account.module";
 import { MoodleModule } from "./integrations/moodle/moodle.module";
+import { LlmModule } from "./llm/llm.module";
+import { MaintenanceModule } from "./maintenance/maintenance.module";
+import { MappingsModule } from "./mappings/mappings.module";
+import { RecommendationsModule } from "./recommendations/recommendations.module";
+import { ProposalsModule } from "./proposals/proposals.module";
 import { RedisModule } from "./redis/redis.module";
+import { StorageModule } from "./storage/storage.module";
+import { SyllabiModule } from "./syllabi/syllabi.module";
 
 @Module({
   imports: [
@@ -38,6 +49,17 @@ import { RedisModule } from "./redis/redis.module";
     AuditModule,
     AuthModule,
     MoodleModule,
+    IntegrationAccountModule,
+    StorageModule,
+    LlmModule,
+    SyllabiModule,
+    AssistantModule,
+    AnalyticsModule,
+    RecommendationsModule,
+    ProposalsModule,
+    MappingsModule,
+    MaintenanceModule,
+    AdminModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
 })

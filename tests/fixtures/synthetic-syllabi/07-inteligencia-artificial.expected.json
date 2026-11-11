@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "INTELIGENCIA ARTIFICIAL",
+    "code": "UAF-FCI-SF-MP-UP-07-01",
+    "period": "JULIO 2026 - DICIEMBRE 2026",
+    "teacher": "MARCELA QUISPE ANDRADE",
+    "generalObjective": "Aplicar técnicas de inteligencia artificial para resolver problemas de clasificación, búsqueda y decisión."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Implementa algoritmos de búsqueda sobre problemas de decisión"
+    },
+    {
+      "id": "RA2",
+      "description": "Entrena y evalúa modelos supervisados con datos reales"
+    },
+    {
+      "id": "RA3",
+      "description": "Construye una red neuronal sencilla y explica su entrenamiento"
+    },
+    {
+      "id": "RA4",
+      "description": "Reconoce los sesgos y límites de un sistema de IA"
+    },
+    {
+      "id": "RA5",
+      "description": "Resuelve un problema real aplicando un flujo completo de IA"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "JULIO 2026 - DICIEMBRE 2026",
+      "weight": null,
+      "units": [
+        {
+          "title": "Búsqueda y resolución de problemas",
+          "topics": ["Búsqueda no informada", "Búsqueda heurística", "Juegos"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Aprendizaje supervisado",
+          "topics": ["Regresión y clasificación", "Árboles de decisión", "Evaluación de modelos"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Redes neuronales",
+          "topics": ["Perceptrón", "Retropropagación", "Redes convolucionales"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Ética y límites de la IA",
+          "topics": ["Sesgos", "Transparencia", "Uso responsable"],
+          "learningOutcomeIds": ["RA4"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Proyecto integrador",
+          "topics": [
+            "Definición del problema",
+            "Preparación de datos",
+            "Presentación de resultados"
+          ],
+          "learningOutcomeIds": ["RA5"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 40
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 30
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 30
+    }
+  ],
+  "bibliography": [
+    "Valdivieso Ramos, E. (2021). Fundamentos prácticos de la asignatura. Editorial Andina Ficticia.",
+    "Montalvo Suárez, P. (2019). Guía de estudio aplicada. Ediciones del Sur Ficticias.",
+    "Reinoso Cabrera, L. (2023). Casos y ejercicios resueltos. Universidad Andina Ficticia."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

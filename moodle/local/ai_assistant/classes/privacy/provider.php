@@ -25,9 +25,10 @@ use core_privacy\local\request\userlist;
 /**
  * Privacy provider for local_ai_assistant.
  *
- * The plugin stores nothing in Moodle tables. It sends data to the Smart LMS backend, which is
- * declared here as an external location (see docs/security/analisis-privacidad.md). Export and
- * deletion of the data held by the backend are handled there.
+ * The plugin stores no personal data in Moodle tables: local_ai_assistant_items only maps the id of a
+ * proposal item to the section or activity created from it, with no user. It sends data to the Smart LMS
+ * backend, which is declared here as an external location (see docs/security/analisis-privacidad.md).
+ * Export and deletion of the data held by the backend are handled there.
  *
  * @package    local_ai_assistant
  * @copyright  2026 Smart LMS project

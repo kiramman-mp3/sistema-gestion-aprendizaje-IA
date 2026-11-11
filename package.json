@@ -16,7 +16,18 @@
     "test": "pnpm -r --if-present run test",
     "typecheck": "pnpm -r --if-present run typecheck",
     "build:amd": "rollup -c infra/amd/rollup.config.mjs",
-    "check:amd": "pnpm build:amd && git diff --exit-code -- moodle"
+    "check:amd": "pnpm build:amd && git diff --exit-code -- moodle",
+    "eval:extraction": "node infra/scripts/evaluate-extraction.mjs",
+    "eval:text": "node infra/scripts/evaluate-text-extraction.mjs",
+    "eval:text:docker": "bash infra/scripts/evaluate-text-extraction-docker.sh",
+    "synthetic:syllabi": "node infra/synthetic-syllabi/generate.mjs && node infra/synthetic-syllabi/make-scans.mjs",
+    "mock:ai": "pnpm --filter @smart-lms/mocks ai",
+    "loadtest": "node infra/loadtest/load.mjs",
+    "smoke:publicacion": "node infra/scripts/smoke-publicacion.mjs",
+    "smoke:asistente": "node infra/scripts/smoke-asistente.mjs",
+    "smoke:silabos": "node infra/scripts/smoke-silabos.mjs",
+    "smoke:ia": "node infra/scripts/smoke-ia-real.mjs",
+    "extract:synthetic": "node infra/scripts/extract-synthetic.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -69,7 +69,10 @@ final class check_access_test extends \core_external\tests\externallib_testcase 
         $this->assertTrue($result['courseexists']);
         $this->assertTrue($result['active']);
         $this->assertSame(['editingteacher'], $result['roles']);
-        $this->assertSame(['use' => true, 'publish' => true, 'viewanalytics' => true], $result['capabilities']);
+        $this->assertSame(
+            ['use' => true, 'publish' => true, 'viewanalytics' => true, 'admin' => false],
+            $result['capabilities']
+        );
     }
 
     public function test_non_editing_teacher_cannot_publish(): void {
@@ -77,7 +80,10 @@ final class check_access_test extends \core_external\tests\externallib_testcase 
 
         $result = $this->check($teacher->id, $this->course->id);
 
-        $this->assertSame(['use' => true, 'publish' => false, 'viewanalytics' => true], $result['capabilities']);
+        $this->assertSame(
+            ['use' => true, 'publish' => false, 'viewanalytics' => true, 'admin' => false],
+            $result['capabilities']
+        );
     }
 
     public function test_student_has_no_capabilities(): void {
@@ -86,7 +92,10 @@ final class check_access_test extends \core_external\tests\externallib_testcase 
         $result = $this->check($student->id, $this->course->id);
 
         $this->assertSame(['student'], $result['roles']);
-        $this->assertSame(['use' => false, 'publish' => false, 'viewanalytics' => false], $result['capabilities']);
+        $this->assertSame(
+            ['use' => false, 'publish' => false, 'viewanalytics' => false, 'admin' => false],
+            $result['capabilities']
+        );
     }
 
     public function test_teacher_of_another_course_has_no_capabilities(): void {
@@ -115,6 +124,42 @@ final class check_access_test extends \core_external\tests\externallib_testcase 
 
         $this->assertFalse($this->check($teacher->id, 999999)['courseexists']);
         $this->assertFalse($this->check($teacher->id, SITEID)['courseexists']);
+    }
+
+    public function test_manager_at_the_system_level_administers_in_every_course(): void {
+        $manager = $this->getDataGenerator()->create_user();
+        $managerrole = $this->get_manager_role_id();
+        role_assign($managerrole, $manager->id, \context_system::instance()->id);
+
+        $result = $this->check($manager->id, $this->course->id);
+
+        $this->assertTrue($result['capabilities']['admin']);
+        $this->assertTrue($result['capabilities']['use']);
+        $this->assertTrue($result['capabilities']['viewanalytics']);
+    }
+
+    public function test_only_the_manager_archetype_receives_administer(): void {
+        global $DB;
+
+        foreach (['editingteacher', 'teacher', 'student'] as $shortname) {
+            $roleid = $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
+            $capability = $DB->get_record('role_capabilities', [
+                'roleid' => $roleid,
+                'capability' => 'local/ai_assistant:administer',
+                'contextid' => \context_system::instance()->id,
+            ]);
+            $this->assertFalse($capability && (int) $capability->permission === CAP_ALLOW, $shortname);
+        }
+    }
+
+    /**
+     * Id of the manager role.
+     *
+     * @return int
+     */
+    private function get_manager_role_id(): int {
+        global $DB;
+        return (int) $DB->get_field('role', 'id', ['shortname' => 'manager'], MUST_EXIST);
     }
 
     public function test_caller_without_checkaccess_is_denied(): void {

@@ -19,8 +19,8 @@ const fakeAccess = {
     roles: userId === 42 ? ["editingteacher"] : ["student"],
     capabilities:
       userId === 42
-        ? { use: true, publish: true, viewanalytics: true }
-        : { use: false, publish: false, viewanalytics: false },
+        ? { use: true, publish: true, viewanalytics: true, admin: false }
+        : { use: false, publish: false, viewanalytics: false, admin: false },
   }),
 };
 
@@ -57,7 +57,7 @@ describe("Autenticación del plugin (e2e)", () => {
       moodleUserId: 42,
       courseId: 7,
       roles: ["editingteacher"],
-      capabilities: { use: true, publish: true, viewanalytics: true },
+      capabilities: { use: true, publish: true, viewanalytics: true, admin: false },
     });
   });
 

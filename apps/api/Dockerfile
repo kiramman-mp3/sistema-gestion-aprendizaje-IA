@@ -1,6 +1,6 @@
 # Imagen del backend. Se construye desde la raíz del monorepo:
 #   docker build -f apps/api/Dockerfile .
-FROM node:26.13.0-alpine AS base
+FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN npm install -g pnpm@12.18.0
 WORKDIR /repo
@@ -15,12 +15,20 @@ COPY packages/contracts packages/contracts
 RUN pnpm --filter @smart-lms/api... build \
   && pnpm --filter @smart-lms/api deploy --prod --legacy /out
 
-FROM node:26.13.0-alpine AS runtime
+# Aplica las migraciones de Prisma (docker-compose.prod.yml, servicio `migrate`). Necesita el CLI de Prisma,
+# que es una dependencia de desarrollo y por eso no está en la imagen final.
+FROM build AS migrate
+WORKDIR /repo/apps/api
+CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
+
+FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /out/node_modules ./node_modules
 COPY --from=build --chown=node:node /out/package.json ./package.json
 COPY --from=build --chown=node:node /repo/apps/api/dist ./dist
+# El volumen de archivos subidos hereda este dueño al crearse por primera vez.
+RUN mkdir -p /var/lib/smart-lms/storage && chown node:node /var/lib/smart-lms/storage
 USER node
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

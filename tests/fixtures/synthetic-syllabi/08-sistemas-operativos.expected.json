@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "SISTEMAS OPERATIVOS",
+    "code": "UAF-FCI-SF-MP-UP-08-01",
+    "period": "ENERO 2027 - JUNIO 2027",
+    "teacher": "RODRIGO VILLACÍS HEREDIA",
+    "generalObjective": null
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Explica cómo el sistema operativo gestiona procesos e hilos"
+    },
+    {
+      "id": "RA2",
+      "description": "Analiza el uso de memoria de un sistema"
+    },
+    {
+      "id": "RA3",
+      "description": "Administra archivos y permisos en un sistema operativo"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "ENERO 2027 - JUNIO 2027",
+      "weight": null,
+      "units": [
+        {
+          "title": "Procesos y hilos",
+          "topics": ["Estados de un proceso", "Planificación", "Hilos"],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Memoria",
+          "topics": ["Paginación", "Memoria virtual", "Reemplazo de páginas"],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        },
+        {
+          "title": "Archivos y almacenamiento",
+          "topics": ["Sistemas de archivos", "Permisos", "Entrada y salida"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": null,
+          "endDate": null,
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso",
+    "Método Expositivo"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 35
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 35
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 30
+    }
+  ],
+  "bibliography": [
+    "Montalvo Suárez, P. (2019). Guía de estudio aplicada. Ediciones del Sur Ficticias.",
+    "Reinoso Cabrera, L. (2023). Casos y ejercicios resueltos. Universidad Andina Ficticia.",
+    "Paredes Ortiz, J. (2018). Manual de laboratorio. Editorial Andina Ficticia.",
+    "Salazar Beltrán, M. (2022). Buenas prácticas en la industria. Ediciones del Sur Ficticias."
+  ],
+  "uncertainFields": [
+    {
+      "path": "course.generalObjective",
+      "reason": "missing",
+      "note": null
+    }
+  ],
+  "sourceReferences": []
+}

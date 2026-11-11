@@ -38,6 +38,26 @@ $functions = [
         'capabilities' => 'local/ai_assistant:use',
     ],
 
+    // Called from the browser (AJAX): the names of the students stay in Moodle (ADR-010).
+    'local_ai_assistant_get_course_students' => [
+        'classname' => \local_ai_assistant\external\get_course_students::class,
+        'description' => 'Lists the students of a course with their names, for the analytics screens.',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => 'local/ai_assistant:viewanalytics',
+    ],
+
+    // Called from the browser (AJAX): the activities the teacher can relate to syllabus units.
+    'local_ai_assistant_get_course_activities' => [
+        'classname' => \local_ai_assistant\external\get_course_activities::class,
+        'description' => 'Lists the activities of a course, to relate each one to a unit of the syllabus.',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => 'local/ai_assistant:use',
+    ],
+
     // Called by the backend with the integration token (ADR-007).
     'local_ai_assistant_check_access' => [
         'classname' => \local_ai_assistant\external\check_access::class,
@@ -45,6 +65,80 @@ $functions = [
         'type' => 'read',
         'ajax' => false,
         'capabilities' => 'local/ai_assistant:checkaccess',
+    ],
+
+    // Called by the backend to publish an approved proposal (RF-09, ADR-008).
+    'local_ai_assistant_publish_section' => [
+        'classname' => \local_ai_assistant\external\publish_section::class,
+        'description' => 'Creates the section of an approved proposal item, or returns the one already created for it.',
+        'type' => 'write',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:createcontent',
+    ],
+    'local_ai_assistant_publish_module' => [
+        'classname' => \local_ai_assistant\external\publish_module::class,
+        'description' => 'Creates the activity of an approved proposal item, or returns the one already created for it.',
+        'type' => 'write',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:createcontent',
+    ],
+
+    // Called by the backend to read academic data, ids only (ADR-017). Each one checks the teacher's permissions.
+    'local_ai_assistant_list_activities' => [
+        'classname' => \local_ai_assistant\external\read::class,
+        'methodname' => 'list_activities',
+        'description' => 'Lists the activities of a course with their due date and maximum grade.',
+        'type' => 'read',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:readdata',
+    ],
+    'local_ai_assistant_list_students' => [
+        'classname' => \local_ai_assistant\external\read::class,
+        'methodname' => 'list_students',
+        'description' => 'Lists the ids of the active students of a course.',
+        'type' => 'read',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:readdata',
+    ],
+    'local_ai_assistant_get_submissions' => [
+        'classname' => \local_ai_assistant\external\read::class,
+        'methodname' => 'get_submissions',
+        'description' => 'Reports the state of the submission of each student in an assignment.',
+        'type' => 'read',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:readdata',
+    ],
+    'local_ai_assistant_get_pending_grading' => [
+        'classname' => \local_ai_assistant\external\read::class,
+        'methodname' => 'get_pending_grading',
+        'description' => 'Lists the submissions that are waiting for a grade.',
+        'type' => 'read',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:readdata',
+    ],
+    'local_ai_assistant_get_grades' => [
+        'classname' => \local_ai_assistant\external\read::class,
+        'methodname' => 'get_grades',
+        'description' => 'Lists the visible grades of the activities of a course.',
+        'type' => 'read',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:readdata',
+    ],
+    'local_ai_assistant_get_completion' => [
+        'classname' => \local_ai_assistant\external\read::class,
+        'methodname' => 'get_completion',
+        'description' => 'Lists which activities each student completed.',
+        'type' => 'read',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:readdata',
+    ],
+    'local_ai_assistant_get_last_access' => [
+        'classname' => \local_ai_assistant\external\read::class,
+        'methodname' => 'get_last_access',
+        'description' => 'Reports the last access of each student to the course.',
+        'type' => 'read',
+        'ajax' => false,
+        'capabilities' => 'local/ai_assistant:readdata',
     ],
 ];
 
@@ -54,6 +148,15 @@ $services = [
         'functions' => [
             'core_webservice_get_site_info',
             'local_ai_assistant_check_access',
+            'local_ai_assistant_publish_section',
+            'local_ai_assistant_publish_module',
+            'local_ai_assistant_list_activities',
+            'local_ai_assistant_list_students',
+            'local_ai_assistant_get_submissions',
+            'local_ai_assistant_get_pending_grading',
+            'local_ai_assistant_get_grades',
+            'local_ai_assistant_get_completion',
+            'local_ai_assistant_get_last_access',
         ],
         'restrictedusers' => 1,
         'enabled' => 1,

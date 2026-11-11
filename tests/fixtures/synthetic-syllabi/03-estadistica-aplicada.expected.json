@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "name": "ESTADISTICA APLICADA",
+    "code": "UAF-FCI-SF-MP-UP-03-01",
+    "period": "JULIO 2026 - DICIEMBRE 2026",
+    "teacher": "PATRICIA NARVÁEZ LOOR",
+    "generalObjective": "Aplicar técnicas de estadística descriptiva e inferencial al análisis de datos de problemas reales."
+  },
+  "learningOutcomes": [
+    {
+      "id": "RA1",
+      "description": "Resume y presenta un conjunto de datos con medidas y gráficos"
+    },
+    {
+      "id": "RA2",
+      "description": "Calcula probabilidades de eventos con las distribuciones más usadas"
+    },
+    {
+      "id": "RA3",
+      "description": "Contrasta hipótesis y valida conclusiones con datos"
+    },
+    {
+      "id": "RA4",
+      "description": "Ajusta modelos de regresión e interpreta sus resultados"
+    }
+  ],
+  "gradingPeriods": [
+    {
+      "name": "JULIO 2026 - DICIEMBRE 2026",
+      "weight": null,
+      "units": [
+        {
+          "title": "Estadística descriptiva",
+          "topics": [
+            "Tablas de frecuencia",
+            "Medidas de tendencia central",
+            "Medidas de dispersión"
+          ],
+          "learningOutcomeIds": ["RA1"],
+          "startDate": "2026-08-03",
+          "endDate": "2026-08-27",
+          "activities": []
+        },
+        {
+          "title": "Probabilidad",
+          "topics": [
+            "Eventos y espacio muestral",
+            "Probabilidad condicional",
+            "Distribuciones discretas y continuas"
+          ],
+          "learningOutcomeIds": ["RA2"],
+          "startDate": "2026-08-31",
+          "endDate": "2026-09-24",
+          "activities": []
+        },
+        {
+          "title": "Inferencia estadística",
+          "topics": ["Intervalos de confianza", "Pruebas de hipótesis", "Prueba t y ji cuadrado"],
+          "learningOutcomeIds": ["RA3"],
+          "startDate": "2026-09-28",
+          "endDate": "2026-10-22",
+          "activities": []
+        },
+        {
+          "title": "Regresión",
+          "topics": ["Regresión lineal simple", "Correlación", "Regresión múltiple"],
+          "learningOutcomeIds": ["RA4"],
+          "startDate": "2026-10-26",
+          "endDate": "2026-11-19",
+          "activities": []
+        }
+      ]
+    }
+  ],
+  "methodologies": [
+    "Aprendizaje Basado en Problemas",
+    "Aprendizaje Basado en Proyectos",
+    "Método de Caso",
+    "Método Expositivo",
+    "Aprendizaje Colaborativo"
+  ],
+  "resources": [],
+  "assessmentInstruments": [
+    {
+      "name": "APRENDIZAJE EN CONTACTO CON EL DOCENTE",
+      "weight": 30
+    },
+    {
+      "name": "APRENDIZAJE PRÁCTICO EXPERIMENTAL",
+      "weight": 30
+    },
+    {
+      "name": "APRENDIZAJE AUTÓNOMO",
+      "weight": 40
+    }
+  ],
+  "bibliography": [
+    "Reinoso Cabrera, L. (2023). Casos y ejercicios resueltos. Universidad Andina Ficticia.",
+    "Paredes Ortiz, J. (2018). Manual de laboratorio. Editorial Andina Ficticia.",
+    "Salazar Beltrán, M. (2022). Buenas prácticas en la industria. Ediciones del Sur Ficticias.",
+    "Cevallos Mena, R. (2020). Introducción a los fundamentos. Editorial Andina Ficticia.",
+    "Valdivieso Ramos, E. (2021). Fundamentos prácticos de la asignatura. Editorial Andina Ficticia."
+  ],
+  "uncertainFields": [],
+  "sourceReferences": []
+}

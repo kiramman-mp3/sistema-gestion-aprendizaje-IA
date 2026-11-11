@@ -1,6 +1,6 @@
 # ADR-008: Creación de actividades mediante funciones externas del plugin
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada (implementada en el Sprint 7; detalle en [ADR-015](0015-publicacion-idempotente-identidad-docente.md))
 - **Fecha:** 2026-11-09
 - **Sprint:** S0 (implementación en S7)
 

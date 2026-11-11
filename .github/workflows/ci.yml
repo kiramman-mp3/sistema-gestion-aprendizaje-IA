@@ -5,6 +5,7 @@ on:
     branches: [main, develop, "feature/**", "fix/**", "refactor/**", "chore/**", "docs/**", "ci/**"]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,6 +30,10 @@ jobs:
 
       - name: Instalar dependencias
         run: pnpm install --frozen-lockfile
+
+      # Falla si una dependencia de producción tiene una vulnerabilidad alta o crítica conocida.
+      - name: Auditoría de dependencias de producción
+        run: pnpm audit --prod --audit-level high
 
       - name: Linter
         run: pnpm lint
@@ -59,3 +64,62 @@ jobs:
 
       - name: phpcs con moodle-cs
         run: bash infra/scripts/phpcs.sh
+
+  phpunit:
+    name: Pruebas PHPUnit del plugin (Moodle 5.1)
+    runs-on: ubuntu-latest
+    # Se ejecuta con moodle-plugin-ci, que instala Moodle 5.1 y PostgreSQL (H-7). Es bloqueante desde que pasó en verde.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      MOODLE_BRANCH: MOODLE_501_STABLE
+      DB: pgsql
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: plugin-source
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pgsql, zip, gd, intl, xml, mbstring, soap, sodium
+          ini-values: max_input_vars=5000
+          coverage: none
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Instalar la configuración regional que pide PHPUnit de Moodle
+        run: |
+          sudo locale-gen en_AU.UTF-8
+          sudo update-locale
+
+      - name: Instalar moodle-plugin-ci
+        run: |
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
+          echo "$(cd ci/bin; pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ci/vendor/bin; pwd)" >> "$GITHUB_PATH"
+
+      - name: Instalar Moodle con el plugin
+        run: moodle-plugin-ci install --plugin ./plugin-source/moodle/local/ai_assistant --db-host=127.0.0.1 --db-user=postgres --db-pass=postgres
+
+      - name: PHPUnit
+        run: |
+          set +e
+          moodle-plugin-ci phpunit --fail-on-warning 2>&1 | tee phpunit.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # Deja el final del registro como anotacion para verlo sin abrir el registro completo.
+            msg=$(tail -n 70 phpunit.log | awk 'BEGIN { ORS = "%0A" } { gsub(/%/, "%25"); gsub(/[[:cntrl:]]/, ""); print }')
+            echo "::error title=Resultado de PHPUnit::${msg}"
+          fi
+          exit "$code"

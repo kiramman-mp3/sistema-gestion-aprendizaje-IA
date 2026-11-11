@@ -23,11 +23,13 @@
 
 import Ajax from "core/ajax";
 import { getString } from "core/str";
+import { readEvents } from "local_ai_assistant/sse";
 
 const CAPABILITY_STRINGS = {
   use: "capuse",
   publish: "cappublish",
   viewanalytics: "capviewanalytics",
+  admin: "capadmin",
 };
 
 /**
@@ -40,24 +42,90 @@ const getBackendToken = (courseId) =>
   Ajax.call([{ methodname: "local_ai_assistant_get_backend_token", args: { courseid: courseId } }])[0];
 
 /**
+ * Lists the students of the course with their names. Moodle answers it with the teacher's session: the
+ * names never go through the backend.
+ *
+ * @param {number} courseId
+ * @returns {Promise<Array<{id: number, fullname: string}>>}
+ */
+export const getCourseStudents = (courseId) =>
+  Ajax.call([{ methodname: "local_ai_assistant_get_course_students", args: { courseid: courseId } }])[0];
+
+/**
+ * Lists the activities of the course. Moodle answers it with the teacher's session.
+ *
+ * @param {number} courseId
+ * @returns {Promise<Array<{cmid: number, name: string, modname: string, sectionnum: number, sectionname: string, visible: boolean}>>}
+ */
+export const getCourseActivities = (courseId) =>
+  Ajax.call([{ methodname: "local_ai_assistant_get_course_activities", args: { courseid: courseId } }])[0];
+
+/**
  * Calls the backend with a fresh token. Each token is accepted only once.
  *
  * @param {number} courseId
  * @param {string} path Path under the API prefix, for example "/session".
+ * @param {{method?: string, body?: FormData, json?: object, headers?: Object<string, string>}} [options]
+ *     A FormData body is sent as multipart; `json` is sent as a JSON body; `headers` adds headers, for
+ *     example `Idempotency-Key`.
  * @returns {Promise<object>}
  */
-export const callBackend = async (courseId, path) => {
+export const callBackend = async (courseId, path, options = {}) => {
   const { token, backendurl } = await getBackendToken(courseId);
+  const headers = { ...options.headers, Authorization: `Bearer ${token}`, Accept: "application/json" };
+  if (options.json !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
   const response = await fetch(`${backendurl.replace(/\/+$/, "")}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    method: options.method || "GET",
+    body: options.json !== undefined ? JSON.stringify(options.json) : options.body,
+    headers,
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(body.message || `HTTP ${response.status}`);
     error.code = body.code;
+    error.status = response.status;
+    error.details = body.details;
+    error.retryAfter = Number(response.headers.get("Retry-After")) || null;
     throw error;
   }
   return body;
+};
+
+/**
+ * POSTs to the backend and reads the answer as a stream of events (Server-Sent Events).
+ *
+ * If the backend answers with plain JSON instead of a stream, that body is delivered as a single `final`
+ * event, so the caller handles both the same way.
+ *
+ * @param {number} courseId
+ * @param {string} path Path under the API prefix.
+ * @param {{json: object, onEvent: function({event: string, data: string}): void, signal?: AbortSignal}} options
+ * @returns {Promise<void>} Resolves when the stream ends; rejects with `code` and `status` on an HTTP error.
+ */
+export const streamBackend = async (courseId, path, { json, onEvent, signal }) => {
+  const { token, backendurl } = await getBackendToken(courseId);
+  const response = await fetch(`${backendurl.replace(/\/+$/, "")}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream", "Content-Type": "application/json" },
+    body: JSON.stringify(json),
+    signal,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const error = new Error(body.message || `HTTP ${response.status}`);
+    error.code = body.code;
+    error.status = response.status;
+    error.details = body.details;
+    error.retryAfter = Number(response.headers.get("Retry-After")) || null;
+    throw error;
+  }
+  if (!(response.headers.get("content-type") ?? "").includes("text/event-stream")) {
+    onEvent({ event: "final", data: JSON.stringify(await response.json()) });
+    return;
+  }
+  await readEvents(response, onEvent);
 };
 
 /**
@@ -77,6 +145,7 @@ const renderConnected = async (status, session) => {
       const label = await getString(stringId, "local_ai_assistant");
       const li = document.createElement("li");
       li.textContent = `${label}: ${session.capabilities[key] ? yes : no}`;
+      li.dataset.enabled = String(Boolean(session.capabilities[key]));
       return li;
     }),
   );

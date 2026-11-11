@@ -1,0 +1,104 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 575 >>
+stream
+BT /F1 16 Tf 72 720 Td (UNIVERSIDAD ANDINA FICTICIA) Tj ET
+BT /F1 10 Tf 72 696 Td (FACULTAD DE: CIENCIAS DE LA INGENIERIA \(INSTITUCION FICTICIA PARA PRUEBAS\)) Tj ET
+BT /F1 10 Tf 72 682 Td (CARRERA DE: Software MODALIDAD PRESENCIAL) Tj ET
+BT /F1 16 Tf 72 668 Td (PROGRAMA ANALITICO SISTEMAS OPERATIVOS) Tj ET
+BT /F1 10 Tf 72 644 Td (NIVEL TERCERO ENERO 2027 - JUNIO 2027) Tj ET
+BT /F1 10 Tf 72 630 Td (RODRIGO VILLACÍS HEREDIA) Tj ET
+BT /F1 10 Tf 72 616 Td (Documento sintetico generado para pruebas. No describe un curso real.) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 1/3) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 3058 >>
+stream
+BT /F1 14 Tf 72 720 Td (I. INFORMACIÓN GENERAL) Tj ET
+BT /F1 10 Tf 72 698 Td (Nombre de la asignatura: SISTEMAS OPERATIVOS) Tj ET
+BT /F1 10 Tf 72 684 Td (Código: UAF-FCI-SF-MP-UP-08-01) Tj ET
+BT /F1 10 Tf 72 670 Td (Nivel: TERCERO Créditos/Horas: 4) Tj ET
+BT /F1 10 Tf 72 656 Td (Total de horas de aprendizaje en el ciclo: 144) Tj ET
+BT /F1 14 Tf 72 642 Td (II. OBJETIVOS) Tj ET
+BT /F1 12 Tf 72 620 Td (Objetivos específicos de la asignatura) Tj ET
+BT /F1 10 Tf 72 601 Td (1.- Explica cómo el sistema operativo gestiona procesos e hilos) Tj ET
+BT /F1 10 Tf 72 587 Td (2.- Analiza el uso de memoria de un sistema) Tj ET
+BT /F1 10 Tf 72 573 Td (3.- Administra archivos y permisos en un sistema operativo) Tj ET
+BT /F1 14 Tf 72 559 Td (III. CONTENIDO) Tj ET
+BT /F1 12 Tf 72 537 Td (U.1 Procesos y hilos \(48 horas\)) Tj ET
+BT /F1 10 Tf 72 518 Td (Contenidos mínimos: Estados de un proceso; Planificación; Hilos.) Tj ET
+BT /F1 10 Tf 72 504 Td (Resultado de aprendizaje: Explica cómo el sistema operativo gestiona procesos e hilos.) Tj ET
+BT /F1 12 Tf 72 490 Td (U.2 Memoria \(48 horas\)) Tj ET
+BT /F1 10 Tf 72 471 Td (Contenidos mínimos: Paginación; Memoria virtual; Reemplazo de páginas.) Tj ET
+BT /F1 10 Tf 72 457 Td (Resultado de aprendizaje: Analiza el uso de memoria de un sistema.) Tj ET
+BT /F1 12 Tf 72 443 Td (U.3 Archivos y almacenamiento \(48 horas\)) Tj ET
+BT /F1 10 Tf 72 424 Td (Contenidos mínimos: Sistemas de archivos; Permisos; Entrada y salida.) Tj ET
+BT /F1 10 Tf 72 410 Td (Resultado de aprendizaje: Administra archivos y permisos en un sistema operativo.) Tj ET
+BT /F1 10 Tf 72 396 Td (Total de horas: 144) Tj ET
+BT /F1 14 Tf 72 382 Td (IV. METODOLOGÍA) Tj ET
+BT /F1 10 Tf 72 360 Td (Se aplicarán los métodos, técnicas y estrategias siguientes, con evaluación continua y) Tj ET
+BT /F1 10 Tf 72 346 Td (formativa:) Tj ET
+BT /F1 10 Tf 72 332 Td (- Aprendizaje Basado en Problemas) Tj ET
+BT /F1 10 Tf 72 318 Td (- Aprendizaje Basado en Proyectos) Tj ET
+BT /F1 10 Tf 72 304 Td (- Método de Caso) Tj ET
+BT /F1 10 Tf 72 290 Td (- Método Expositivo) Tj ET
+BT /F1 14 Tf 72 276 Td (V. PROCEDIMIENTOS DE EVALUACIÓN) Tj ET
+BT /F1 10 Tf 72 254 Td (APRENDIZAJE EN CONTACTO CON EL DOCENTE: 35%) Tj ET
+BT /F1 10 Tf 72 240 Td (APRENDIZAJE PRÁCTICO EXPERIMENTAL: 35%) Tj ET
+BT /F1 10 Tf 72 226 Td (APRENDIZAJE AUTÓNOMO: 30%) Tj ET
+BT /F1 14 Tf 72 212 Td (VI. BIBLIOGRAFÍA) Tj ET
+BT /F1 12 Tf 72 190 Td (BIBLIOGRAFÍA BÁSICA) Tj ET
+BT /F1 10 Tf 72 171 Td (Montalvo Suárez, P. 2019 Guía de estudio aplicada Ediciones del Sur Ficticias Físico) Tj ET
+BT /F1 10 Tf 72 157 Td (Reinoso Cabrera, L. 2023 Casos y ejercicios resueltos Universidad Andina Ficticia) Tj ET
+BT /F1 10 Tf 72 143 Td (Virtual) Tj ET
+BT /F1 12 Tf 72 129 Td (BIBLIOGRAFÍA COMPLEMENTARIA) Tj ET
+BT /F1 10 Tf 72 110 Td (Paredes Ortiz, J. 2018 Manual de laboratorio Editorial Andina Ficticia Físico) Tj ET
+BT /F1 10 Tf 72 96 Td (Salazar Beltrán, M. 2022 Buenas prácticas en la industria Ediciones del Sur Ficticias) Tj ET
+BT /F1 10 Tf 72 82 Td (Virtual) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 2/3) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 182 >>
+stream
+BT /F1 14 Tf 72 720 Td (VII. VALIDACIÓN DEL PROGRAMA ANALÍTICO) Tj ET
+BT /F1 10 Tf 72 698 Td (Fecha de elaboración: 31 de julio de 2026) Tj ET
+BT /F1 8 Tf 72 40 Td (Pagina 3/3) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000850 00000 n 
+0000000976 00000 n 
+0000004086 00000 n 
+0000004212 00000 n 
+0000004445 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+4571
+%%EOF

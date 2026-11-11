@@ -1,0 +1,348 @@
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Pure logic of the chat: the conversation state, how each streamed event changes it, and links to sources.
+ *
+ * The events and their data are the contract of `POST /assistant/chat` (docs/api/openapi.yaml):
+ *
+ * - `token`: `{"text": "..."}`, a piece of the answer.
+ * - `tool`: `{"name": "get_assignment_submissions"}`, the assistant is consulting data.
+ * - `final`: the complete `ChatResponse`. Its `answer` replaces what was streamed, its `criteria` are the rules applied
+ *   to the data (shown as "criterio aplicado"), and its `data.students` lists
+ *   the pseudonyms (`Estudiante#NNNNNNNN`) that appear in the answer with the Moodle id of each student; the
+ *   page swaps them for the names Moodle gives to the teacher's session (ADR-010).
+ * - `error`: `{"code": "...", "message": "..."}`. No answer is invented.
+ *
+ * No function changes its input.
+ *
+ * @module     local_ai_assistant/chat_model
+ * @copyright  2026 Smart LMS project
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/** Pseudonym the backend uses for a student in an answer. */
+const ALIAS_PATTERN = /Estudiante#\d{8}/g;
+const ALIAS_EXACT = /^Estudiante#\d{8}$/;
+
+/** Same limit as the API (`message.maxLength`). */
+export const MAX_MESSAGE_LENGTH = 2000;
+
+/**
+ * An empty conversation.
+ *
+ * @returns {{conversationId: string|null, messages: object[]}}
+ */
+export const emptyConversation = () => ({ conversationId: null, messages: [] });
+
+/**
+ * Cleans what the teacher typed.
+ *
+ * @param {string} text
+ * @returns {string} The trimmed text, or "" if it cannot be sent.
+ */
+export const cleanMessage = (text) => text.trim();
+
+/**
+ * Whether a message can be sent.
+ *
+ * @param {string} text
+ * @returns {boolean}
+ */
+export const canSend = (text) => {
+  const clean = cleanMessage(text);
+  return clean.length > 0 && clean.length <= MAX_MESSAGE_LENGTH;
+};
+
+/**
+ * Body for `POST /assistant/chat`.
+ *
+ * @param {{conversationId: string|null}} conversation
+ * @param {number} courseId
+ * @param {string} text
+ * @returns {{courseId: number, conversationId: string|null, message: string}}
+ */
+export const toChatRequest = (conversation, courseId, text) => ({
+  courseId,
+  conversationId: conversation.conversationId,
+  message: cleanMessage(text),
+});
+
+/**
+ * Adds the teacher's message and an empty assistant message that the stream will fill.
+ *
+ * @param {object} conversation
+ * @param {string} text
+ * @returns {object}
+ */
+export const startTurn = (conversation, text) => ({
+  ...conversation,
+  messages: [
+    ...conversation.messages,
+    { role: "user", text: cleanMessage(text), status: "done" },
+    { role: "assistant", text: "", status: "streaming", tools: [], sources: [], criteria: [], students: [], incompleteData: false, generatedAt: null, errorCode: null },
+  ],
+});
+
+/**
+ * Parses the data of an event; a malformed one is ignored instead of breaking the conversation.
+ *
+ * @param {string} data
+ * @returns {object|null}
+ */
+const parseData = (data) => {
+  try {
+    const value = JSON.parse(data);
+    return value && typeof value === "object" ? value : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * The pseudonyms of a `final` event that can be trusted: an alias in the expected format and a Moodle id.
+ *
+ * @param {{students?: unknown}|null|undefined} data The `data` of the response.
+ * @returns {Array<{alias: string, studentId: number}>}
+ */
+export const parseStudents = (data) =>
+  Array.isArray(data?.students)
+    ? data.students.filter((student) => student && ALIAS_EXACT.test(student.alias) && Number.isInteger(student.studentId) && student.studentId > 0)
+    : [];
+
+/**
+ * The text of a message as the teacher sees it: each pseudonym replaced by the student's name. A student that
+ * Moodle does not list (or names that could not be loaded) shows as `fallback(id)`, never as the alias.
+ *
+ * @param {{text: string, students?: Array<{alias: string, studentId: number}>}} message
+ * @param {Map<number, string>|null} names Names by Moodle id, or null while they are not known.
+ * @param {function(number): string} fallback Text for an unknown student, such as `Student 12`.
+ * @returns {string}
+ */
+export const displayText = (message, names, fallback) => {
+  if (!message.students?.length) {
+    return message.text;
+  }
+  const idByAlias = new Map(message.students.map((student) => [student.alias, student.studentId]));
+  return message.text.replace(ALIAS_PATTERN, (alias) => {
+    const id = idByAlias.get(alias);
+    return id === undefined ? alias : (names?.get(id) ?? fallback(id));
+  });
+};
+
+const withLast = (conversation, change) => {
+  const messages = [...conversation.messages];
+  const last = messages.length - 1;
+  messages[last] = { ...messages[last], ...change(messages[last]) };
+  return { ...conversation, messages };
+};
+
+/**
+ * Applies one streamed event to the last (assistant) message.
+ *
+ * @param {object} conversation
+ * @param {{event: string, data: string}} event
+ * @returns {object}
+ */
+export const applyEvent = (conversation, event) => {
+  const data = parseData(event.data);
+  if (!data) {
+    return conversation;
+  }
+  switch (event.event) {
+    case "token":
+      return typeof data.text === "string" ? withLast(conversation, (message) => ({ text: message.text + data.text })) : conversation;
+    case "tool":
+      return typeof data.name === "string"
+        ? withLast(conversation, (message) => ({ tools: message.tools.includes(data.name) ? message.tools : [...message.tools, data.name] }))
+        : conversation;
+    case "final":
+      return {
+        ...withLast(conversation, () => ({
+          text: String(data.answer ?? ""),
+          status: "done",
+          sources: Array.isArray(data.sources) ? data.sources : [],
+          criteria: Array.isArray(data.criteria) ? data.criteria.filter((rule) => typeof rule === "string" && rule.trim() !== "") : [],
+          students: parseStudents(data.data),
+          incompleteData: data.incompleteData === true,
+          generatedAt: data.generatedAt ?? null,
+        })),
+        conversationId: data.conversationId ?? conversation.conversationId,
+      };
+    case "error":
+      return withLast(conversation, () => ({ status: "error", errorCode: String(data.code ?? "ERROR") }));
+    default:
+      return conversation;
+  }
+};
+
+/**
+ * Marks the answer as failed, for example when the connection drops. A partial answer is kept but not
+ * trusted: the interface shows the error next to it.
+ *
+ * @param {object} conversation
+ * @param {string} errorCode
+ * @param {{retryAfter?: number|null, details?: string[]}} [extra] Seconds to wait and the invalid fields.
+ * @returns {object}
+ */
+export const failTurn = (conversation, errorCode, extra = {}) =>
+  withLast(conversation, () => ({ status: "error", errorCode, retryAfter: extra.retryAfter ?? null, details: extra.details ?? [] }));
+
+/**
+ * The conversation without its id, so the next message starts a new one. Used when the backend no longer has it.
+ *
+ * @param {object} conversation
+ * @returns {object}
+ */
+export const forgetConversation = (conversation) => ({ ...conversation, conversationId: null });
+
+/**
+ * Closes a stream that ended without a `final` event: what arrived is not a complete answer.
+ *
+ * @param {object} conversation
+ * @returns {object}
+ */
+export const closeTurn = (conversation) => {
+  const last = conversation.messages.at(-1);
+  return last?.role === "assistant" && last.status === "streaming" ? failTurn(conversation, "STREAM_INTERRUPTED") : conversation;
+};
+
+/**
+ * The name of the message to show for an error code.
+ *
+ * @param {string|undefined} code Code from the API or from the stream.
+ * @param {number} [status] HTTP status, when the error came before the stream started.
+ * @returns {string} One of `ratelimited`, `unavailable`, `forbidden`, `notfound`, `validation`, `interrupted`, `other`.
+ */
+export const errorKind = (code, status) => {
+  if (status === 429 || code === "RATE_LIMITED") {
+    return "ratelimited";
+  }
+  if (status === 503 || code === "SERVICE_UNAVAILABLE" || code === "AI_PROVIDER_UNAVAILABLE") {
+    return "unavailable";
+  }
+  if (status === 403 || (code && code.startsWith("FORBIDDEN"))) {
+    return "forbidden";
+  }
+  if (status === 404 || code === "CONVERSATION_NOT_FOUND") {
+    return "notfound";
+  }
+  if (status === 400 || code === "VALIDATION_ERROR") {
+    return "validation";
+  }
+  if (code === "STREAM_INTERRUPTED") {
+    return "interrupted";
+  }
+  return "other";
+};
+
+/**
+ * The code that describes a failed request: the one from the API, or one derived from the HTTP status or the
+ * kind of failure.
+ *
+ * @param {{name?: string, code?: string, status?: number}} error
+ * @returns {string}
+ */
+export const codeFromError = (error) => {
+  if (error.name === "AbortError") {
+    return "STREAM_INTERRUPTED";
+  }
+  const byStatus = { 429: "RATE_LIMITED", 503: "SERVICE_UNAVAILABLE", 403: "FORBIDDEN", 404: "CONVERSATION_NOT_FOUND", 400: "VALIDATION_ERROR" };
+  return byStatus[error.status] ?? error.code ?? "CONNECTION";
+};
+
+/** Most invalid fields listed to the teacher. */
+const MAX_DETAILS = 5;
+
+/**
+ * The wait after a 429 in the largest unit that reads well: seconds up to two minutes, minutes up to two hours and
+ * hours after that (the daily limit can ask for many hours, and "64541 seconds" tells the teacher nothing).
+ *
+ * @param {number} seconds Seconds from the `Retry-After` header.
+ * @returns {{unit: "seconds"|"minutes"|"hours", value: number}}
+ */
+export const waitInUnits = (seconds) => {
+  if (seconds <= 120) {
+    return { unit: "seconds", value: seconds };
+  }
+  if (seconds <= 7200) {
+    return { unit: "minutes", value: Math.ceil(seconds / 60) };
+  }
+  return { unit: "hours", value: Math.ceil(seconds / 3600) };
+};
+
+/**
+ * What the interface needs besides the code: how long to wait after a 429 and which fields a 400 rejected.
+ *
+ * @param {{retryAfter?: number, details?: Array<{path?: string, message?: string}>}} error
+ * @returns {{retryAfter: number|null, details: string[]}}
+ */
+export const errorExtras = (error) => ({
+  retryAfter: Number.isFinite(error.retryAfter) && error.retryAfter > 0 ? Math.ceil(error.retryAfter) : null,
+  details: (Array.isArray(error.details) ? error.details : [])
+    .filter((detail) => detail && typeof detail.message === "string")
+    .slice(0, MAX_DETAILS)
+    .map((detail) => (detail.path ? `${detail.path}: ${detail.message}` : detail.message)),
+});
+
+/**
+ * Link for a source of an answer, or null if there is nothing to open.
+ *
+ * @param {{type: string, id: number|string, url?: string|null}} source
+ * @param {string} wwwroot Moodle base URL.
+ * @param {number} courseId
+ * @returns {string|null}
+ */
+export const sourceUrl = (source, wwwroot, courseId) => {
+  const base = wwwroot.replace(/\/+$/, "");
+  if (source.type === "moodle_activity") {
+    return `${base}/mod/view.php?id=${encodeURIComponent(String(source.id))}`;
+  }
+  if (source.type === "moodle_gradebook") {
+    return `${base}/grade/report/grader/index.php?id=${courseId}`;
+  }
+  // A document is not served by Moodle: the backend decides whether it has a link.
+  return source.url ?? null;
+};
+
+/**
+ * Turns an internal tool name into text for the "consulting" line.
+ *
+ * @param {string} name For example `get_assignment_submissions`.
+ * @returns {string} `get assignment submissions`
+ */
+export const toolLabel = (name) => name.replace(/_/g, " ");
+
+/**
+ * Rebuilds a conversation from `GET /assistant/conversations/:id`.
+ *
+ * @param {{id: string, messages: Array<{role: string, content: string}>}} history
+ * @returns {object}
+ */
+export const fromHistory = (history) => ({
+  conversationId: history.id,
+  messages: history.messages.map((message) => ({
+    role: message.role === "user" ? "user" : "assistant",
+    text: message.content,
+    status: "done",
+    tools: [],
+    sources: [],
+    criteria: [],
+    students: [],
+    incompleteData: false,
+    generatedAt: message.createdAt ?? null,
+    errorCode: null,
+  })),
+});
