@@ -18,9 +18,11 @@
     @template local_ai_assistant/assistant
 
     Shell of the assistant page. The AMD module local_ai_assistant/assistant fills the status area
-    after checking the connection with the backend. The module local_ai_assistant/extraction_editor
-    draws the syllabus extraction editor inside the extraction-editor region, and
-    local_ai_assistant/proposal_preview draws the course proposal inside the proposal-preview region.
+    after checking the connection with the backend. The page is split into tabs, one panel per task;
+    local_ai_assistant/navigation shows one panel at a time and hides the tab of a panel that has nothing
+    to show. The module local_ai_assistant/extraction_editor draws the syllabus extraction editor inside
+    the extraction-editor region, and local_ai_assistant/proposal_preview draws the course proposal inside
+    the proposal-preview region.
 
     Context variables required for this template:
     * courseid - Course id.
@@ -33,14 +35,15 @@
     }
 }}
 <div class="local_ai_assistant" data-region="local_ai_assistant" data-courseid="{{courseid}}">
-    <h2 class="h4 mb-3">{{#str}} assistant, local_ai_assistant {{/str}}</h2>
+    <header class="lai-header">
+        <h2 class="lai-header__title">{{#str}} assistant, local_ai_assistant {{/str}}</h2>
+        <div class="alert alert-info" role="note">
+            <i class="icon fa fa-info-circle fa-fw" aria-hidden="true"></i>
+            <span>{{#str}} ainotice, local_ai_assistant {{/str}}</span>
+        </div>
+    </header>
 
-    <div class="alert alert-info" role="note">
-        <i class="icon fa fa-info-circle fa-fw" aria-hidden="true"></i>
-        <span>{{#str}} ainotice, local_ai_assistant {{/str}}</span>
-    </div>
-
-    <section class="card mb-3" aria-labelledby="local_ai_assistant-connection">
+    <section class="card lai-status" aria-labelledby="local_ai_assistant-connection">
         <div class="card-body">
             <h3 class="h5 card-title" id="local_ai_assistant-connection">{{#str}} connection, local_ai_assistant {{/str}}</h3>
             {{#backendconfigured}}
@@ -56,40 +59,87 @@
     </section>
 
     {{#backendconfigured}}
-    <section class="card mb-3" aria-labelledby="local_ai_assistant-syllabus" data-region="syllabus">
-        <div class="card-body">
-            <h3 class="h5 card-title" id="local_ai_assistant-syllabus">{{#str}} syllabus, local_ai_assistant {{/str}}</h3>
-            <p class="card-text">{{#str}} syllabusdesc, local_ai_assistant {{/str}}</p>
-            <form data-action="upload-syllabus" class="mb-3">
-                <div class="mb-2">
-                    <label class="form-label" for="local_ai_assistant-file">{{#str}} syllabusfile, local_ai_assistant {{/str}}</label>
-                    <input type="file" class="form-control" id="local_ai_assistant-file" name="file" required
-                        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-                </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <button type="submit" class="btn btn-primary" data-action="upload-and-structure">{{#str}} syllabuscreatestructure, local_ai_assistant {{/str}}</button>
-                    <button type="submit" class="btn btn-outline-secondary" data-action="upload-only">{{#str}} syllabusupload, local_ai_assistant {{/str}}</button>
-                </div>
-                <p class="form-text mb-0 mt-2">{{#str}} syllabuscreatestructurehint, local_ai_assistant {{/str}}</p>
-            </form>
-            <div class="progress mb-2 d-none" data-region="syllabus-progress">
-                <div class="progress-bar" role="progressbar" style="width: 0%"
-                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="local_ai_assistant-syllabus"></div>
-            </div>
-            <div data-region="syllabus-status" aria-live="polite"></div>
+    <nav class="lai-tabs" aria-label="{{#str}} nav_label, local_ai_assistant {{/str}}">
+        <div role="tablist" class="lai-tabs__list">
+            <button type="button" role="tab" class="lai-tab" id="local_ai_assistant-tab-syllabus" data-tab="syllabus"
+                aria-controls="local_ai_assistant-panel-syllabus" aria-selected="true">
+                <i class="icon fa fa-file-alt fa-fw" aria-hidden="true"></i>{{#str}} nav_syllabus, local_ai_assistant {{/str}}
+            </button>
+            <button type="button" role="tab" class="lai-tab" id="local_ai_assistant-tab-proposal" data-tab="proposal" hidden
+                aria-controls="local_ai_assistant-panel-proposal" aria-selected="false" tabindex="-1">
+                <i class="icon fa fa-clipboard-list fa-fw" aria-hidden="true"></i>{{#str}} nav_proposal, local_ai_assistant {{/str}}
+            </button>
+            <button type="button" role="tab" class="lai-tab" id="local_ai_assistant-tab-chat" data-tab="chat" hidden
+                aria-controls="local_ai_assistant-panel-chat" aria-selected="false" tabindex="-1">
+                <i class="icon fa fa-comments fa-fw" aria-hidden="true"></i>{{#str}} nav_chat, local_ai_assistant {{/str}}
+            </button>
+            <button type="button" role="tab" class="lai-tab" id="local_ai_assistant-tab-analytics" data-tab="analytics" hidden
+                aria-controls="local_ai_assistant-panel-analytics" aria-selected="false" tabindex="-1">
+                <i class="icon fa fa-chart-bar fa-fw" aria-hidden="true"></i>{{#str}} nav_analytics, local_ai_assistant {{/str}}
+            </button>
+            <button type="button" role="tab" class="lai-tab" id="local_ai_assistant-tab-mapping" data-tab="mapping" hidden
+                aria-controls="local_ai_assistant-panel-mapping" aria-selected="false" tabindex="-1">
+                <i class="icon fa fa-link fa-fw" aria-hidden="true"></i>{{#str}} nav_mapping, local_ai_assistant {{/str}}
+            </button>
+            <button type="button" role="tab" class="lai-tab" id="local_ai_assistant-tab-admin" data-tab="admin" hidden
+                aria-controls="local_ai_assistant-panel-admin" aria-selected="false" tabindex="-1">
+                <i class="icon fa fa-cog fa-fw" aria-hidden="true"></i>{{#str}} nav_admin, local_ai_assistant {{/str}}
+            </button>
         </div>
-    </section>
+    </nav>
 
-    <section class="card card-body mb-3 d-none" data-region="extraction-editor"></section>
+    <div class="lai-panel" role="tabpanel" id="local_ai_assistant-panel-syllabus" data-panel="syllabus"
+        aria-labelledby="local_ai_assistant-tab-syllabus">
+        <section class="card lai-card" aria-labelledby="local_ai_assistant-syllabus" data-region="syllabus">
+            <div class="card-body">
+                <h3 class="h5 card-title" id="local_ai_assistant-syllabus">{{#str}} syllabus, local_ai_assistant {{/str}}</h3>
+                <p class="card-text">{{#str}} syllabusdesc, local_ai_assistant {{/str}}</p>
+                <form data-action="upload-syllabus" class="mb-3">
+                    <div class="mb-2">
+                        <label class="form-label" for="local_ai_assistant-file">{{#str}} syllabusfile, local_ai_assistant {{/str}}</label>
+                        <input type="file" class="form-control" id="local_ai_assistant-file" name="file" required
+                            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary" data-action="upload-and-structure">{{#str}} syllabuscreatestructure, local_ai_assistant {{/str}}</button>
+                        <button type="submit" class="btn btn-outline-secondary" data-action="upload-only">{{#str}} syllabusupload, local_ai_assistant {{/str}}</button>
+                    </div>
+                    <p class="form-text mb-0 mt-2">{{#str}} syllabuscreatestructurehint, local_ai_assistant {{/str}}</p>
+                </form>
+                <div class="progress mb-2 d-none" data-region="syllabus-progress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"
+                        aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="local_ai_assistant-syllabus"></div>
+                </div>
+                <div data-region="syllabus-status" aria-live="polite"></div>
+            </div>
+        </section>
 
-    <section class="card card-body mb-3 d-none" data-region="proposal-preview"></section>
+        <section class="card card-body lai-card d-none" data-region="extraction-editor"></section>
+    </div>
 
-    <section class="card card-body mb-3 d-none" data-region="chat"></section>
+    <div class="lai-panel" role="tabpanel" id="local_ai_assistant-panel-proposal" data-panel="proposal" hidden
+        aria-labelledby="local_ai_assistant-tab-proposal">
+        <section class="card card-body lai-card d-none" data-region="proposal-preview"></section>
+    </div>
 
-    <section class="card card-body mb-3 d-none" data-region="analytics"></section>
+    <div class="lai-panel" role="tabpanel" id="local_ai_assistant-panel-chat" data-panel="chat" hidden
+        aria-labelledby="local_ai_assistant-tab-chat">
+        <section class="card card-body lai-card d-none" data-region="chat"></section>
+    </div>
 
-    <section class="card card-body mb-3 d-none" data-region="mapping"></section>
+    <div class="lai-panel" role="tabpanel" id="local_ai_assistant-panel-analytics" data-panel="analytics" hidden
+        aria-labelledby="local_ai_assistant-tab-analytics">
+        <section class="card card-body lai-card d-none" data-region="analytics"></section>
+    </div>
 
-    <section class="card card-body mb-3 d-none" data-region="admin"></section>
+    <div class="lai-panel" role="tabpanel" id="local_ai_assistant-panel-mapping" data-panel="mapping" hidden
+        aria-labelledby="local_ai_assistant-tab-mapping">
+        <section class="card card-body lai-card d-none" data-region="mapping"></section>
+    </div>
+
+    <div class="lai-panel" role="tabpanel" id="local_ai_assistant-panel-admin" data-panel="admin" hidden
+        aria-labelledby="local_ai_assistant-tab-admin">
+        <section class="card card-body lai-card d-none" data-region="admin"></section>
+    </div>
     {{/backendconfigured}}
 </div>

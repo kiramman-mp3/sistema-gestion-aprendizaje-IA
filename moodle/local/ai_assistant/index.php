@@ -47,6 +47,7 @@ $PAGE->requires->js_call_amd('local_ai_assistant/chat', 'init', [(int) $course->
 $PAGE->requires->js_call_amd('local_ai_assistant/analytics', 'init', [(int) $course->id]);
 $PAGE->requires->js_call_amd('local_ai_assistant/mapping', 'init', [(int) $course->id]);
 $PAGE->requires->js_call_amd('local_ai_assistant/admin', 'init', [(int) $course->id]);
+$PAGE->requires->js_call_amd('local_ai_assistant/navigation', 'init', [['proposalId' => $proposalid]]);
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('local_ai_assistant/assistant', [

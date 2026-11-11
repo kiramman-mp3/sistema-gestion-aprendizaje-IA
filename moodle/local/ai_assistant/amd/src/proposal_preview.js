@@ -26,6 +26,7 @@
  */
 
 import { callBackend } from "local_ai_assistant/assistant";
+import { activate } from "local_ai_assistant/navigation";
 import * as Model from "local_ai_assistant/proposal_model";
 import { loadPanelStrings, PublishPanel } from "local_ai_assistant/publish_panel";
 import { createStrings, el, icon, uniqueId } from "local_ai_assistant/ui";
@@ -144,6 +145,8 @@ class Preview {
       this.setProposal(proposal);
       this.knownOutcomes = await this.loadOutcomes();
       this.render();
+      // The teacher asked for the proposal: take them to it.
+      activate("proposal");
     } catch (error) {
       if (error.code === "PROPOSAL_EXISTS") {
         this.showExisting(syllabusId, extractionVersion, error.details?.[0]?.message);
@@ -163,7 +166,7 @@ class Preview {
         el(
           "div",
           { class: "d-flex gap-2" },
-          existingId && el("button", { type: "button", class: "btn btn-primary", onclick: () => this.open(existingId) }, str("openexisting")),
+          existingId && el("button", { type: "button", class: "btn btn-primary", onclick: () => this.open(existingId).then(() => activate("proposal")) }, str("openexisting")),
           el("button", { type: "button", class: "btn btn-outline-secondary", onclick: () => this.generate(syllabusId, extractionVersion, true) }, str("createanother")),
         ),
       ),
