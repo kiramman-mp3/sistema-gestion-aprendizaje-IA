@@ -65,7 +65,9 @@
                     <input type="file" class="form-control" id="local_ai_assistant-file" name="file" required
                         accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
                 </div>
-                <button type="submit" class="btn btn-primary">{{#str}} syllabusupload, local_ai_assistant {{/str}}</button>
+                <button type="submit" class="btn btn-primary" data-action="upload-and-structure">{{#str}} syllabuscreatestructure, local_ai_assistant {{/str}}</button>
+                <button type="submit" class="btn btn-outline-secondary ms-2" data-action="upload-only">{{#str}} syllabusupload, local_ai_assistant {{/str}}</button>
+                <p class="form-text mb-0 mt-2">{{#str}} syllabuscreatestructurehint, local_ai_assistant {{/str}}</p>
             </form>
             <div class="progress mb-2 d-none" data-region="syllabus-progress">
                 <div class="progress-bar" role="progressbar" style="width: 0%"
