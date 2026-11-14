@@ -28,6 +28,20 @@ Un modelo no es determinista: una comprobación puede fallar una vez por ruido. 
 dos veces y las comprobaciones funcionales pasaron en ambas (la primera ejecución completa tuvo fallas por documentos que
 quedaron de una ejecución interrumpida; se limpiaron y se repitió).
 
+### Repetición del 2026-11-13
+
+Se repitió todo sobre `develop` (`5240add`, v0.2.0 más la licencia) en otra instalación local, con el mismo modelo:
+
+- `pnpm smoke:ia`: todas las comprobaciones pasan. El chat usó `get_assignment_submissions` (Tarea 2) y
+  `get_student_learning_evidence` con el seudónimo del turno anterior, con lo que quedan probadas con el proveedor real.
+- `pnpm extract:synthetic` y `pnpm eval:extraction var/extraction-eval --check`: 12 de 12 extracciones; unidades 46/46 y
+  resultados de aprendizaje 46/46 (F1 100 % en ambas, sin falsos positivos ni negativos).
+- `pnpm smoke:silabos`, `smoke:publicacion` y `smoke:asistente`: pasan. En una instalación de Moodle anterior a las
+  funciones de lectura y publicación fallaron hasta ejecutar `setup_integration.php` después de `upgrade.php` (el rol de
+  integración no tenía las capacidades nuevas); el paso ya estaba en la [guía del entorno local](../desarrollo/entorno-local.md).
+- En el navegador, como `prueba_docente`: el chat respondió quién no entregó la Tarea 3 con las fuentes de Moodle y la
+  analítica cargó sin errores en la consola.
+
 ## Extracción de sílabos
 
 | Categoría                         | Medición 1 | Medición 2 (tras la regla 7) | Meta   |
@@ -59,13 +73,14 @@ más variados hay que recalibrar.
 
 Seis preguntas con herramienta por ejecución, plan gratuito, modelo `gemini-3.5-flash-lite`:
 
-| Ejecución | Primer evento p50 / p95 | Respuesta completa p50 / p95 |
-| --------- | ----------------------- | ---------------------------- |
-| 1         | 1186 ms / 3294 ms       | 2557 ms / 5505 ms            |
-| 2         | 1808 ms / 4648 ms       | 4638 ms / 7360 ms            |
+| Ejecución      | Primer evento p50 / p95 | Respuesta completa p50 / p95 |
+| -------------- | ----------------------- | ---------------------------- |
+| 1              | 1186 ms / 3294 ms       | 2557 ms / 5505 ms            |
+| 2              | 1808 ms / 4648 ms       | 4638 ms / 7360 ms            |
+| 3 (2026-11-13) | 1169 ms / 1290 ms       | 3413 ms / 3885 ms            |
 
-- **RNF-02** (respuesta completa p95 < 10 s): dentro del objetivo en ambas.
-- **RNF-01** (primer evento p95 < 3 s): fuera del objetivo en ambas. Con 6 muestras el p95 es el valor máximo, el plan
+- **RNF-02** (respuesta completa p95 < 10 s): dentro del objetivo en las tres.
+- **RNF-01** (primer evento p95 < 3 s): fuera del objetivo en las dos primeras y dentro en la tercera. Con 6 muestras el p95 es el valor máximo, el plan
   gratuito comparte capacidad y el «primer evento» es la llamada a la herramienta (el modelo decide la herramienta antes de
   escribir), no el primer token de la respuesta. **No se declara cumplido ni incumplido**: se repetirá con
   `pnpm loadtest -- --scenario chat`, más muestras y el plan definitivo.
