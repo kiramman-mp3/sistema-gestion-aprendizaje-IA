@@ -21,6 +21,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+import { deleteCancelPromise } from "core/notification";
 import { getString } from "core/str";
 import { callBackend } from "local_ai_assistant/assistant";
 import { open as openExtractionEditor } from "local_ai_assistant/extraction_editor";
@@ -100,6 +101,66 @@ const follow = async (courseId, syllabusId, progress, isDone = (syllabus) => !is
 };
 
 /**
+ * Remembers the syllabus on screen and shows the discard button for it.
+ *
+ * @param {{discard: HTMLElement}} view
+ * @param {string|null} syllabusId
+ */
+const setCurrent = (view, syllabusId) => {
+  view.syllabusId = syllabusId;
+  view.discard.classList.toggle("d-none", !syllabusId);
+};
+
+/**
+ * Opens the page again without a syllabus or proposal in the URL, so every panel starts empty. An object so the
+ * tests can replace it: jsdom does not navigate.
+ */
+export const reload = {
+  run: () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("syllabusid");
+    url.searchParams.delete("proposalid");
+    window.location.assign(url.toString());
+  },
+};
+
+/**
+ * Asks for confirmation and discards the syllabus on screen with everything the assistant generated from it.
+ * Nothing published to the course is touched: the backend refuses (409) if a proposal was published.
+ *
+ * @param {{courseId: number, status: HTMLElement, syllabusId: string|null}} view
+ * @param {HTMLButtonElement} button
+ */
+const discard = async (view, button) => {
+  const { courseId, status, syllabusId } = view;
+  try {
+    await deleteCancelPromise(
+      getString("syllabusdiscardtitle", "local_ai_assistant"),
+      getString("syllabusdiscardconfirm", "local_ai_assistant"),
+      getString("syllabusdiscard", "local_ai_assistant"),
+    );
+  } catch {
+    // The teacher cancelled.
+    return;
+  }
+  button.disabled = true;
+  try {
+    await callBackend(courseId, `/syllabi/${encodeURIComponent(syllabusId)}`, { method: "DELETE" });
+  } catch (error) {
+    button.disabled = false;
+    const published = error.code === "SYLLABUS_PUBLISHED";
+    const message = published
+      ? await getString("syllabusdiscardpublished", "local_ai_assistant")
+      : await getString("syllabusdiscardfailed", "local_ai_assistant", error.code || error.message);
+    show(status, published ? "warning" : "danger", [message]);
+    return;
+  }
+  setCurrent(view, null);
+  show(status, "success", [await getString("syllabusdiscarded", "local_ai_assistant")]);
+  reload.run();
+};
+
+/**
  * Starts the structure extraction and opens the editor when it is ready.
  *
  * @param {{courseId: number, progress: HTMLElement, status: HTMLElement}} view
@@ -135,6 +196,7 @@ const showResult = async (view, syllabus, { autoExtract = false } = {}) => {
     show(status, "warning", [await getString("syllabustimeout", "local_ai_assistant")]);
     return;
   }
+  setCurrent(view, syllabus.id);
   if (syllabus.status === "FAILED") {
     const stringId = FAILURE_STRINGS[syllabus.errorCode];
     const message = stringId
@@ -232,6 +294,7 @@ const upload = async (view, form, createStructure) => {
     }
   }
 
+  setCurrent(view, syllabusId);
   const syllabus = await follow(courseId, syllabusId, progress);
   setProgress(progress, null);
   await showResult(view, syllabus, { autoExtract: createStructure });
@@ -245,6 +308,7 @@ const upload = async (view, form, createStructure) => {
  */
 const resume = async (view, syllabusId) => {
   const { courseId, progress, status } = view;
+  setCurrent(view, syllabusId);
   try {
     const syllabus = await follow(courseId, syllabusId, progress);
     setProgress(progress, null);
@@ -290,7 +354,10 @@ export const init = (courseId, syllabusId = "") => {
   const progress = region.querySelector('[data-region="syllabus-progress"]');
   const status = region.querySelector('[data-region="syllabus-status"]');
   const buttons = [...form.querySelectorAll('[type="submit"]')];
-  const view = { courseId, progress, status };
+  const discardRegion = region.querySelector('[data-region="syllabus-discard"]');
+  const view = { courseId, progress, status, discard: discardRegion, syllabusId: null };
+  const discardButton = discardRegion.querySelector('[data-action="discard-syllabus"]');
+  discardButton.addEventListener("click", () => discard(view, discardButton));
 
   if (syllabusId) {
     resume(view, syllabusId);

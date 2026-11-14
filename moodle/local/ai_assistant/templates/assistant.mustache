@@ -111,6 +111,12 @@
                         aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="local_ai_assistant-syllabus"></div>
                 </div>
                 <div data-region="syllabus-status" aria-live="polite"></div>
+                <div class="mt-3 d-none" data-region="syllabus-discard">
+                    <button type="button" class="btn btn-outline-danger" data-action="discard-syllabus">
+                        <i class="icon fa fa-trash fa-fw" aria-hidden="true"></i>{{#str}} syllabusdiscard, local_ai_assistant {{/str}}
+                    </button>
+                    <p class="form-text mb-0 mt-1">{{#str}} syllabusdiscardhint, local_ai_assistant {{/str}}</p>
+                </div>
             </div>
         </section>
 

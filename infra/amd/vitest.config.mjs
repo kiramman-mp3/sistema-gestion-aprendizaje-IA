@@ -10,6 +10,7 @@ export default defineConfig({
       "@smart-lms/contracts": path("../../packages/contracts/src/index.ts"),
       // Módulos de Moodle que el JavaScript del plugin importa en el navegador.
       "core/str": path("./tests/stubs/core-str.mjs"),
+      "core/notification": path("./tests/stubs/notification.mjs"),
       "local_ai_assistant/assistant": path("./tests/stubs/assistant.mjs"),
       "local_ai_assistant/extraction_model": path(
         "../../moodle/local/ai_assistant/amd/src/extraction_model.js",

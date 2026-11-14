@@ -2,7 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildSyllabusExtraction } from "../../../packages/contracts/src/syllabus/fixtures.ts";
 import { backend } from "./stubs/assistant.mjs";
-import { init } from "../../../moodle/local/ai_assistant/amd/src/syllabus.js";
+import { confirmation } from "./stubs/notification.mjs";
+import { init, reload } from "../../../moodle/local/ai_assistant/amd/src/syllabus.js";
 
 const SYLLABUS_ID = "33333333-3333-4333-8333-333333333333";
 
@@ -71,6 +72,9 @@ beforeEach(() => {
           <div class="progress-bar" role="progressbar" style="width: 0%"></div>
         </div>
         <div data-region="syllabus-status"></div>
+        <div class="d-none" data-region="syllabus-discard">
+          <button type="button" data-action="discard-syllabus">Discard syllabus and proposal</button>
+        </div>
       </section>
       <section class="d-none" data-region="extraction-editor"></section>
       <section class="d-none" data-region="proposal-preview"></section>
@@ -212,5 +216,78 @@ describe("retomar el último sílabo al abrir la página", () => {
     await vi.waitFor(() => expect(editor().classList.contains("d-none")).toBe(false));
 
     expect(calls()).not.toContain("GET /syllabi/latest");
+  });
+});
+
+describe("descartar el sílabo y lo que generó el asistente", () => {
+  const discardRegion = () => document.querySelector('[data-region="syllabus-discard"]');
+
+  /**
+   * Abre la página con un sílabo en la dirección. El DOM se copia para quitar los manejadores del `init` de
+   * `beforeEach`: si no, un clic llamaría dos veces al backend.
+   */
+  const openWith = (current, onDelete) => {
+    const page = document.body.innerHTML;
+    document.body.innerHTML = page;
+    backend.calls = [];
+    backend.handler = async (call) => {
+      const key = `${call.method} ${call.path}`;
+      if (key === `GET /syllabi/${SYLLABUS_ID}`) return structuredClone(current);
+      if (key === `DELETE /syllabi/${SYLLABUS_ID}`) return onDelete();
+      throw Object.assign(new Error(`Ruta sin respuesta: ${key}`), { code: "NOT_FOUND" });
+    };
+    init(7, SYLLABUS_ID);
+  };
+
+  beforeEach(() => {
+    confirmation.accept = true;
+    confirmation.calls = [];
+    reload.run = vi.fn();
+  });
+
+  it("sin sílabo en pantalla el botón no aparece", () => {
+    expect(discardRegion().classList.contains("d-none")).toBe(true);
+  });
+
+  it("pide confirmación, borra el sílabo y recarga la página vacía", async () => {
+    openWith(syllabus("TEXT_READY"), async () => ({}));
+    await vi.waitFor(() => expect(discardRegion().classList.contains("d-none")).toBe(false));
+
+    button("Discard syllabus and proposal").click();
+    await vi.waitFor(() => expect(reload.run).toHaveBeenCalled());
+
+    expect(confirmation.calls[0]).toMatchObject({
+      title: "Discard the syllabus",
+      deleteLabel: "Discard syllabus and proposal",
+    });
+    expect(confirmation.calls[0].question).toContain("Nothing in the course changes");
+    expect(calls()).toContain(`DELETE /syllabi/${SYLLABUS_ID}`);
+    expect(status().textContent).toContain("were discarded");
+    expect(discardRegion().classList.contains("d-none")).toBe(true);
+  });
+
+  it("si el docente cancela no borra nada", async () => {
+    confirmation.accept = false;
+    openWith(syllabus("TEXT_READY"), async () => ({}));
+    await vi.waitFor(() => expect(discardRegion().classList.contains("d-none")).toBe(false));
+
+    button("Discard syllabus and proposal").click();
+    await vi.waitFor(() => expect(confirmation.calls).toHaveLength(1));
+
+    expect(calls()).not.toContain(`DELETE /syllabi/${SYLLABUS_ID}`);
+    expect(reload.run).not.toHaveBeenCalled();
+  });
+
+  it("si una propuesta ya se publicó lo explica, no recarga y deja el botón disponible", async () => {
+    openWith(syllabus("TEXT_READY"), async () => {
+      throw Object.assign(new Error("publicado"), { code: "SYLLABUS_PUBLISHED", status: 409 });
+    });
+    await vi.waitFor(() => expect(discardRegion().classList.contains("d-none")).toBe(false));
+
+    button("Discard syllabus and proposal").click();
+    await vi.waitFor(() => expect(status().textContent).toContain("already published"));
+
+    expect(reload.run).not.toHaveBeenCalled();
+    expect(button("Discard syllabus and proposal").disabled).toBe(false);
   });
 });
