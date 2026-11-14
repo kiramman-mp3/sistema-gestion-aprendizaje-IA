@@ -6,7 +6,7 @@
 # Comprueba:
 #   1. El estado del backend (/api/v1/health: base de datos, Redis, Moodle y antivirus).
 #   2. Que ningún contenedor del despliegue esté caído o sin pasar su healthcheck.
-#   3. Que la última copia de seguridad no sea más antigua de BACKUP_MAX_AGE_HOURS.
+#   3. Que la última copia de seguridad (y la de Moodle, si existe) no sea más antigua de BACKUP_MAX_AGE_HOURS.
 #   4. Que el disco de las copias y el de Docker no pasen de DISK_MAX_PERCENT de uso.
 #
 # Salida (convención de Nagios): una línea de resumen y, debajo, el detalle.
@@ -78,25 +78,34 @@ else
 fi
 
 # 3. Antigüedad de la última copia.
-if [[ -f "${BACKUP_DIR}/LATEST" ]]; then
-  stamp="$(tr -d '\r\n' < "${BACKUP_DIR}/LATEST")"
+check_backup_age() {
+  local marker="$1" label="$2" stamp iso then_s age_h
+  stamp="$(tr -d '\r\n' < "${marker}")"
   # 20261110T032159Z -> 2026-11-10T03:21:59Z
   iso="${stamp:0:4}-${stamp:4:2}-${stamp:6:2}T${stamp:9:2}:${stamp:11:2}:${stamp:13:2}Z"
   if then_s="$(date -u -d "${iso}" +%s 2> /dev/null)"; then
     age_h=$((($(date -u +%s) - then_s) / 3600))
     if ((age_h > BACKUP_MAX_AGE_HOURS)); then
-      details+=("WARNING  la última copia tiene ${age_h} h (máximo ${BACKUP_MAX_AGE_HOURS} h)")
+      details+=("WARNING  la última ${label} tiene ${age_h} h (máximo ${BACKUP_MAX_AGE_HOURS} h)")
       raise 1
     else
-      details+=("ok       última copia hace ${age_h} h")
+      details+=("ok       última ${label} hace ${age_h} h")
     fi
   else
-    details+=("WARNING  no se pudo leer la fecha de la última copia (${stamp})")
+    details+=("WARNING  no se pudo leer la fecha de la última ${label} (${stamp})")
     raise 1
   fi
+}
+
+if [[ -f "${BACKUP_DIR}/LATEST" ]]; then
+  check_backup_age "${BACKUP_DIR}/LATEST" "copia"
 else
   details+=("WARNING  no hay copias de seguridad en ${BACKUP_DIR}")
   raise 1
+fi
+# La copia de Moodle (backup-moodle.sh) solo se revisa si existe: el Moodle puede respaldarlo la institución.
+if [[ -f "${BACKUP_DIR}/LATEST-moodle" ]]; then
+  check_backup_age "${BACKUP_DIR}/LATEST-moodle" "copia de Moodle"
 fi
 
 # 4. Disco.

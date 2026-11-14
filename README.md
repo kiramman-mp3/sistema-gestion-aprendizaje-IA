@@ -8,6 +8,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-12-F69220?style=flat-square&logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![CI](https://github.com/kiramman-mp3/sistema-gestion-aprendizaje-IA/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/kiramman-mp3/sistema-gestion-aprendizaje-IA/actions/workflows/ci.yml)
+[![Licencia](https://img.shields.io/badge/licencia-propietaria-lightgrey?style=flat-square)](LICENSE)
 
 **LMS Inteligente con Asistente de IA** es una plataforma de gestión del aprendizaje basada en Moodle,
 ampliada con una capa propia de inteligencia artificial que ayuda al docente a planificar cursos a
@@ -15,7 +16,7 @@ partir de su sílabo, consultar en lenguaje natural la información real del cur
 recomendaciones pedagógicas basadas en evidencias.
 
 Es un proyecto de desarrollo de software y titulación para una institución de educación superior de
-Ecuador, y se presenta como una **demostración funcional del agente**. La versión `v0.2.0` recorre de
+Ecuador, y se presenta como una **demostración funcional del agente**. La versión `v0.3.0` recorre de
 punta a punta lo planeado en el [roadmap](docs/ROADMAP.md): el docente sube su sílabo, el sistema
 extrae su estructura con IA, propone el curso y, tras su aprobación, lo publica en Moodle; después
 puede preguntarle al asistente por los datos reales del curso, ver la analítica y recibir
@@ -241,6 +242,8 @@ recomendaciones.
 │   ├── levantamiento/              # Guía de entrevista, catálogo de sílabos, consentimiento
 │   └── prototipos/                 # Prototipos de baja fidelidad
 ├── CONTRIBUTING.md                 # Cómo contribuir: ramas, commits, pruebas y PR
+├── LICENSE                         # Licencia propietaria (todos los derechos reservados)
+├── .mailmap                        # Une las identidades de Git de cada persona
 ├── CLAUDE.md                       # Reglas de Git y documentación del proyecto
 ├── docker-compose.yml              # Base auxiliar y Redis; perfiles antivirus, worker y api (desarrollo)
 ├── docker-compose.prod.yml         # Producción: proxy con TLS, red interna, secretos fuera del repositorio
@@ -371,6 +374,8 @@ conocidos. En resumen:
 | `pnpm synthetic:syllabi`                            | Regenera los 12 sílabos sintéticos (los escaneados usan Docker)                                                               |
 | `pnpm eval:text` / `pnpm eval:text:docker`          | Qué parte del contenido de un sílabo llega al texto que extrae el worker (con OCR en Docker)                                  |
 | `bash infra/monitoring/check-ai-usage.sh`           | Alertas de errores y consumo de IA (para cron)                                                                                |
+| `bash infra/scripts/backup-moodle.sh`               | Copia cifrada de la base de Moodle y de `moodledata` (`MAINTENANCE=1` pone el sitio en mantenimiento durante la copia)        |
+| `bash infra/scripts/restore-moodle-test.sh`         | Restaura la última copia de Moodle en una base temporal y la compara con la real                                              |
 | `pnpm eval:extraction [dir] [--check]`              | Precisión, exhaustividad y F1 de la extracción sobre un conjunto de referencia                                                |
 | `bash infra/scripts/moodle.sh <comando>`            | `setup`, `sync`, `up`, `install`, `configure`, `seed`, `down`, `compose`                                                      |
 | `bash infra/scripts/phpcs.sh [--fix]`               | Revisa (o corrige) el PHP con el estándar de Moodle                                                                           |
@@ -403,8 +408,8 @@ $COMPOSE up -d --build app-db redis clamav && $COMPOSE run --rm migrate && $COMP
 | `API_DOMAIN`, `ACME_EMAIL`   | Dominio público del backend y correo de Let's Encrypt                 |
 | `MOODLE_BASE_URL`            | `wwwroot` de Moodle; también es el único origen CORS permitido        |
 
-Las copias de seguridad cifradas (`infra/scripts/backup.sh`), la prueba de restauración (`restore-test.sh`) y el
-monitoreo (`infra/monitoring/check-health.sh`) se programan con cron. Pasos completos, actualización y restauración en el
+Las copias de seguridad cifradas (`infra/scripts/backup.sh` y, si el Moodle corre con Docker Compose,
+`backup-moodle.sh`), sus pruebas de restauración (`restore-test.sh` y `restore-moodle-test.sh`) y el monitoreo (`infra/monitoring/check-health.sh`) se programan con cron. Pasos completos, actualización y restauración en el
 [manual de instalación y operación](docs/operacion/instalacion-y-operacion.md); qué hacer ante un fallo, en el
 [procedimiento de incidentes](docs/operacion/procedimiento-incidentes.md); y para quien enseña, el
 [manual del docente](docs/user-manual/manual-docente.md).
@@ -507,10 +512,10 @@ Los puntos sin marcar dependen de datos o personas reales y quedan fuera del alc
 - [ ] Extracción estructurada con IA y revisión del docente (Sprint 5; hechos el editor y la API, falta medir el F1 con sílabos reales)
 - [x] Propuesta de curso: generador, validación, estados, API y vista previa (Sprint 6)
 - [x] Publicación idempotente en Moodle, con confirmación, resumen y reanudación (Sprint 7)
-- [x] Asistente conversacional (Sprints 8–9): chat, orquestador, seudonimización, límites de uso, lecturas de Moodle, búsqueda en documentos (RAG), criterio aplicado y aclaración única; falta repetir las pruebas de ataque y medir la calidad con el proveedor real
-- [ ] Analítica y asistente pedagógico (Sprints 10–11): hechos el panel, los indicadores, las señales, las evidencias, los snapshots, las reglas por API, las recomendaciones y el seguimiento; falta medir la pertinencia de las recomendaciones con un modelo real
-- [ ] Evaluación con docentes (Sprint 12): hechas la revisión OWASP, la prueba de carga, los casos SEC-06 y SEC-07 con un modelo simulado y las verificaciones de punta a punta; faltan los casos con el proveedor real, la medición de RNF-01 a RNF-03, la calidad de la IA y el piloto con la encuesta SUS
-- [ ] Despliegue y documentación final (Sprint 13): hechos el entorno de producción, las copias con prueba de restauración, el monitoreo y las alertas, los manuales y los capítulos técnicos de la tesis; faltan el despliegue real, la capacitación y la versión 1.0
+- [x] Asistente conversacional (Sprints 8–9): chat, orquestador, seudonimización, límites de uso, lecturas de Moodle, búsqueda en documentos (RAG), criterio aplicado y aclaración única, probados también con Gemini y datos sintéticos, incluidas las pruebas de ataque
+- [x] Analítica y asistente pedagógico (Sprints 10–11): panel, indicadores, señales, evidencias (también como herramienta del chat), snapshots, reglas por API, recomendaciones y seguimiento; la pertinencia de las recomendaciones con docentes queda fuera de alcance
+- [ ] Evaluación con docentes (Sprint 12): hechas la suite de seguridad SEC-01 a SEC-10, la revisión OWASP, la prueba de carga sin IA y las verificaciones de punta a punta con el proveedor de demostración y con Gemini; faltan la medición de RNF-01 a RNF-03 con licencia de pago, la calidad de la IA con sílabos reales y el piloto con la encuesta SUS
+- [ ] Despliegue y documentación final (Sprint 13): hechos el entorno de producción, las copias (también de Moodle) con prueba de restauración, el monitoreo y las alertas, los manuales, los capítulos técnicos de la tesis y la versión `v0.3.0`; faltan el RPO y el RTO, el despliegue real, la capacitación y la versión 1.0
 
 ---
 
@@ -531,12 +536,13 @@ están en [`CLAUDE.md`](CLAUDE.md).
 
 ## 👥 Contribuidores
 
+Conteo de `git shortlog -sn` en `main` con la versión `v0.3.0` (el archivo `.mailmap` une las identidades de cada persona).
+
 | Nombre            | Commits |
 | ----------------- | ------- |
 | JoseM151          | 278     |
-| kiramman-mp3      | 197     |
-| JuanCarlos        | 77      |
-| JuanCarlos Pashma | 2       |
+| Johan Rodríguez   | 220     |
+| JuanCarlos Pashma | 79      |
 
 ---
 
@@ -559,6 +565,12 @@ están en [`CLAUDE.md`](CLAUDE.md).
 
 ---
 
+## ⚖️ Licencia
+
+El código es propietario y todos los derechos están reservados: ver [`LICENSE`](LICENSE).
+
+---
+
 ## ✍️ Autor
 
-kiramman-mp3
+Johan Rodríguez
