@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import {
+  Logger,
   BadRequestException,
   ConflictException,
   NotFoundException,
@@ -40,8 +41,19 @@ export interface UploadedDocument {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Estados de una propuesta que ya tocó Moodle: `FAILED` es una publicación que se cortó a mitad y pudo dejar
+ * elementos creados. Un sílabo con una propuesta así no se descarta.
+ */
+const PUBLISHED_STATUSES = ["PUBLISHING", "PUBLISHED", "FAILED"] as const;
+
+/** Se detectó una propuesta publicada dentro de la transacción del descarte. */
+class SyllabusPublishedError extends Error {}
+
 @Injectable()
 export class SyllabiService {
+  private readonly logger = new Logger(SyllabiService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: FileStorage,
@@ -187,6 +199,92 @@ export class SyllabiService {
     });
   }
 
+  /**
+   * Descarta lo que generó el asistente a partir de un sílabo: el documento, su texto, sus fragmentos para
+   * la búsqueda, todas las versiones de la extracción y las propuestas sin publicar. No toca el curso de
+   * Moodle, así que se niega (409) si alguna propuesta del sílabo ya se publicó o empezó a publicarse.
+   * Borrar propuestas exige `publish`, la misma capacidad que crearlas.
+   */
+  async discard(auth: AuthContext, id: string): Promise<void> {
+    const document = /^[0-9a-f-]{36}$/i.test(id)
+      ? await this.prisma.syllabusDocument.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            moodleCourseId: true,
+            storageKey: true,
+            _count: { select: { extractions: true } },
+          },
+        })
+      : null;
+    if (!document || document.moodleCourseId !== auth.courseId) {
+      throw new NotFoundException({ code: "SYLLABUS_NOT_FOUND", message: "El sílabo no existe." });
+    }
+
+    const proposals = { extraction: { documentId: document.id } };
+    const proposalCount = await this.prisma.courseProposal.count({ where: proposals });
+    if (proposalCount > 0 && !auth.capabilities?.publish) {
+      await this.audit.record({
+        action: "access.denied",
+        outcome: "DENIED",
+        actorMoodleId: auth.moodleUserId,
+        courseId: auth.courseId,
+        resourceType: "syllabus_document",
+        resourceId: document.id,
+        metadata: { code: "FORBIDDEN_CAPABILITY", operation: "syllabus.discard" },
+      });
+      throw new ForbiddenException({
+        code: "FORBIDDEN_CAPABILITY",
+        message: "Falta la capacidad: publish.",
+      });
+    }
+
+    await this.prisma
+      .$transaction(async (tx) => {
+        // La comprobación va dentro de la transacción: una publicación que empezó entre tanto deja una
+        // operación que impide borrar la propuesta, y el descarte se cancela entero.
+        const published = await tx.courseProposal.count({
+          where: {
+            ...proposals,
+            OR: [
+              { status: { in: [...PUBLISHED_STATUSES] } },
+              { publishOperations: { some: {} } },
+            ],
+          },
+        });
+        if (published > 0) throw new SyllabusPublishedError();
+        // Los elementos de cada propuesta, las extracciones y los fragmentos se borran en cascada.
+        await tx.courseProposal.deleteMany({ where: proposals });
+        await tx.syllabusDocument.delete({ where: { id: document.id } });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof SyllabusPublishedError || isForeignKeyViolation(error)) {
+          throw new ConflictException({
+            code: "SYLLABUS_PUBLISHED",
+            message:
+              "Una propuesta de este sílabo ya se publicó en Moodle; lo publicado no se descarta desde aquí.",
+          });
+        }
+        throw error;
+      });
+
+    if (document.storageKey) {
+      // La fila ya no existe: si el archivo no se puede borrar, lo dice el registro, pero el descarte vale.
+      await this.storage.delete(document.storageKey).catch(() => {
+        this.logger.error(`No se pudo borrar el archivo del sílabo descartado ${document.id}.`);
+      });
+    }
+    await this.audit.record({
+      action: "syllabus.discard",
+      outcome: "SUCCESS",
+      actorMoodleId: auth.moodleUserId,
+      courseId: auth.courseId,
+      resourceType: "syllabus_document",
+      resourceId: document.id,
+      metadata: { extractions: document._count.extractions, proposals: proposalCount },
+    });
+  }
+
   private async checkType(auth: AuthContext, file: UploadedDocument): Promise<DocumentKind> {
     try {
       return detectDocumentKind(file.originalname, file.buffer);
@@ -235,6 +333,11 @@ export class SyllabiService {
       metadata: { reason, ...extra },
     });
   }
+}
+
+/** Prisma P2003: una fila que se iba a borrar sigue referenciada (una operación de publicación nueva). */
+function isForeignKeyViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2003";
 }
 
 /**

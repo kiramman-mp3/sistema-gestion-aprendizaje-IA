@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -61,6 +62,16 @@ export class SyllabiController {
     @Param("syllabusId") id: string,
   ): Promise<SyllabusDocumentDto> {
     return this.syllabi.findOne(auth, id);
+  }
+
+  /**
+   * Descarta el sílabo y todo lo que el asistente generó con él (extracciones y propuestas sin publicar).
+   * Lo publicado en Moodle no se toca: si hay algo publicado, responde 409.
+   */
+  @Delete(":syllabusId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  discard(@Auth() auth: AuthContext, @Param("syllabusId") id: string): Promise<void> {
+    return this.syllabi.discard(auth, id);
   }
 
   /** Inicia o reintenta la extracción con IA (RF-05). Responde al instante; el avance se consulta con GET. */
