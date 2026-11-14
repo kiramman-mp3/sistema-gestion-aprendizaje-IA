@@ -3,7 +3,8 @@
 // Todo sale del entorno del contenedor: aquí no hay secretos.
 //
 // TLS lo termina un proxy delante (tailscale serve u otro): Moodle recibe HTTP pero su dirección pública es HTTPS
-// (sslproxy) y el proxy puede cambiar la cabecera Host (reverseproxy), así que no se compara con wwwroot.
+// (sslproxy). El proxy conserva la cabecera Host; si la cambiara, haría falta además $CFG->reverseproxy, que con un
+// Host igual a wwwroot Moodle rechaza («Reverse proxy enabled so the server cannot be accessed directly»).
 
 unset($CFG);
 global $CFG;
@@ -23,8 +24,7 @@ $CFG->dataroot     = '/var/www/moodledata';
 $CFG->admin        = 'admin';
 $CFG->directorypermissions = 02770;
 
-$CFG->sslproxy     = true;
-$CFG->reverseproxy = true;
+$CFG->sslproxy = true;
 
 // Sin correo saliente en la demostración.
 $CFG->noemailever = true;
