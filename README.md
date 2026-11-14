@@ -540,8 +540,8 @@ Conteo de `git shortlog -sn` en `main` con la versión `v0.3.0` (el archivo `.ma
 
 | Nombre            | Commits |
 | ----------------- | ------- |
-| JoseM151          | 277     |
-| Johan Rodríguez   | 217     |
+| JoseM151          | 278     |
+| Johan Rodríguez   | 220     |
 | JuanCarlos Pashma | 79      |
 
 ---
