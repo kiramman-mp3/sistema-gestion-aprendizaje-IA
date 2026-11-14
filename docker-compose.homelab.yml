@@ -1,0 +1,123 @@
+# Despliegue de demostración en un homelab: se combina con docker-compose.prod.yml.
+#
+#   docker compose --env-file .env.homelab -f docker-compose.prod.yml -f docker-compose.homelab.yml up -d --build
+#
+# Qué cambia respecto de producción (ver docs/operacion/despliegue-homelab.md):
+#   - No hay Caddy: TLS lo pone un proxy del host (tailscale serve). El backend y Moodle solo escuchan en 127.0.0.1.
+#   - Incluye un Moodle propio (no hay uno institucional), con su base, su cron y el plugin montado en solo lectura.
+#   - El backend resuelve la dirección pública de Moodle a la IP del proxy (MOODLE_PROXY_IP): así llama a Moodle por
+#     la misma URL que firma el JWT del plugin.
+#
+# Solo para datos sintéticos: no es una instalación de producción.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  proxy:
+    profiles: ["disabled"]
+
+  api:
+    ports:
+      - "127.0.0.1:${API_PORT:-8091}:3000"
+    extra_hosts:
+      - "${MOODLE_HOST:?Define MOODLE_HOST en .env.homelab}:${MOODLE_PROXY_IP:?Define MOODLE_PROXY_IP en .env.homelab}"
+
+  # Copia el código de Moodle en su volumen la primera vez (no hace nada si ya está).
+  moodle-code:
+    image: alpine:3.22.8
+    command:
+      - sh
+      - -c
+      - |
+        if [ -f /dst/version.php ]; then echo "Moodle ya está en el volumen."; exit 0; fi
+        apk add --no-cache --quiet git
+        git clone --quiet --depth 1 --branch ${MOODLE_TAG:-v5.1.8} https://github.com/moodle/moodle.git /tmp/moodle
+        rm -rf /tmp/moodle/.git
+        cp -a /tmp/moodle/. /dst/
+        chown -R 33:33 /dst
+        echo "Moodle ${MOODLE_TAG:-v5.1.8} copiado."
+    volumes:
+      - moodle_code:/dst
+    networks: [edge]
+
+  moodle-db:
+    image: postgres:17@sha256:846a7ddaa67a4b354ae1d21087b683901aa6113a4ed626d3787cfbf6c85e3e07
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_DB: moodle
+      POSTGRES_USER: moodle
+      POSTGRES_PASSWORD_FILE: /run/secrets/moodle_db_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    secrets: [moodle_db_password]
+    volumes:
+      - moodle_db_data:/var/lib/postgresql/data
+    mem_limit: 768m
+    cpus: 1.0
+    networks: [moodle]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moodle -d moodle"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  moodle:
+    image: moodlehq/moodle-php-apache:8.3@sha256:1db7b6ed013fcb5268095b5e28c410ba9117d38d9b6a324c100c48fcbe69745e
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      MOODLE_WWWROOT: ${MOODLE_WWWROOT:?Define MOODLE_WWWROOT en .env.homelab}
+    secrets: [moodle_db_password]
+    ports:
+      - "127.0.0.1:${MOODLE_PORT:-8090}:80"
+    volumes: &moodle-volumes
+      - moodle_code:/var/www/html
+      - moodle_data:/var/www/moodledata
+      - ./infra/homelab/moodle-config.php:/var/www/html/config.php:ro
+      # Moodle 5.1 sirve el sitio desde public/.
+      - ./infra/moodle/apache-public.conf:/etc/apache2/sites-available/000-default.conf:ro
+      - ./moodle/local/ai_assistant:/var/www/html/public/local/ai_assistant:ro
+      - ./infra/moodle/cli:/opt/smart-lms/cli:ro
+    mem_limit: 768m
+    cpus: 1.0
+    networks: [moodle, edge]
+    depends_on:
+      moodle-db:
+        condition: service_healthy
+      moodle-code:
+        condition: service_completed_successfully
+
+  # Tareas programadas de Moodle cada minuto.
+  moodle-cron:
+    image: moodlehq/moodle-php-apache:8.3@sha256:1db7b6ed013fcb5268095b5e28c410ba9117d38d9b6a324c100c48fcbe69745e
+    restart: unless-stopped
+    logging: *logging
+    user: "33:33"
+    command: ["sh", "-c", "while true; do php /var/www/html/admin/cli/cron.php > /dev/null 2>&1; sleep 60; done"]
+    environment:
+      MOODLE_WWWROOT: ${MOODLE_WWWROOT}
+    secrets: [moodle_db_password]
+    volumes: *moodle-volumes
+    mem_limit: 256m
+    cpus: 0.5
+    networks: [moodle, edge]
+    depends_on:
+      - moodle
+
+networks:
+  # La base de Moodle sin salida a internet.
+  moodle:
+    internal: true
+
+secrets:
+  moodle_db_password:
+    file: ${SECRETS_DIR}/moodle_db_password
+
+volumes:
+  moodle_code:
+  moodle_data:
+  moodle_db_data:
