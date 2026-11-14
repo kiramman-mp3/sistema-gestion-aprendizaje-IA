@@ -22,6 +22,9 @@ services:
     profiles: ["disabled"]
 
   api:
+    environment:
+      # El navegador llama a la API desde el origen de Moodle (sin la ruta de wwwroot).
+      CORS_ORIGINS: ${PUBLIC_ORIGIN:?Define PUBLIC_ORIGIN en .env.homelab}
     ports:
       - "127.0.0.1:${API_PORT:-8091}:3000"
     extra_hosts:
@@ -95,8 +98,8 @@ services:
       - moodle_code:/var/www/html
       - moodle_data:/var/www/moodledata
       - ./infra/homelab/moodle-config.php:/var/www/html/config.php:ro
-      # Moodle 5.1 sirve el sitio desde public/.
-      - ./infra/moodle/apache-public.conf:/etc/apache2/sites-available/000-default.conf:ro
+      # Moodle 5.1 sirve el sitio desde public/, en la raíz y bajo /lms.
+      - ./infra/homelab/apache-moodle.conf:/etc/apache2/sites-available/000-default.conf:ro
       - ./moodle/local/ai_assistant:/var/www/html/public/local/ai_assistant:ro
       - ./infra/moodle/cli:/opt/smart-lms/cli:ro
     mem_limit: 768m
