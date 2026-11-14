@@ -4,6 +4,12 @@ Gracias por sumarte al **LMS Inteligente con Asistente de IA**. Esta guía resum
 repositorio. Las reglas completas del flujo de Git están en [`CLAUDE.md`](CLAUDE.md) y valen igual
 para personas y para asistentes de código.
 
+## Quién puede contribuir
+
+El código es propietario y todos los derechos están reservados ([`LICENSE`](LICENSE)). Que el repositorio sea público no
+concede permiso para usarlo, copiarlo ni modificarlo: solo contribuyen las personas del equipo autorizadas por el titular.
+Si quieres proponer un cambio sin ser parte del equipo, abre primero un issue para pedir autorización.
+
 ## Antes de empezar
 
 1. Lee el [README](README.md), el [roadmap](docs/ROADMAP.md) y el
@@ -75,7 +81,12 @@ bash infra/scripts/phpcs.sh # si tocaste el PHP del plugin
 
 Si cambiaste el plugin de Moodle, ejecuta también sus pruebas PHPUnit (ver la guía del entorno local)
 y sube `$plugin->version` en `moodle/local/ai_assistant/version.php` cuando cambien la base de datos,
-los servicios, las capacidades, las cadenas o el JavaScript.
+los servicios, las capacidades, las cadenas o el JavaScript. Al traer cambios del plugin a tu Moodle local, ejecuta
+`upgrade.php` y después `setup_integration.php`: sin el segundo, el rol de integración no recibe las capacidades nuevas
+y la publicación, el chat y la analítica fallan con `nopermissions`.
+
+Las verificaciones de punta a punta (`pnpm smoke:silabos`, `smoke:publicacion`, `smoke:asistente` y, con una clave de
+Gemini, `smoke:ia`) necesitan el entorno completo levantado; ejecútalas antes de integrar cambios en esos flujos.
 
 ## Pull requests
 
