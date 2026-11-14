@@ -154,10 +154,13 @@ services:
   redis:
     <<: *hardening
     image: redis:8.8.4-alpine@sha256:c027ae0f677dcf73d74038256f5b88c9ba7b11ccbfae97e96a9f091208d36125
+    # El entrypoint de la imagen da /data al usuario redis y baja a él; sin CHOWN, SETUID y SETGID, root (sin
+    # capacidades) no puede escribir el append-only en el volumen.
+    cap_add: ["CHOWN", "SETGID", "SETUID"]
     command:
       - sh
       - -c
-      - exec redis-server --appendonly yes --requirepass "$$(cat /run/secrets/redis_password)"
+      - exec docker-entrypoint.sh redis-server --appendonly yes --requirepass "$$(cat /run/secrets/redis_password)"
     secrets: [redis_password]
     volumes:
       - redis_data:/data
