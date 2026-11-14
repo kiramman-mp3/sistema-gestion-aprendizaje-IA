@@ -5,8 +5,9 @@
 # Qué cambia respecto de producción (ver docs/operacion/despliegue-homelab.md):
 #   - No hay Caddy: TLS lo pone un proxy del host (tailscale serve). El backend y Moodle solo escuchan en 127.0.0.1.
 #   - Incluye un Moodle propio (no hay uno institucional), con su base, su cron y el plugin montado en solo lectura.
-#   - El backend resuelve la dirección pública de Moodle a la IP del proxy (MOODLE_PROXY_IP): así llama a Moodle por
-#     la misma URL que firma el JWT del plugin.
+#   - El backend llama a Moodle por su dirección pública (la misma que firma el JWT del plugin). Como tailscale serve
+#     solo atiende el tráfico que entra por tailscale0, un relé TCP en la red del host (moodle-relay) reenvía las
+#     conexiones del backend a esa IP sin descifrarlas: el certificado sigue siendo válido.
 #
 # Solo para datos sintéticos: no es una instalación de producción.
 
@@ -24,7 +25,23 @@ services:
     ports:
       - "127.0.0.1:${API_PORT:-8091}:3000"
     extra_hosts:
-      - "${MOODLE_HOST:?Define MOODLE_HOST en .env.homelab}:${MOODLE_PROXY_IP:?Define MOODLE_PROXY_IP en .env.homelab}"
+      - "${MOODLE_HOST:?Define MOODLE_HOST en .env.homelab}:${RELAY_BIND_IP:-172.17.0.1}"
+    depends_on:
+      moodle-relay:
+        condition: service_started
+
+  # Reenvía, sin descifrar, las conexiones del backend a la dirección pública de Moodle. Escucha solo en la IP del
+  # bridge de Docker (RELAY_BIND_IP), que no es accesible desde fuera del servidor.
+  moodle-relay:
+    image: alpine/socat:1.8.0.3@sha256:beb4a68d9e4fe6b0f21ea774a0fde6c31f580dde6368939ed70100c5385b015e
+    restart: unless-stopped
+    logging: *logging
+    network_mode: host
+    command:
+      - TCP-LISTEN:${MOODLE_PUBLIC_PORT:-8444},bind=${RELAY_BIND_IP:-172.17.0.1},fork,reuseaddr
+      - TCP:${MOODLE_PROXY_IP:?Define MOODLE_PROXY_IP en .env.homelab}:${MOODLE_PUBLIC_PORT:-8444}
+    mem_limit: 64m
+    cpus: 0.25
 
   # Copia el código de Moodle en su volumen la primera vez (no hace nada si ya está).
   moodle-code:
