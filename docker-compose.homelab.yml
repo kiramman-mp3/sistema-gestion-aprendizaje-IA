@@ -96,8 +96,11 @@ services:
     image: moodlehq/moodle-php-apache:8.3@sha256:1db7b6ed013fcb5268095b5e28c410ba9117d38d9b6a324c100c48fcbe69745e
     restart: unless-stopped
     logging: *logging
-    user: "33:33"
-    command: ["sh", "-c", "while true; do php /var/www/html/admin/cli/cron.php > /dev/null 2>&1; sleep 60; done"]
+    # El entrypoint de la imagen escribe su php.ini como root; cron.php corre como www-data, igual que la web.
+    command:
+      - sh
+      - -c
+      - while true; do su -s /bin/sh -c 'php /var/www/html/admin/cli/cron.php > /dev/null 2>&1' www-data; sleep 60; done
     environment:
       MOODLE_WWWROOT: ${MOODLE_WWWROOT}
     secrets: [moodle_db_password]
