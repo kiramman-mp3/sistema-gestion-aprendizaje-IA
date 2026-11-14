@@ -1,4 +1,4 @@
-# 🗺️ Roadmap de implementación — LMS inteligente con asistente de IA
+| S13 | En curso | undefined | | Producción, copias (también de Moodle) con prueba de restauración, monitoreo y alertas, manuales, guion de capacitación, tesis (borradores) y README final hechos; faltan RPO y RTO, despliegue real y capacitación impartida (fuera de alcance) || S12 | En curso | undefined | | Suite SEC-01 a SEC-10, revisión OWASP, prueba de carga sin IA y verificaciones de punta a punta (también con Gemini) hechas; faltan RNF-01 a RNF-03 con licencia de pago, la evaluación con docentes, el piloto y SUS (fuera de alcance) || S11 | Terminado | undefined | 2026-11-13 | Evidencias (ruta y herramienta del chat), recomendaciones con pasajes del sílabo, seguimiento y validador hechos y probados con Gemini y datos sintéticos; la pertinencia con docentes queda en S12 (fuera de alcance) || S8 | Terminado | undefined | 2026-11-13 | Chat, orquestador, seudonimización, lecturas de Moodle, criterio aplicado, aclaración única y evidencias hechos; `get_assignment_submissions` probada con Gemini; `get_teacher_courses` descartada |# 🗺️ Roadmap de implementación — LMS inteligente con asistente de IA
 
 Plan de implementación por fases y sprints del sistema descrito en
 [`docs/requisitos/implementacion_lms_inteligente_ia.md`](requisitos/implementacion_lms_inteligente_ia.md)
@@ -428,8 +428,8 @@ validados por el tutor y Moodle local de desarrollo.
 **Objetivo:** responder preguntas sobre entregas, pendientes y notas con datos reales de Moodle.
 
 - [x] `feature/ai-orchestrator`: bucle de tool calling con límite de iteraciones (5) y herramientas separadas de lectura y escritura: el modelo solo recibe las de lectura.
-- [ ] `feature/tool-teacher-courses`: `get_teacher_courses`, `get_course_activities`. **Parcial:** hecha `get_course_activities` contra el contrato de lectura; `get_teacher_courses` no, porque el token fija un solo curso.
-- [ ] `feature/tool-submissions`: `get_assignment_submissions` respetando los estados reales de Moodle (sin entrega, borrador, enviada, tardía). Código y función `local_ai_assistant_get_submissions` hechos y verificados por REST con el curso `AN-401-PRUEBA`; falta probar la herramienta en el chat con el proveedor real (el de demostración no la elige).
+- [x] `feature/tool-teacher-courses`: `get_teacher_courses`, `get_course_activities`. Hecha `get_course_activities` contra el contrato de lectura. `get_teacher_courses` se descartó (2026-11-13): el token del plugin fija un solo curso y el asistente nunca consulta otro (SEC-01), así que listar los cursos del docente no tiene uso.
+- [x] `feature/tool-submissions`: `get_assignment_submissions` respetando los estados reales de Moodle (sin entrega, borrador, enviada, tardía). Código y función `local_ai_assistant_get_submissions` hechos y verificados por REST con el curso `AN-401-PRUEBA`; probada en el chat con Gemini el 2026-11-13 (`pnpm smoke:ia`, [resultados](resultados/ia-real-sintetica.md)).
 - [x] `feature/tool-pending-grading`: `get_pending_grading`. Verificada con Moodle real: devuelve los 4 pendientes del curso de prueba (`pnpm smoke:asistente`).
 - [x] `feature/tool-grade-summary`: `get_course_grade_summary` con cálculos deterministas y normalización de escalas. Hecha como `get_grade_summary` (una nota ausente no cuenta como cero); verificada con Moodle real: 11, 8 y 9 notas, sin la calificación oculta.
 - [x] `feature/pseudonymization`: el LLM recibe seudónimos; la respuesta lleva los seudónimos y `data.students` con su id de Moodle, y el plugin los sustituye por el nombre ([ADR-010](architecture/adr/0010-seudonimizacion.md)).
@@ -449,6 +449,7 @@ validados por el tutor y Moodle local de desarrollo.
 - Los nombres nunca llegan al backend (los resuelve el plugin con `get_course_students`), así que el backend no «restaura nombres»: devuelve los seudónimos y su id en `data.students`.
 - El seudónimo se deriva con HMAC (`PSEUDONYM_SECRET`), no por orden de aparición: es el mismo en todos los turnos de la conversación sin guardar una tabla de correspondencia.
 - Nada se guarda si la IA falla: ni la conversación ni los mensajes.
+- `get_teacher_courses` se descartó (2026-11-13): el token del plugin fija un curso y el asistente no puede consultar otro, así que la herramienta no tendría uso. `get_assignment_submissions` y las evidencias del estudiante se probaron con Gemini ese día.
 
 ### Sprint 9 · Semanas 19–20 — RAG y chat completo
 
@@ -488,7 +489,7 @@ validados por el tutor y Moodle local de desarrollo.
 
 **Objetivo:** recomendaciones basadas en evidencias, sujetas a revisión docente.
 
-- [ ] `feature/student-evidence`: `get_student_learning_evidence` y `GET /analytics/courses/:courseId/students/:studentId`. **Parcial:** hecha la ruta, con lo observado, lo calculado y lo desconocido por separado; falta la herramienta del chat.
+- [x] `feature/student-evidence`: `get_student_learning_evidence` y `GET /analytics/courses/:courseId/students/:studentId`, con lo observado, lo calculado y lo desconocido por separado. La herramienta del chat (`student-tools.ts`, con el permiso `viewanalytics`) se probó con Gemini el 2026-11-13 usando el seudónimo de un turno anterior.
 - [x] `feature/pedagogical-recommendations`: resumen de evidencias, fortalezas, dificultades, información faltante, estrategias, actividades de refuerzo e indicadores de seguimiento. `POST /analytics/courses/:courseId/students/:studentId/recommendations`, con `422` si faltan datos. Falta medir su pertinencia con un modelo real (Sprint 12).
 - [x] Reglas de lenguaje: describir comportamientos observables; sin diagnósticos ni atribuciones personales (validador de salida + pruebas). El validador rechaza y se reintenta una vez; si el segundo intento tampoco cumple, no se guarda nada.
 - [x] Integración RAG con documentos pedagógicos autorizados: las recomendaciones reciben pasajes del sílabo del curso sobre metodología y evaluación, como datos delimitados.
@@ -510,14 +511,14 @@ validados por el tutor y Moodle local de desarrollo.
 > Las pruebas unitarias y de integración se escriben en cada sprint. Este sprint completa las pruebas
 > end-to-end y ejecuta la evaluación con docentes.
 
-- [x] Pruebas end-to-end de CU-01 a CU-07 con el proveedor de demostración (`pnpm smoke:silabos`, `smoke:publicacion`, `smoke:asistente`); falta repetirlas con el proveedor real.
-- [ ] Suite completa de seguridad de la sección 13.2 y revisión OWASP Top 10.
+- [x] Pruebas end-to-end de CU-01 a CU-07 con el proveedor de demostración (`pnpm smoke:silabos`, `smoke:publicacion`, `smoke:asistente`) y con Gemini y datos sintéticos (2026-11-13, también `smoke:ia` y `extract:synthetic`).
+- [x] Suite completa de seguridad de la sección 13.2 y revisión OWASP Top 10: SEC-01 a SEC-10 automatizados (124 pruebas con código SEC, SEC-08 añadido el 2026-11-13) y 8 hallazgos OWASP cerrados ([revisión](security/revision-owasp.md)).
 - [ ] Prueba de carga básica contra RNF-01 a RNF-03. **Bloqueada:** no se puede medir con el plan gratuito del proveedor de IA (cuota diaria, capacidad compartida); se hará con la licencia de pago ([detalle](resultados/ia-real-sintetica.md)).
 - [ ] Evaluación de calidad de IA sobre el conjunto de referencia (sección 13.3).
 - [ ] Piloto con docentes: planificación asistida frente a la línea base del Sprint 1; promedio, mediana y dispersión del ahorro de tiempo.
 - [ ] Encuesta SUS y entrevistas breves.
 - [ ] Evaluación de recomendaciones: pertinencia, claridad, viabilidad, relación con evidencias y alineación con resultados.
-- [ ] Corrección de defectos priorizados (ramas `fix/*`).
+- [x] Corrección de defectos priorizados (ramas `fix/*`). No quedan defectos abiertos en GitHub; la repetición completa del 2026-11-13 no encontró fallas del código.
 
 **Entregables (H6):** informe de resultados, correcciones y versión candidata `v1.0.0-rc`.
 
@@ -530,12 +531,12 @@ validados por el tutor y Moodle local de desarrollo.
 **Objetivo:** dejar el sistema desplegado, operable y documentado.
 
 - [x] `chore/production-compose`: imágenes con versión fijada, sin `latest`; TLS, límites de recursos y secretos fuera del repositorio ([`docker-compose.prod.yml`](../docker-compose.prod.yml)).
-- [ ] Copias de seguridad cifradas de la base de Moodle, la base auxiliar y `moodledata`; prueba de restauración; RPO y RTO acordados. **Parcial:** hechas la base auxiliar y los archivos subidos, con prueba de restauración verificada; la base y `moodledata` de Moodle son de la institución, y el RPO y el RTO se acuerdan con ella.
+- [ ] Copias de seguridad cifradas de la base de Moodle, la base auxiliar y `moodledata`; prueba de restauración; RPO y RTO acordados. **Parcial:** hechas la base auxiliar y los archivos subidos, y la base y `moodledata` de Moodle (`backup-moodle.sh`, 2026-11-13), todas con prueba de restauración verificada; falta acordar el RPO y el RTO con la institución.
 - [ ] Monitoreo: métricas, trazas, alertas de errores y de costo de IA. **Parcial:** hecho `check-health.sh` (backend, contenedores, antigüedad de la copia y disco) y la rotación de logs; faltan métricas, trazas y el costo de IA (dependen del proveedor).
 - [x] Procedimiento de incidentes y brechas de datos ([`docs/operacion/procedimiento-incidentes.md`](operacion/procedimiento-incidentes.md)).
 - [x] Manual de instalación y operación ([`docs/operacion/instalacion-y-operacion.md`](operacion/instalacion-y-operacion.md)).
 - [ ] Manual del docente y capacitación. **Parcial:** hechos el [manual del docente](user-manual/manual-docente.md), el [manual del administrador](user-manual/manual-administrador.md) y el [guion de capacitación](user-manual/capacitacion.md); falta impartirla (piloto). Las capturas del producto ya están en `docs/capturas/` ([pruebas de pantalla](resultados/pruebas-de-pantalla.md)).
-- [ ] README final según `CLAUDE.md`.
+- [x] README final según `CLAUDE.md`.
 - [x] Capítulos técnicos de la tesis (`docs/thesis/`): arquitectura, privacidad y seguridad, IA y evaluación, pruebas y resultados. Borradores que se completan con el levantamiento y el piloto.
 - [ ] Merge `develop` → `main` con `--no-ff` y etiqueta `v1.0.0`.
 

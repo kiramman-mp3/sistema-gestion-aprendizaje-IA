@@ -144,8 +144,31 @@ El escenario `chat` está listo, pero sus números solo son válidos con el prov
 p95 < 3 s; RNF-02: respuesta completa p95 < 10 s; RNF-03: extracción de 20 páginas < 2 min): se miden en el cierre
 del Sprint 12 con la integración hecha.
 
+## Suite de seguridad de la sección 13.2
+
+Cada caso del [plan de pruebas](../testing/plan-pruebas.md) tiene pruebas automatizadas que llevan su código en el
+nombre. Ejecución del 2026-11-13 sobre `develop` (`npx jest -t 'SEC-'` en `apps/api`, más PHPUnit y los smoke):
+124 pruebas del backend con código SEC, ninguna falla.
+
+| Caso   | Qué se comprueba                                               | Pruebas                                                                                                                         | Resultado |
+| ------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| SEC-01 | Curso ajeno: `403` o `404` sin revelar el recurso, y auditoría | 12 (`course-access.guard.spec.ts`, e2e de sílabos, propuestas, publicación y mapeos)                                            | Pasa      |
+| SEC-02 | Herramientas del docente sin la capacidad: `403`               | 6 (`course-access.guard.spec.ts`, `auth.e2e-spec.ts`, `admin.e2e-spec.ts`)                                                      | Pasa      |
+| SEC-03 | Token inválido, expirado o reutilizado: `401`                  | 6 (`auth.e2e-spec.ts`, `syllabi.e2e-spec.ts`)                                                                                   | Pasa      |
+| SEC-04 | Publicación repetida sin duplicados                            | 4 (`proposals-publish.e2e-spec.ts`) y 2 de PHPUnit (`publish_section_test.php`, `publish_module_test.php`); `smoke:publicacion` | Pasa      |
+| SEC-05 | Archivo con extensión falsa o malicioso                        | 1 e2e (`syllabi.e2e-spec.ts`) y `file-signature.spec.ts`; EICAR contra ClamAV real en `smoke:silabos`                           | Pasa      |
+| SEC-06 | Documento con instrucciones maliciosas                         | 12 con un modelo que obedece al atacante (`chat-attacks*.spec.ts`, `recommendations-documents.spec.ts`); Gemini en `smoke:ia`   | Pasa      |
+| SEC-07 | Datos personales no necesarios                                 | 7 (`chat-attacks*.spec.ts`); Gemini en `smoke:ia` (no entrega correos ni cédulas, solo seudónimos)                              | Pasa      |
+| SEC-08 | Inyección en parámetros, filtros y cuerpos                     | 73 (`input-injection.e2e-spec.ts`): 5 cargas en 9 rutas, 4 filtros y el curso; cuerpos con operadores y tipos equivocados       | Pasa      |
+| SEC-09 | Ningún token, clave ni JWT en los logs                         | 1 (`auth.e2e-spec.ts`) y la redacción de `logger.ts`                                                                            | Pasa      |
+| SEC-10 | Conversación de otro usuario: `404`                            | 2 (`chat-attacks.spec.ts`, `chat.service.spec.ts`)                                                                              | Pasa      |
+
+La prueba de SEC-08 sustituye la base por una que registra cada llamada y comprueba que ninguna carga llega a ella; un
+caso de control confirma que un id válido sí llega, para que la comprobación no sea trivial.
+
 ## Qué falta del Sprint 12
 
-- Repetir SEC-06 y SEC-07 con el proveedor de IA real, y medir RNF-01 a RNF-03 con él: los casos están automatizados con un
-  modelo simulado que obedece al atacante, también para la búsqueda en documentos.
-- Repetir esta revisión sobre la versión integrada y con el piloto (encuesta SUS).
+- SEC-06 y SEC-07 se repitieron con el proveedor real (Gemini, plan gratuito) y datos sintéticos el 2026-11-13 con
+  `pnpm smoke:ia`: todas las comprobaciones pasan ([resultados](../resultados/ia-real-sintetica.md)). RNF-01 a RNF-03
+  siguen sin una medición válida: el plan gratuito no permite una prueba de carga.
+- Repetir esta revisión con el piloto (encuesta SUS), fuera del alcance de la demostración.

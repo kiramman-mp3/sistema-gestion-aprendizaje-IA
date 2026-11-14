@@ -149,6 +149,27 @@ el modelo elegido se ajusta `TOKENS_ALERT_DAILY`. El envío de las alertas a un 
 `ROW_TOLERANCE` admite las filas que se escriben entre la copia nocturna y la prueba del domingo (por ejemplo, de
 auditoría). Una copia sin probar no cuenta: revisa el registro de la prueba cada semana.
 
+#### Copia de Moodle
+
+El Moodle es de la institución y sus copias (base y `moodledata`) las hace su equipo. Si ese Moodle corre con Docker
+Compose en el mismo servidor, `backup-moodle.sh` y `restore-moodle-test.sh` hacen lo mismo que los scripts anteriores:
+copia cifrada con la misma contraseña, sumas SHA-256, marcador `LATEST-moodle` (que `check-health.sh` vigila) y prueba
+de restauración en una base temporal que compara las filas de cada tabla y los archivos de `filedir`. Se ajustan con
+variables (`MOODLE_COMPOSE_CMD`, `MOODLE_DB_SERVICE`, `MOODLE_DB_USER`, `MOODLE_DB_NAME`, `MOODLE_WEB_SERVICE`,
+`MOODLE_DATAROOT` y `MOODLE_DB_PREFIX`, que en una instalación estándar es `mdl_`); los valores por defecto son los del
+Moodle local de desarrollo.
+
+```cron
+# Copia de Moodle en modo mantenimiento a las 2:30 y prueba de restauración los domingos
+30 2 * * *  cd /opt/smart-lms && BACKUP_PASSPHRASE_FILE=/etc/smart-lms/backup.pass MAINTENANCE=1 MOODLE_COMPOSE_CMD="docker compose -p moodle" infra/scripts/backup-moodle.sh >> /var/log/smart-lms-backup.log 2>&1
+15 4 * * 0  cd /opt/smart-lms && BACKUP_PASSPHRASE_FILE=/etc/smart-lms/backup.pass ROW_TOLERANCE=500 MOODLE_DB_PREFIX=mdl_ MOODLE_COMPOSE_CMD="docker compose -p moodle" infra/scripts/restore-moodle-test.sh >> /var/log/smart-lms-restore-test.log 2>&1
+```
+
+Con `MAINTENANCE=1` el sitio queda en mantenimiento durante la copia (unos segundos con datos pequeños), para que
+`moodledata` no cambie a mitad. Al quitar el modo mantenimiento Moodle escribe un par de filas de registro: por eso la
+prueba de restauración necesita una tolerancia aunque se ejecute justo después. El RPO y el RTO se acuerdan con la
+institución.
+
 ## Operación diaria
 
 | Tarea                                 | Comando                                                                                                                                                                                                                                                                      |
@@ -166,7 +187,8 @@ auditoría). Una copia sin probar no cuenta: revisa el registro de la prueba cad
 
 1. Haz una copia: `infra/scripts/backup.sh`. Anota la versión actual (`git describe --tags`).
 2. `git fetch --tags && sudo git checkout <versión nueva>`.
-3. Si cambió el plugin, cópialo a Moodle y ejecuta la actualización (`upgrade.php`).
+3. Si cambió el plugin, cópialo a Moodle, ejecuta la actualización (`upgrade.php`) y después `setup_integration.php`
+   para que el rol de integración reciba las capacidades nuevas (sin `--rotate` no cambia el token).
 4. `$COMPOSE run --rm migrate && $COMPOSE up -d --build`.
 5. Comprueba la salud y haz una consulta de prueba desde un curso.
 
@@ -187,6 +209,10 @@ $COMPOSE up -d api document-worker
 
 `restore.sh db` sin tercer argumento restaura en una base nueva (`restore_<fecha>`) para revisarla sin tocar la real.
 
+La copia de Moodle se restaura con las herramientas de PostgreSQL y `tar` después de descifrarla con
+`openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass file:/etc/smart-lms/backup.pass -in <archivo>`, con Moodle en
+modo mantenimiento. Después de restaurar `moodledata`, purga las cachés (`admin/cli/purge_caches.php`).
+
 ## Lista de comprobación de seguridad
 
 - [ ] Los puertos abiertos hacia internet son solo el 80 y el 443 (`ss -tlnp`).
@@ -200,12 +226,12 @@ $COMPOSE up -d api document-worker
 
 ## Datos y retención
 
-| Dato                             | Dónde                       | Conservación                                                                 |
-| -------------------------------- | --------------------------- | ---------------------------------------------------------------------------- |
-| Archivos de sílabos              | volumen `file_storage`      | `SYLLABUS_RETENTION_DAYS` (30 por defecto); lo borra el mantenimiento diario |
-| Texto, extracciones y propuestas | PostgreSQL                  | Pendiente de la política institucional (D-08)                                |
-| Auditoría                        | PostgreSQL (`audit_events`) | Pendiente de D-08                                                            |
-| Copias de seguridad              | `/var/backups/smart-lms`    | `RETENTION_DAYS` (14 por defecto)                                            |
+| Dato                                 | Dónde                       | Conservación                                                                 |
+| ------------------------------------ | --------------------------- | ---------------------------------------------------------------------------- |
+| Archivos de sílabos                  | volumen `file_storage`      | `SYLLABUS_RETENTION_DAYS` (30 por defecto); lo borra el mantenimiento diario |
+| Texto, extracciones y propuestas     | PostgreSQL                  | Pendiente de la política institucional (D-08)                                |
+| Auditoría                            | PostgreSQL (`audit_events`) | Pendiente de D-08                                                            |
+| Copias de seguridad (también Moodle) | `/var/backups/smart-lms`    | `RETENTION_DAYS` (14 por defecto)                                            |
 
 Los plazos definitivos de conversaciones, embeddings y auditoría dependen de la política de datos de la
 institución (D-08) y se ajustan aquí cuando se cierre.
