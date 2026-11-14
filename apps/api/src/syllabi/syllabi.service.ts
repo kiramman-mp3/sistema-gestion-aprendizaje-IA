@@ -246,10 +246,7 @@ export class SyllabiService {
         const published = await tx.courseProposal.count({
           where: {
             ...proposals,
-            OR: [
-              { status: { in: [...PUBLISHED_STATUSES] } },
-              { publishOperations: { some: {} } },
-            ],
+            OR: [{ status: { in: [...PUBLISHED_STATUSES] } }, { publishOperations: { some: {} } }],
           },
         });
         if (published > 0) throw new SyllabusPublishedError();
