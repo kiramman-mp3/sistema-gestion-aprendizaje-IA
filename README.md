@@ -218,6 +218,7 @@ recomendaciones.
 │   └── index.php, lib.php          # Página del asistente y enlace en el curso
 ├── infra/
 │   ├── docker/                     # Init de PostgreSQL e imagen de phpcs
+│   ├── homelab/                    # Configuración de Moodle y de Apache del despliegue en un homelab
 │   ├── moodle/                     # local.yml de moodle-docker, Apache y scripts CLI (integración, seed, cursos de prueba y sus imágenes de portada)
 │   ├── amd/                        # Rollup de los módulos AMD y pruebas de su JavaScript (Vitest + jsdom)
 │   ├── mocks/                      # API de IA simulada para desarrollar la interfaz (`pnpm mock:ai`)
@@ -237,7 +238,7 @@ recomendaciones.
 │   ├── security/                   # Análisis de privacidad (LOPDP), revisión OWASP y seguridad de la IA
 │   ├── testing/                    # Plan de pruebas
 │   ├── user-manual/                # Manual del docente, del administrador y guion de capacitación
-│   ├── operacion/                  # Instalación, operación diaria e incidentes
+│   ├── operacion/                  # Instalación, operación diaria, incidentes y despliegue en un homelab
 │   ├── thesis/                     # Capítulos técnicos de la tesis
 │   ├── levantamiento/              # Guía de entrevista, catálogo de sílabos, consentimiento
 │   └── prototipos/                 # Prototipos de baja fidelidad
@@ -247,6 +248,7 @@ recomendaciones.
 ├── CLAUDE.md                       # Reglas de Git y documentación del proyecto
 ├── docker-compose.yml              # Base auxiliar y Redis; perfiles antivirus, worker y api (desarrollo)
 ├── docker-compose.prod.yml         # Producción: proxy con TLS, red interna, secretos fuera del repositorio
+├── docker-compose.homelab.yml      # Demostración en un homelab: Moodle propio, puertos locales y publicación con Tailscale Funnel
 ├── .env.example                    # Variables de entorno de referencia
 ├── package.json                    # Scripts del workspace
 └── pnpm-workspace.yaml             # Paquetes y política de scripts de instalación
@@ -411,7 +413,8 @@ $COMPOSE up -d --build app-db redis clamav && $COMPOSE run --rm migrate && $COMP
 Las copias de seguridad cifradas (`infra/scripts/backup.sh` y, si el Moodle corre con Docker Compose,
 `backup-moodle.sh`), sus pruebas de restauración (`restore-test.sh` y `restore-moodle-test.sh`) y el monitoreo (`infra/monitoring/check-health.sh`) se programan con cron. Pasos completos, actualización y restauración en el
 [manual de instalación y operación](docs/operacion/instalacion-y-operacion.md); qué hacer ante un fallo, en el
-[procedimiento de incidentes](docs/operacion/procedimiento-incidentes.md); y para quien enseña, el
+[procedimiento de incidentes](docs/operacion/procedimiento-incidentes.md); para una demostración completa en un servidor
+casero con Moodle incluido y publicado en internet con Tailscale Funnel, el [despliegue en un homelab](docs/operacion/despliegue-homelab.md); y para quien enseña, el
 [manual del docente](docs/user-manual/manual-docente.md).
 
 ---
