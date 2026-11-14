@@ -100,6 +100,7 @@ describe("SEC-08: inyección en parámetros y filtros (e2e)", () => {
     it.each([
       ["GET", `/api/v1/syllabi/${encoded}`],
       ["GET", `/api/v1/syllabi/${encoded}/extraction`],
+      ["DELETE", `/api/v1/syllabi/${encoded}`],
       ["GET", `/api/v1/proposals/${encoded}`],
       ["POST", `/api/v1/proposals/${encoded}/approve`],
       ["GET", `/api/v1/assistant/conversations/${encoded}`],
@@ -109,7 +110,7 @@ describe("SEC-08: inyección en parámetros y filtros (e2e)", () => {
       ["PUT", `/api/v1/admin/difficulty-rules/${encoded}`],
     ])("en la ruta %s %s se rechaza sin llegar a la base", async (method, path) => {
       const res = await http()
-        [method.toLowerCase() as "get" | "post" | "put"](path)
+        [method.toLowerCase() as "get" | "post" | "put" | "delete"](path)
         .set("Authorization", token())
         .send({});
 
